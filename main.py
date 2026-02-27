@@ -1,5 +1,5 @@
-from src.services.status_service import executar_leitura_limpeza_status
+from src.pipelines.ingestao_pipeline import run_ingestao_pipeline
 
 
 if __name__ == '__main__':
-    executar_leitura_limpeza_status()
+    run_ingestao_pipeline()

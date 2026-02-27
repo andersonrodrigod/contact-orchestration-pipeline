@@ -1,4 +1,5 @@
 import pandas as pd
+import os
 
 
 def ler_arquivo_csv(caminho_arquivo, separador=';'):
@@ -23,3 +24,14 @@ def ler_arquivo_csv(caminho_arquivo, separador=';'):
         1,
         f'Nao foi possivel ler {caminho_arquivo} com os encodings: {encodings}',
     )
+
+
+def salvar_output_validacao(resultado, arquivo_output):
+    pasta = os.path.dirname(arquivo_output)
+    if pasta:
+        os.makedirs(pasta, exist_ok=True)
+
+    with open(arquivo_output, 'w', encoding='utf-8') as arquivo:
+        arquivo.write(f"OK={resultado['ok']}\n")
+        for mensagem in resultado['mensagens']:
+            arquivo.write(f"- {mensagem}\n")
