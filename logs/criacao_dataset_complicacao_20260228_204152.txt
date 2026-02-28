@@ -1,0 +1,31 @@
+[EXECUCAO] Inicio do relatorio de execucao
+
+[2026-02-28 20:41:52] [INFO] [LOGGER] Execucao iniciada
+
+[2026-02-28 20:41:52] [INFO] [INICIO] arquivo_origem_dataset=src/data/complicacao.xlsx
+[2026-02-28 20:41:52] [INFO] [INICIO] arquivo_status_integrado=src/data/arquivo_limpo/status_complicacao.csv
+[2026-02-28 20:41:52] [INFO] [INICIO] arquivo_saida_dataset=src/data/arquivo_limpo/dataset_complicacao.xlsx
+
+[2026-02-28 20:41:57] [INFO] [VALIDACAO_COLUNAS] colunas_arquivo=['COD FILIAL', 'FILIAL', 'BASE', 'SIGLA', 'ESTADOS', 'SENHA', 'COMPLICACAO', 'OBITO', 'COD USUARIO', 'USUARIO', 'TEL USO', 'IDADE T', 'EMPRESA', 'COD PLANO', 'PLANO', 'DT ADESAO', 'TEMPO PLANO', 'DIAS CARENCIA', 'TP ATENDIMENTO', 'TRATAMENTO', 'IDADE', 'PRESTADOR', 'SOLICITANTE', 'COD PROCEDIMENTO', 'PROCEDIMENTO', 'DT AUTORIZACAO', 'DT INTERNACAO', 'DT ENVIO', 'DT ALTA', 'DIARIAS', 'UTI', 'OBSERVACAO', 'CHAVE', 'OPERADOR', 'CONTATO', 'DT ENVIO MANUAL', 'DATA DO CONTATO', 'LIDA', 'RESPOSTA DE IDENTIFICACAO', 'STATUS', 'DATA DE ENVIO', 'P1', 'P2', 'P3', 'P4', 'OBSERVAÇÕES DO CLIENTE', 'RP1', 'TENTATIVA', 'DATA ULTIMA TENTATIVA', 'TELEFONE TENTADO', 'ESPECIALISTA', 'TIPO', 'UF', 'DISTRITO', 'TELEFONE 1', 'TELEFONE 2', 'TELEFONE 3', 'TELEFONE 4', 'TELEFONE 5', 'Unnamed: 59', 'Unnamed: 60', 'CHAVE ERRADA P2', 'CHAVE ERRADA P3', 'CHAVE ERRADA P4']
+[2026-02-28 20:41:57] [INFO] [VALIDACAO_COLUNAS] ok=True
+[2026-02-28 20:41:57] [INFO] [VALIDACAO_COLUNAS] Todas as colunas obrigatorias do dataset de complicacao foram encontradas.
+
+[2026-02-28 20:42:22] [INFO] [SAIDA] arquivo_saida=src/data/arquivo_limpo/dataset_complicacao.xlsx
+[2026-02-28 20:42:22] [INFO] [SAIDA] total_linhas=11873
+
+[2026-02-28 20:42:22] [INFO] [MATCH_STATUS_DATASET] total_dataset=11873
+[2026-02-28 20:42:22] [INFO] [MATCH_STATUS_DATASET] total_match=9135
+[2026-02-28 20:42:22] [INFO] [MATCH_STATUS_DATASET] total_sem_match=2738
+
+[2026-02-28 20:42:22] [INFO] [PREENCHIMENTO] identificacao=9135 (76.94%)
+[2026-02-28 20:42:22] [INFO] [PREENCHIMENTO] resposta=9135 (76.94%)
+
+[2026-02-28 20:42:22] [INFO] [STATUS_DISTRIBUICAO] Lida: qtd=5720 pct=48.18%
+[2026-02-28 20:42:22] [INFO] [STATUS_DISTRIBUICAO] Entregue: qtd=2020 pct=17.01%
+[2026-02-28 20:42:22] [INFO] [STATUS_DISTRIBUICAO] Mensagem não pode ser entregue: qtd=797 pct=6.71%
+[2026-02-28 20:42:22] [INFO] [STATUS_DISTRIBUICAO] A Meta decidiu não entregar a mensagem: qtd=340 pct=2.86%
+[2026-02-28 20:42:22] [INFO] [STATUS_DISTRIBUICAO] Número é parte de um experimento: qtd=146 pct=1.23%
+[2026-02-28 20:42:22] [INFO] [STATUS_DISTRIBUICAO] Enviada: qtd=110 pct=0.93%
+[2026-02-28 20:42:22] [INFO] [STATUS_DISTRIBUICAO] Usuário decidiu não receber MKT messages: qtd=2 pct=0.02%
+
+[2026-02-28 20:42:22] [INFO] [LOGGER] Execucao finalizada com status=SUCESSO em 0:00:29.865353

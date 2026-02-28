@@ -93,12 +93,18 @@ def _carregar_status_para_lookup(arquivo_status_integrado):
 
     return {
         'ok': True,
+        'df_status_full': df_status,
         'df_status_por_contato': df_status_por_contato,
         'df_status_por_nome_tel': df_status_por_nome_tel,
     }
 
 
-def _enriquecer_dataset_com_status(df_dataset, df_status_por_contato, df_status_por_nome_tel):
+def _enriquecer_dataset_com_status(
+    df_dataset,
+    df_status_full,
+    df_status_por_contato,
+    df_status_por_nome_tel,
+):
     df_saida = df_dataset.copy()
     if 'USUARIO' not in df_saida.columns:
         return {
@@ -135,6 +141,11 @@ def _enriquecer_dataset_com_status(df_dataset, df_status_por_contato, df_status_
     df_saida['CHAVE STATUS'] = ''
     df_saida['STATUS CHAVE'] = ''
     df_saida['TELEFONE PRIORIDADE'] = ''
+    df_saida['STATUS TELEFONE'] = ''
+    for i in range(1, 6):
+        col_status_tel = f'TELEFONE STATUS {i}'
+        if col_status_tel not in df_saida.columns:
+            df_saida[col_status_tel] = ''
 
     # Match principal: CHAVE RELATORIO -> Contato
     mapa_principal = df_status_por_contato.set_index('Contato')
@@ -231,14 +242,38 @@ def _enriquecer_dataset_com_status(df_dataset, df_status_por_contato, df_status_
 
     # TELEFONE PRIORIDADE recebe o nome da coluna onde bate com TELEFONE ENVIADO
     telefone_enviado_norm = _normalizar_texto_serie(df_saida['TELEFONE ENVIADO']).apply(normalizar_telefone)
+    match_telefone_any = pd.Series(False, index=df_saida.index)
     for coluna_tel in colunas_tel_existentes:
         tel_col_norm = _normalizar_texto_serie(df_saida[coluna_tel]).apply(normalizar_telefone)
+        match_col = (telefone_enviado_norm != '') & (tel_col_norm == telefone_enviado_norm)
+        match_telefone_any = match_telefone_any | match_col
         mask_tel = (
             (df_saida['TELEFONE PRIORIDADE'] == '')
-            & (telefone_enviado_norm != '')
-            & (tel_col_norm == telefone_enviado_norm)
+            & match_col
         )
         df_saida.loc[mask_tel, 'TELEFONE PRIORIDADE'] = coluna_tel
+    df_saida.loc[match_telefone_any, 'STATUS TELEFONE'] = 'OK'
+    df_saida.loc[~match_telefone_any, 'STATUS TELEFONE'] = 'ERROR'
+
+    # Marcacao historica por chave: quais telefones ja foram enviados para cada CHAVE RELATORIO.
+    mapa_chave_telefones = (
+        df_status_full[(df_status_full['Contato'] != '') & (df_status_full['Telefone'] != '')]
+        .groupby('Contato')['Telefone']
+        .apply(lambda s: set(s.astype(str)))
+        .to_dict()
+    )
+    chave_relatorio_norm = _normalizar_texto_serie(df_saida['CHAVE RELATORIO'])
+    for i, coluna_tel in enumerate(colunas_tel_existentes, start=1):
+        coluna_status_tel = f'TELEFONE STATUS {i}'
+        tel_dataset_norm = _normalizar_texto_serie(df_saida[coluna_tel]).apply(normalizar_telefone)
+        mask_enviado = chave_relatorio_norm.index.to_series().apply(
+            lambda idx: (
+                chave_relatorio_norm.loc[idx] in mapa_chave_telefones
+                and tel_dataset_norm.loc[idx] != ''
+                and tel_dataset_norm.loc[idx] in mapa_chave_telefones[chave_relatorio_norm.loc[idx]]
+            )
+        )
+        df_saida.loc[mask_enviado, coluna_status_tel] = 'ENVIADO'
 
     for coluna in [
         'ULTIMO STATUS DE ENVIO',
@@ -249,6 +284,12 @@ def _enriquecer_dataset_com_status(df_dataset, df_status_por_contato, df_status_
         'CHAVE STATUS',
         'STATUS CHAVE',
         'TELEFONE PRIORIDADE',
+        'STATUS TELEFONE',
+        'TELEFONE STATUS 1',
+        'TELEFONE STATUS 2',
+        'TELEFONE STATUS 3',
+        'TELEFONE STATUS 4',
+        'TELEFONE STATUS 5',
     ]:
         _limpar_coluna_texto(df_saida, coluna)
 
@@ -387,10 +428,12 @@ def criar_dataset_complicacao(
         }
     df_status_por_contato = resultado_status['df_status_por_contato']
     df_status_por_nome_tel = resultado_status['df_status_por_nome_tel']
+    df_status_full = resultado_status['df_status_full']
 
     df_usuarios = _montar_df_final_complicacao(df_sem_duplicados)
     resultado_enriquecimento = _enriquecer_dataset_com_status(
         df_usuarios,
+        df_status_full,
         df_status_por_contato,
         df_status_por_nome_tel,
     )
@@ -419,6 +462,7 @@ def criar_dataset_complicacao(
     df_usuarios_lidos = _montar_df_final_complicacao(df_lidos_base)
     resultado_lidos = _enriquecer_dataset_com_status(
         df_usuarios_lidos,
+        df_status_full,
         df_status_por_contato,
         df_status_por_nome_tel,
     )
@@ -436,6 +480,7 @@ def criar_dataset_complicacao(
     df_usuarios_respondidos = _montar_df_final_complicacao(df_resp_base)
     resultado_respondidos = _enriquecer_dataset_com_status(
         df_usuarios_respondidos,
+        df_status_full,
         df_status_por_contato,
         df_status_por_nome_tel,
     )
@@ -445,6 +490,7 @@ def criar_dataset_complicacao(
     df_usuarios_duplicados = _montar_df_final_complicacao(df_duplicados)
     resultado_duplicados = _enriquecer_dataset_com_status(
         df_usuarios_duplicados,
+        df_status_full,
         df_status_por_contato,
         df_status_por_nome_tel,
     )
