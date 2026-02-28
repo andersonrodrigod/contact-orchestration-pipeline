@@ -46,18 +46,6 @@ class PipelineLogger:
         for linha in trilha.strip().splitlines():
             self._escrever_linha('ERROR', etapa, linha)
 
-    def log_dataframe(self, etapa, nome, df):
-        self._escrever_linha(
-            'INFO',
-            etapa,
-            f'{nome}: linhas={len(df)} colunas={len(df.columns)}',
-        )
-        self._escrever_linha(
-            'INFO',
-            etapa,
-            f'{nome}: colunas={list(df.columns)}',
-        )
-
     def finalizar(self, status):
         fim = datetime.now()
         duracao = fim - self.inicio

@@ -37,11 +37,14 @@ def _executar_normalizacao_padronizacao(
     try:
         logger.info('LEITURA', 'Lendo arquivo status')
         df_status = ler_arquivo_csv(arquivo_status)
-        logger.log_dataframe('LEITURA', 'df_status', df_status)
+        logger.info('LEITURA', f'df_status: linhas={len(df_status)} colunas={len(df_status.columns)}')
 
         logger.info('LEITURA', 'Lendo arquivo status_resposta')
         df_status_resposta = ler_arquivo_csv(arquivo_status_resposta)
-        logger.log_dataframe('LEITURA', 'df_status_resposta', df_status_resposta)
+        logger.info(
+            'LEITURA',
+            f'df_status_resposta: linhas={len(df_status_resposta)} colunas={len(df_status_resposta.columns)}',
+        )
 
         resultado_colunas_origem = validar_colunas_origem_para_padronizacao(
             df_status, df_status_resposta
@@ -62,8 +65,6 @@ def _executar_normalizacao_padronizacao(
         logger.info('PADRONIZACAO', 'Padronizando nomes de colunas')
         df_status = padronizar_colunas_status(df_status)
         df_status_resposta = padronizar_colunas_status_resposta(df_status_resposta)
-        logger.log_dataframe('PADRONIZACAO', 'df_status', df_status)
-        logger.log_dataframe('PADRONIZACAO', 'df_status_resposta', df_status_resposta)
 
         logger.info('NORMALIZACAO', 'Convertendo tipos de colunas')
         df_status = normalizar_tipos_dataframe(df_status, colunas_data=['Data agendamento'])

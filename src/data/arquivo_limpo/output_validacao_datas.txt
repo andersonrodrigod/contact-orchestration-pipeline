@@ -1,3 +1,0 @@
-OK=False
-- Modo complicacao selecionado.
-- Arquivo status_resposta com estrutura alterada. Colunas faltando: ['dat_atendimento ou DT_ATENDIMENTO']. O codigo do app precisa ser adaptado para a nova alteracao.

@@ -1,4 +1,5 @@
 import argparse
+from pathlib import Path
 
 from src.pipelines.ingestao_pipeline import (
     run_ingestao_complicacao,
@@ -8,6 +9,41 @@ from src.pipelines.integracao_pipeline import (
     integrar_dados_status_complicacao,
     integrar_dados_status_unificar,
 )
+
+
+DEFAULT_PATHS = {
+    'arquivo_status': 'src/data/status.csv',
+    'arquivo_status_resposta_complicacao': 'src/data/status_resposta_complicacao.csv',
+    'arquivo_status_resposta_eletivo': 'src/data/status_respostas_eletivo.csv',
+    'arquivo_status_resposta_internacao': 'src/data/status_resposta_internacao.csv',
+    'arquivo_status_resposta_unificado': 'src/data/status_resposta_eletivo_internacao.csv',
+    'saida_status': 'src/data/arquivo_limpo/status_limpo.csv',
+    'saida_status_resposta_complicacao': 'src/data/arquivo_limpo/status_resposta_complicacao_limpo.csv',
+    'saida_status_resposta_unificado': 'src/data/arquivo_limpo/status_resposta_eletivo_internacao_limpo.csv',
+    'saida_status_integrado_complicacao': 'src/data/arquivo_limpo/status_complicacao_integrado.csv',
+    'saida_status_integrado_unificado': 'src/data/arquivo_limpo/status_unificado_integrado.csv',
+}
+
+
+def _arquivo_existe_e_tem_dados(caminho):
+    arquivo = Path(caminho)
+    return arquivo.exists() and arquivo.is_file() and arquivo.stat().st_size > 0
+
+
+def _resolver_modo_execucao(args):
+    if args.modo in ['complicacao', 'unificar']:
+        return args.modo
+
+    if _arquivo_existe_e_tem_dados(args.arquivo_status_resposta_complicacao):
+        return 'complicacao'
+
+    if (
+        _arquivo_existe_e_tem_dados(args.arquivo_status_resposta_eletivo)
+        and _arquivo_existe_e_tem_dados(args.arquivo_status_resposta_internacao)
+    ):
+        return 'unificar'
+
+    return 'complicacao'
 
 
 def _imprimir_resumo_execucao(resultado):
@@ -33,21 +69,22 @@ def _imprimir_resumo_execucao(resultado):
 
 def run_pipeline():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--modo', choices=['complicacao', 'unificar'], default='complicacao')
-    parser.add_argument('--arquivo-status', default='src/data/status.csv')
-    parser.add_argument('--arquivo-status-resposta-complicacao', default='src/data/status_resposta_complicacao.csv')
-    parser.add_argument('--arquivo-status-resposta-eletivo', default='src/data/status_respostas_eletivo.csv')
-    parser.add_argument('--arquivo-status-resposta-internacao', default='src/data/status_resposta_internacao.csv')
-    parser.add_argument('--arquivo-status-resposta-unificado', default='src/data/status_resposta_eletivo_internacao.csv')
-    parser.add_argument('--saida-status', default='src/data/arquivo_limpo/status_limpo.csv')
-    parser.add_argument('--saida-status-resposta-complicacao', default='src/data/arquivo_limpo/status_resposta_complicacao_limpo.csv')
-    parser.add_argument('--saida-status-resposta-unificado', default='src/data/arquivo_limpo/status_resposta_eletivo_internacao_limpo.csv')
-    parser.add_argument('--saida-status-integrado-complicacao', default='src/data/arquivo_limpo/status_complicacao_integrado.csv')
-    parser.add_argument('--saida-status-integrado-unificado', default='src/data/arquivo_limpo/status_unificado_integrado.csv')
+    parser.add_argument('--modo', choices=['auto', 'complicacao', 'unificar'], default='auto')
+    parser.add_argument('--arquivo-status', default=DEFAULT_PATHS['arquivo_status'])
+    parser.add_argument('--arquivo-status-resposta-complicacao', default=DEFAULT_PATHS['arquivo_status_resposta_complicacao'])
+    parser.add_argument('--arquivo-status-resposta-eletivo', default=DEFAULT_PATHS['arquivo_status_resposta_eletivo'])
+    parser.add_argument('--arquivo-status-resposta-internacao', default=DEFAULT_PATHS['arquivo_status_resposta_internacao'])
+    parser.add_argument('--arquivo-status-resposta-unificado', default=DEFAULT_PATHS['arquivo_status_resposta_unificado'])
+    parser.add_argument('--saida-status', default=DEFAULT_PATHS['saida_status'])
+    parser.add_argument('--saida-status-resposta-complicacao', default=DEFAULT_PATHS['saida_status_resposta_complicacao'])
+    parser.add_argument('--saida-status-resposta-unificado', default=DEFAULT_PATHS['saida_status_resposta_unificado'])
+    parser.add_argument('--saida-status-integrado-complicacao', default=DEFAULT_PATHS['saida_status_integrado_complicacao'])
+    parser.add_argument('--saida-status-integrado-unificado', default=DEFAULT_PATHS['saida_status_integrado_unificado'])
 
     args = parser.parse_args()
+    modo = _resolver_modo_execucao(args)
 
-    if args.modo == 'complicacao':
+    if modo == 'complicacao':
         resultado_ingestao = run_ingestao_complicacao(
             arquivo_status=args.arquivo_status,
             arquivo_status_resposta_complicacao=args.arquivo_status_resposta_complicacao,

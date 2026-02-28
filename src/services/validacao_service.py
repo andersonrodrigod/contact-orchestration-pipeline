@@ -87,35 +87,6 @@ def validar_padronizacao_colunas_data(df_status, df_status_resposta):
     return resultado
 
 
-def validar_colunas_identicas(df_eletivo, df_internacao):
-    colunas_eletivo = list(df_eletivo.columns)
-    colunas_internacao = list(df_internacao.columns)
-
-    set_eletivo = set(colunas_eletivo)
-    set_internacao = set(colunas_internacao)
-
-    if set_eletivo == set_internacao:
-        return {
-            'ok': True,
-            'mensagens': ['Arquivos de resposta possuem colunas identicas para concatenacao.'],
-        }
-
-    faltando_no_internacao = sorted(set_eletivo - set_internacao)
-    faltando_no_eletivo = sorted(set_internacao - set_eletivo)
-
-    mensagens = ['Arquivos de resposta NAO possuem colunas identicas. Concatenacao ignorada.']
-    if faltando_no_internacao:
-        mensagens.append(
-            f'Colunas presentes no eletivo e ausentes no internacao: {faltando_no_internacao}'
-        )
-    if faltando_no_eletivo:
-        mensagens.append(
-            f'Colunas presentes no internacao e ausentes no eletivo: {faltando_no_eletivo}'
-        )
-
-    return {'ok': False, 'mensagens': mensagens}
-
-
 def validar_colunas_minimas_status_resposta(df_eletivo, df_internacao):
     colunas_minimas = {'resposta', 'nom_contato'}
 

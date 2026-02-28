@@ -1,87 +1,59 @@
 # Contact Orchestration Pipeline
 
-## Entrada de dados
+## Visao geral
+Pipeline em duas etapas:
+- `ingestao`: leitura, validacao, normalizacao e limpeza dos arquivos.
+- `integracao`: filtro por HSM e merge entre status e status_resposta.
 
-Arquivos usados no pipeline de ingestao:
+O projeto roda por `main.py` e escreve logs em `logs/`.
 
+## Modos de execucao
+- `auto` (padrao):
+  - usa `complicacao` se existir arquivo de complicacao com dados.
+  - senao, usa `unificar` se existirem eletivo e internacao com dados.
+  - fallback final: `complicacao`.
+- `complicacao`: usa apenas `status_resposta_complicacao`.
+- `unificar`: concatena `eletivo + internacao` e segue pipeline.
+
+## Entradas padrao
 - `src/data/status.csv`
 - `src/data/status_resposta_complicacao.csv`
+- `src/data/status_respostas_eletivo.csv`
+- `src/data/status_resposta_internacao.csv`
 
-## Como executar
+## Saidas padrao
+- `src/data/arquivo_limpo/status_limpo.csv`
+- `src/data/arquivo_limpo/status_resposta_complicacao_limpo.csv`
+- `src/data/arquivo_limpo/status_resposta_eletivo_internacao_limpo.csv`
+- `src/data/arquivo_limpo/status_complicacao_integrado.csv`
+- `src/data/arquivo_limpo/status_unificado_integrado.csv`
 
-Executar pelo arquivo principal:
-
+## Execucao
 ```bash
 python main.py
 ```
 
-O `main.py` chama:
-
-- `src/pipelines/ingestao_pipeline.py`
-- funcao `run_ingestao_pipeline`
-
-## Padronizacao aplicada
-
-No pipeline de ingestao, as colunas de data sao padronizadas assim:
-
-- `Data agendamento` -> `DT_ENVIO` (arquivo status)
-- `dat_atendimento` -> `DT_ATENDIMENTO` (arquivo status_resposta_complicacao)
-
-Depois da padronizacao:
-
-- colunas de texto sao normalizadas para corrigir caracteres quebrados
-- colunas de data permanecem como data (`datetime`)
-
-## Validacoes de schema (datas)
-
-Antes da padronizacao, o pipeline valida se as colunas obrigatorias existem:
-
-- `Data agendamento` no arquivo status
-- `dat_atendimento` no arquivo status_resposta_complicacao
-
-Se faltar alguma coluna, o pipeline gera output para consumo futuro na interface CTkinter:
-
-- `src/data/arquivo_limpo/output_validacao_datas.txt`
-
-Formato do output:
-
-```txt
-OK=True|False
-- mensagem 1
-- mensagem 2
+Forcar modo:
+```bash
+python main.py --modo complicacao
+python main.py --modo unificar
 ```
 
-## Concatenação de status_resposta
+## Regras principais de dados
+- `Data agendamento` permanece no status.
+- `DT ENVIO` e criado a partir de `Data agendamento` (somente data).
+- `dat_atendimento` e padronizado para `DT_ATENDIMENTO`.
+- `DT_ATENDIMENTO` e formatado em `dd/mm/yyyy`.
+- merge na integracao usa `Contato + DT ENVIO` com `nom_contato + DT_ATENDIMENTO`.
+- `RESPOSTA` recebe `"Sem resposta"` quando vier vazia.
 
-No pipeline de ingestao existe uma etapa opcional para unificar:
+## Logs
+- Saida de execucao em `logs/<nome_pipeline>_<timestamp>.txt`.
+- O terminal tambem mostra resumo final (`OK`, arquivo final e totais de match).
 
-- `src/data/status_respostas_eletivo.csv`
-- `src/data/status_resposta_internacao.csv`
-
-Saida gerada quando os dois arquivos existem e possuem colunas identicas:
-
-- `src/data/status_resposta_eletivo_internacao.csv`
-
-Validacao aplicada nessa etapa:
-
-- compara se os dois arquivos possuem colunas identicas
-- se forem diferentes, a concatenacao e ignorada
-- a mensagem dessa validacao entra no `output_validacao_datas.txt`
-
-## Saidas geradas
-
-- `src/data/arquivo_limpo/status_limpo.csv`
-- `src/data/arquivo_limpo/status_resposta_complicacao_limpo.csv`
-- `src/data/arquivo_limpo/output_validacao_datas.txt`
-
-## Sugestao de commit para esta etapa
-
-```txt
-feat(ingestao): padroniza colunas de data e valida schema de status/status_resposta
-```
-
-## Sugestao de commit para a nova feature
-
-```txt
-feat(ingestao): adiciona concatenacao eletivo+internacao com validacao de colunas identicas
-```
+## Estrutura
+- `main.py`: orquestracao dos modos e resumo final.
+- `src/pipelines/ingestao_pipeline.py`: ingestao.
+- `src/pipelines/integracao_pipeline.py`: integracao.
+- `src/services/`: regras de schema, normalizacao, validacao, integracao e dataset.
+- `core/logger.py`: logger de execucao.
