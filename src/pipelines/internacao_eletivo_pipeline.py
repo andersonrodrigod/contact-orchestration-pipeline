@@ -40,6 +40,7 @@ def run_internacao_eletivo_pipeline(
 
     resultado_dataset = run_criacao_dataset_pipeline(
         arquivo_origem_dataset=arquivo_dataset_origem_internacao,
+        arquivo_status_integrado=saida_status_integrado,
         arquivo_saida_dataset=saida_dataset,
         nome_logger='criacao_dataset_internacao_eletivo',
         contexto='internacao_eletivo',
@@ -91,6 +92,7 @@ def run_pipeline_internacao_eletivo_somente_status():
 
     resultado_dataset = run_criacao_dataset_pipeline(
         arquivo_origem_dataset=DEFAULTS_INTERNACAO_ELETIVO['arquivo_dataset_origem_internacao'],
+        arquivo_status_integrado=DEFAULTS_INTERNACAO_ELETIVO['saida_status_integrado'],
         arquivo_saida_dataset=DEFAULTS_INTERNACAO_ELETIVO['saida_dataset'],
         nome_logger='criacao_dataset_internacao_eletivo_somente_status',
         contexto='internacao_eletivo',

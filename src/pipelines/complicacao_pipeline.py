@@ -36,6 +36,7 @@ def run_complicacao_pipeline(
 
     resultado_dataset = run_criacao_dataset_pipeline(
         arquivo_origem_dataset=arquivo_dataset_origem_complicacao,
+        arquivo_status_integrado=saida_status_integrado,
         arquivo_saida_dataset=saida_dataset,
         nome_logger='criacao_dataset_complicacao',
         contexto='complicacao',
@@ -85,6 +86,7 @@ def run_pipeline_complicacao_somente_status():
 
     resultado_dataset = run_criacao_dataset_pipeline(
         arquivo_origem_dataset=DEFAULTS_COMPLICACAO['arquivo_dataset_origem_complicacao'],
+        arquivo_status_integrado=DEFAULTS_COMPLICACAO['saida_status_integrado'],
         arquivo_saida_dataset=DEFAULTS_COMPLICACAO['saida_dataset'],
         nome_logger='criacao_dataset_complicacao_somente_status',
         contexto='complicacao',
