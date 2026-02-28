@@ -1,0 +1,10 @@
+[EXECUCAO] Inicio do relatorio de execucao
+
+[2026-02-28 17:52:04] [INFO] [LOGGER] Execucao iniciada
+
+[2026-02-28 17:52:04] [INFO] [INICIO] arquivo_status=src/data/status.csv
+[2026-02-28 17:52:04] [INFO] [INICIO] saida_status=src/data/arquivo_limpo/status_internacao_eletivo_limpo.csv
+
+[2026-02-28 17:52:05] [INFO] [LEITURA] df_status: linhas=146248 colunas=17
+
+[2026-02-28 17:52:14] [INFO] [LOGGER] Execucao finalizada com status=SUCESSO em 0:00:10.368853
