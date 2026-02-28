@@ -1,4 +1,5 @@
 from pathlib import Path
+from uuid import uuid4
 
 from src.services.status_service import integrar_status_com_resposta
 from src.utils.arquivos import ler_arquivo_csv
@@ -28,7 +29,9 @@ def integrar_com_filtro_hsm(
 ):
     pasta_saida = Path(arquivo_saida).parent
     pasta_saida.mkdir(parents=True, exist_ok=True)
-    arquivo_status_filtrado = str(pasta_saida / '_tmp_status_filtrado_integracao.csv')
+    arquivo_status_filtrado = str(
+        pasta_saida / f"_tmp_status_filtrado_integracao_{uuid4().hex}.csv"
+    )
 
     try:
         resumo_filtro = filtrar_status_por_hsm(
@@ -44,5 +47,52 @@ def integrar_com_filtro_hsm(
             colunas_limpar=colunas_limpar,
         )
         return {**resultado, 'resumo_filtro': resumo_filtro}
+    finally:
+        Path(arquivo_status_filtrado).unlink(missing_ok=True)
+
+
+def integrar_somente_status_com_filtro_hsm(
+    arquivo_status,
+    arquivo_saida,
+    hsms_permitidos,
+    colunas_limpar=None,
+):
+    pasta_saida = Path(arquivo_saida).parent
+    pasta_saida.mkdir(parents=True, exist_ok=True)
+    arquivo_status_filtrado = str(
+        pasta_saida / f"_tmp_status_filtrado_status_somente_{uuid4().hex}.csv"
+    )
+
+    try:
+        resumo_filtro = filtrar_status_por_hsm(
+            arquivo_status=arquivo_status,
+            hsms_permitidos=hsms_permitidos,
+            arquivo_status_filtrado=arquivo_status_filtrado,
+        )
+
+        df_status = ler_arquivo_csv(arquivo_status_filtrado)
+        if 'Contato' in df_status.columns:
+            df_status['Contato'] = df_status['Contato'].astype(str).str.strip()
+            df_status['NOME_MANIPULADO'] = df_status['Contato'].astype(str).str.split('_', n=1).str[0].str.strip()
+        else:
+            df_status['NOME_MANIPULADO'] = ''
+
+        df_status['RESPOSTA'] = 'Sem resposta'
+
+        if colunas_limpar is None:
+            colunas_limpar = []
+        for coluna in colunas_limpar:
+            if coluna in df_status.columns:
+                df_status[coluna] = ''
+
+        df_status.to_csv(arquivo_saida, sep=';', index=False, encoding='utf-8-sig')
+        return {
+            'ok': True,
+            'arquivo_saida': arquivo_saida,
+            'total_status': len(df_status),
+            'com_match': 0,
+            'sem_match': len(df_status),
+            'resumo_filtro': resumo_filtro,
+        }
     finally:
         Path(arquivo_status_filtrado).unlink(missing_ok=True)

@@ -9,9 +9,10 @@ Pipeline em duas etapas:
 O projeto roda por `main.py` e escreve logs em `logs/`.
 
 ## Modos de execucao
-- `ambos` (padrao): executa `complicacao` e `internacao_eletivo` no mesmo run.
-- `complicacao`: ingestao/integracao com `status_resposta_complicacao.csv` e criacao de dataset usando `complicacao.xlsx`.
-- `internacao_eletivo`: concatena `eletivo + internacao` e segue pipeline.
+- `ambos_com_resposta` (padrao): executa os dois fluxos com status_resposta.
+- `ambos_somente_status`: executa os dois fluxos sem status_resposta.
+- `complicacao_com_resposta` e `complicacao_somente_status`.
+- `internacao_eletivo_com_resposta` e `internacao_eletivo_somente_status`.
 
 ## Entradas padrao
 - `src/data/status.csv`
@@ -39,9 +40,12 @@ python main.py
 
 Forcar modo:
 ```bash
-python main.py --modo complicacao
-python main.py --modo internacao_eletivo
-python main.py --modo ambos
+python main.py --modo complicacao_com_resposta
+python main.py --modo complicacao_somente_status
+python main.py --modo internacao_eletivo_com_resposta
+python main.py --modo internacao_eletivo_somente_status
+python main.py --modo ambos_com_resposta
+python main.py --modo ambos_somente_status
 ```
 
 Os caminhos padrao de cada fluxo ficam definidos nos respectivos arquivos:
@@ -70,6 +74,8 @@ Os caminhos padrao de cada fluxo ficam definidos nos respectivos arquivos:
 - `main.py`: orquestracao dos modos e resumo final.
 - `src/pipelines/complicacao_pipeline.py`: dependencia exclusiva da complicacao.
 - `src/pipelines/internacao_eletivo_pipeline.py`: dependencia exclusiva de internacao+eletivo.
+- `src/pipelines/join_status_resposta_pipeline.py`: unifica status + status_resposta (e versao somente status).
+- `src/pipelines/concatenar_status_respostas_pipeline.py`: unifica status_respostas (eletivo + internacao).
 - `src/pipelines/ingestao_pipeline.py`: ingestao.
 - `src/pipelines/integracao_pipeline.py`: integracao.
 - `src/pipelines/criacao_dataset_pipeline.py`: execucao da criacao de dataset (ativo no modo complicacao).

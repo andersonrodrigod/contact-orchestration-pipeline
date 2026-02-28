@@ -1,6 +1,9 @@
-from src.pipelines.ingestao_pipeline import run_ingestao_unificar
-from src.pipelines.integracao_pipeline import integrar_dados_status_unificar
+from src.pipelines.ingestao_pipeline import run_ingestao_somente_status, run_ingestao_unificar
 from src.pipelines.criacao_dataset_pipeline import run_criacao_dataset_pipeline
+from src.pipelines.join_status_resposta_pipeline import (
+    run_status_somente_internacao_eletivo_pipeline,
+    run_unificar_status_resposta_internacao_eletivo_pipeline,
+)
 
 
 DEFAULTS_INTERNACAO_ELETIVO = {
@@ -38,7 +41,7 @@ def run_internacao_eletivo_pipeline(
     if not resultado_ingestao.get('ok'):
         return resultado_ingestao
 
-    resultado_integracao = integrar_dados_status_unificar(
+    resultado_integracao = run_unificar_status_resposta_internacao_eletivo_pipeline(
         arquivo_status=saida_status,
         arquivo_status_resposta=saida_status_resposta,
         arquivo_saida=saida_status_integrado,
@@ -61,7 +64,7 @@ def run_internacao_eletivo_pipeline(
     }
 
 
-def run_pipeline_internacao_eletivo():
+def run_pipeline_internacao_eletivo_com_resposta():
     return run_internacao_eletivo_pipeline(
         arquivo_status=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status'],
         arquivo_status_resposta_eletivo=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status_resposta_eletivo'],
@@ -73,3 +76,38 @@ def run_pipeline_internacao_eletivo():
         saida_status_integrado=DEFAULTS_INTERNACAO_ELETIVO['saida_status_integrado'],
         saida_dataset=DEFAULTS_INTERNACAO_ELETIVO['saida_dataset'],
     )
+
+
+def run_pipeline_internacao_eletivo_somente_status():
+    resultado_ingestao = run_ingestao_somente_status(
+        arquivo_status=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status'],
+        saida_status=DEFAULTS_INTERNACAO_ELETIVO['saida_status'],
+        nome_logger='ingestao_internacao_eletivo_somente_status',
+    )
+    if not resultado_ingestao.get('ok'):
+        return resultado_ingestao
+
+    resultado_status = run_status_somente_internacao_eletivo_pipeline(
+        arquivo_status=DEFAULTS_INTERNACAO_ELETIVO['saida_status'],
+        arquivo_saida=DEFAULTS_INTERNACAO_ELETIVO['saida_status_integrado'],
+    )
+    if not resultado_status.get('ok'):
+        return resultado_status
+
+    resultado_dataset = run_criacao_dataset_pipeline(
+        arquivo_origem_dataset=DEFAULTS_INTERNACAO_ELETIVO['arquivo_dataset_origem_internacao'],
+        arquivo_saida_dataset=DEFAULTS_INTERNACAO_ELETIVO['saida_dataset'],
+        nome_logger='criacao_dataset_internacao_eletivo_somente_status',
+    )
+    if not resultado_dataset.get('ok'):
+        return resultado_dataset
+
+    return {
+        **resultado_status,
+        **resultado_dataset,
+        'arquivo_saida': resultado_dataset.get('arquivo_saida'),
+    }
+
+
+def run_pipeline_internacao_eletivo():
+    return run_pipeline_internacao_eletivo_com_resposta()

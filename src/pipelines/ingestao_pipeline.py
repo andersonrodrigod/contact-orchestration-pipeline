@@ -14,7 +14,7 @@ from src.services.validacao_service import (
     validar_colunas_origem_para_padronizacao,
     validar_padronizacao_colunas_data,
 )
-from src.services.dataset_service import concatenar_status_resposta_eletivo_internacao
+from src.pipelines.concatenar_status_respostas_pipeline import run_unificar_status_respostas_pipeline
 
 
 def _executar_normalizacao_padronizacao(
@@ -167,6 +167,39 @@ def run_ingestao_complicacao(
     )
 
 
+def run_ingestao_somente_status(
+    arquivo_status='src/data/status.csv',
+    saida_status='src/data/arquivo_limpo/status_limpo.csv',
+    nome_logger='ingestao_somente_status',
+):
+    logger = PipelineLogger(nome_pipeline=nome_logger)
+    logger.info('INICIO', f'arquivo_status={arquivo_status}')
+    logger.info('INICIO', f'saida_status={saida_status}')
+    try:
+        df_status = ler_arquivo_csv(arquivo_status)
+        logger.info('LEITURA', f'df_status: linhas={len(df_status)} colunas={len(df_status.columns)}')
+
+        df_status = padronizar_colunas_status(df_status)
+        df_status = normalizar_tipos_dataframe(df_status, colunas_data=['Data agendamento'])
+        df_status = limpar_texto_exceto_colunas(df_status, colunas_ignorar=['Data agendamento'])
+        criar_coluna_dt_envio_por_data_agendamento(df_status)
+
+        df_status.to_csv(saida_status, sep=';', index=False, encoding='utf-8-sig')
+        logger.finalizar('SUCESSO')
+        return {
+            'ok': True,
+            'arquivo_saida': saida_status,
+            'mensagens': ['Ingestao somente status executada com sucesso.'],
+        }
+    except Exception as erro:
+        logger.exception('ERRO_EXECUCAO', erro)
+        logger.finalizar('ERRO')
+        return {
+            'ok': False,
+            'mensagens': [f'Erro na ingestao somente status: {erro}'],
+        }
+
+
 def run_ingestao_unificar(
     arquivo_status='src/data/status.csv',
     arquivo_status_resposta_eletivo='src/data/status_respostas_eletivo.csv',
@@ -181,7 +214,7 @@ def run_ingestao_unificar(
     logger.info('MODO', f'arquivo_internacao={arquivo_status_resposta_internacao}')
     logger.info('MODO', f'arquivo_unificado={arquivo_status_resposta_unificado}')
 
-    resultado_concat = concatenar_status_resposta_eletivo_internacao(
+    resultado_concat = run_unificar_status_respostas_pipeline(
         arquivo_eletivo=arquivo_status_resposta_eletivo,
         arquivo_internacao=arquivo_status_resposta_internacao,
         arquivo_saida=arquivo_status_resposta_unificado,
