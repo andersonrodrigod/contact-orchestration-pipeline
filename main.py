@@ -1,4 +1,5 @@
 import argparse
+from core.pipeline_result import PipelineResult
 
 from src.pipelines.complicacao_pipeline import (
     run_pipeline_complicacao_com_resposta,
@@ -52,14 +53,16 @@ def run_pipeline():
         resultado_internacao_eletivo = run_pipeline_internacao_eletivo_somente_status()
 
     ok_geral = resultado_complicacao.get('ok', False) and resultado_internacao_eletivo.get('ok', False)
-    return {
-        'ok': ok_geral,
-        'resultados': {
-            'complicacao': resultado_complicacao,
-            'internacao_eletivo': resultado_internacao_eletivo,
+    return PipelineResult(
+        ok=ok_geral,
+        mensagens=['Execucao em modo ambos finalizada.'],
+        dados={
+            'resultados': {
+                'complicacao': resultado_complicacao,
+                'internacao_eletivo': resultado_internacao_eletivo,
+            },
         },
-        'mensagens': ['Execucao em modo ambos finalizada.'],
-    }
+    ).to_dict()
 
 
 if __name__ == '__main__':

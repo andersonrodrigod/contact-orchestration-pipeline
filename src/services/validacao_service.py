@@ -1,4 +1,10 @@
 import pandas as pd
+from src.config.schemas import (
+    COLUNAS_MINIMAS_STATUS_RESPOSTA_CONCATENACAO,
+    COLUNAS_OBRIGATORIAS_DATASET_ORIGEM,
+    COLUNAS_STATUS_OBRIGATORIAS_PADRONIZACAO,
+    COLUNAS_STATUS_RESPOSTA_OBRIGATORIAS_PADRONIZACAO,
+)
 
 
 def _tem_coluna_data_atendimento(df):
@@ -11,15 +17,8 @@ def validar_colunas_origem_para_padronizacao(df_status, df_status_resposta):
         'mensagens': [],
     }
 
-    colunas_status_obrigatorias = [
-        'Data agendamento',
-        'HSM',
-        'Status',
-        'Respondido',
-        'Contato',
-        'Telefone',
-    ]
-    colunas_status_resposta_obrigatorias = ['resposta', 'nom_contato']
+    colunas_status_obrigatorias = COLUNAS_STATUS_OBRIGATORIAS_PADRONIZACAO
+    colunas_status_resposta_obrigatorias = COLUNAS_STATUS_RESPOSTA_OBRIGATORIAS_PADRONIZACAO
 
     faltando_status = [c for c in colunas_status_obrigatorias if c not in df_status.columns]
     faltando_status_resposta = [c for c in colunas_status_resposta_obrigatorias if c not in df_status_resposta.columns]
@@ -88,7 +87,7 @@ def validar_padronizacao_colunas_data(df_status, df_status_resposta):
 
 
 def validar_colunas_minimas_status_resposta(df_eletivo, df_internacao):
-    colunas_minimas = {'resposta', 'nom_contato'}
+    colunas_minimas = COLUNAS_MINIMAS_STATUS_RESPOSTA_CONCATENACAO
 
     faltando_eletivo = sorted(colunas_minimas - set(df_eletivo.columns))
     faltando_internacao = sorted(colunas_minimas - set(df_internacao.columns))
@@ -112,26 +111,8 @@ def validar_colunas_minimas_status_resposta(df_eletivo, df_internacao):
     return {'ok': False, 'mensagens': mensagens}
 
 
-def validar_colunas_origem_dataset_complicacao(colunas_arquivo):
-    colunas_obrigatorias = [
-        'BASE',
-        'COD USUARIO',
-        'USUARIO',
-        'TELEFONE 1',
-        'TELEFONE 2',
-        'TELEFONE 3',
-        'TELEFONE 4',
-        'TELEFONE 5',
-        'PRESTADOR',
-        'PROCEDIMENTO',
-        'TP ATENDIMENTO',
-        'DT INTERNACAO',
-        'DT ENVIO',
-        'CHAVE',
-        'STATUS',
-        'P1',
-    ]
-
+def validar_colunas_origem_dataset_complicacao(colunas_arquivo, contexto='dataset'):
+    colunas_obrigatorias = COLUNAS_OBRIGATORIAS_DATASET_ORIGEM
     set_colunas = {str(c).strip() for c in colunas_arquivo}
     faltando = [col for col in colunas_obrigatorias if col not in set_colunas]
 
@@ -139,7 +120,7 @@ def validar_colunas_origem_dataset_complicacao(colunas_arquivo):
         return {
             'ok': False,
             'mensagens': [
-                'Colunas obrigatorias do dataset de complicacao nao foram encontradas.',
+                f'Colunas obrigatorias do dataset de {contexto} nao foram encontradas.',
                 f'Colunas faltando: {faltando}',
             ],
             'colunas_obrigatorias': colunas_obrigatorias,
@@ -148,7 +129,7 @@ def validar_colunas_origem_dataset_complicacao(colunas_arquivo):
 
     return {
         'ok': True,
-        'mensagens': ['Todas as colunas obrigatorias do dataset de complicacao foram encontradas.'],
+        'mensagens': [f'Todas as colunas obrigatorias do dataset de {contexto} foram encontradas.'],
         'colunas_obrigatorias': colunas_obrigatorias,
         'colunas_faltando': [],
     }

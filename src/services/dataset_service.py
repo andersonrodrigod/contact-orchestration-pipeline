@@ -1,4 +1,5 @@
 import pandas as pd
+from src.config.schemas import COLUNAS_FINAIS_DATASET
 
 from src.services.normalizacao_services import (
     normalizar_colunas_telefone_dataframe,
@@ -10,19 +11,6 @@ from src.services.validacao_service import (
     validar_colunas_origem_dataset_complicacao,
 )
 from src.utils.arquivos import ler_arquivo_csv
-
-
-COLUNAS_FINAIS_DATASET = [
-    'BASE', 'COD USUARIO', 'USUARIO',
-    'TELEFONE 1', 'TELEFONE 2', 'TELEFONE 3', 'TELEFONE 4', 'TELEFONE 5',
-    'PRESTADOR', 'PROCEDIMENTO', 'TP ATENDIMENTO', 'DT INTERNACAO', 'DT ENVIO',
-    'ULTIMO STATUS DE ENVIO', 'IDENTIFICACAO', 'RESPOSTA', 'LIDA_REPOSTA_SIM', 'LIDA_REPOSTA_NAO',
-    'LIDA_SEM_RESPOSTA', 'LIDA', 'ENTREGUE', 'ENVIADA', 'NAO_ENTREGUE_META', 'MENSAGEM_NAO_ENTREGUE',
-    'EXPERIMENTO', 'OPT_OUT', 'TELEFONE ENVIADO', 'TELEFONE PRIORIDADE', 'CHAVE RELATORIO', 'CHAVE STATUS',
-    'STATUS TELEFONE', 'STATUS CHAVE', 'PROCESSO', 'ACAO', 'QT LIDA', 'QT ENTREGUE', 'QT ENVIADA',
-    'QT NAO_ENTREGUE_META', 'QT MENSAGEM_NAO_ENTREGUE', 'QT EXPERIMENTO', 'QT OPT_OUT', 'QT TELEFONE',
-    'TELEFONE STATUS 1', 'TELEFONE STATUS 2', 'TELEFONE STATUS 3', 'TELEFONE STATUS 4', 'TELEFONE STATUS 5',
-]
 
 
 def concatenar_status_resposta_eletivo_internacao(
@@ -105,11 +93,12 @@ def _montar_df_final_complicacao(df_base):
 def criar_dataset_complicacao(
     arquivo_complicacao,
     arquivo_saida_dataset,
+    contexto='dataset',
 ):
     df = ler_arquivo_csv(arquivo_complicacao)
     df.columns = [str(col).strip() for col in df.columns]
 
-    validacao_colunas = validar_colunas_origem_dataset_complicacao(df.columns)
+    validacao_colunas = validar_colunas_origem_dataset_complicacao(df.columns, contexto=contexto)
     if not validacao_colunas['ok']:
         return {
             'ok': False,
@@ -155,7 +144,7 @@ def criar_dataset_complicacao(
         'ok': True,
         'arquivo_saida': arquivo_saida_dataset,
         'total_linhas': len(df_usuarios),
-        'mensagens': validacao_colunas['mensagens'] + ['Dataset de complicacao criado com sucesso.'],
+        'mensagens': validacao_colunas['mensagens'] + [f'Dataset de {contexto} criado com sucesso.'],
         'colunas_arquivo': list(df.columns),
         'colunas_faltando': [],
     }

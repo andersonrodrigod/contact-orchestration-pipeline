@@ -1,0 +1,91 @@
+COLUNAS_STATUS_OBRIGATORIAS_PADRONIZACAO = [
+    'Data agendamento',
+    'HSM',
+    'Status',
+    'Respondido',
+    'Contato',
+    'Telefone',
+]
+
+
+COLUNAS_STATUS_RESPOSTA_OBRIGATORIAS_PADRONIZACAO = [
+    'resposta',
+    'nom_contato',
+]
+
+
+COLUNAS_MINIMAS_STATUS_RESPOSTA_CONCATENACAO = {
+    'resposta',
+    'nom_contato',
+}
+
+
+COLUNAS_OBRIGATORIAS_DATASET_ORIGEM = [
+    'BASE',
+    'COD USUARIO',
+    'USUARIO',
+    'TELEFONE 1',
+    'TELEFONE 2',
+    'TELEFONE 3',
+    'TELEFONE 4',
+    'TELEFONE 5',
+    'PRESTADOR',
+    'PROCEDIMENTO',
+    'TP ATENDIMENTO',
+    'DT INTERNACAO',
+    'DT ENVIO',
+    'CHAVE',
+    'STATUS',
+    'P1',
+]
+
+
+COLUNAS_FINAIS_DATASET = [
+    'BASE',
+    'COD USUARIO',
+    'USUARIO',
+    'TELEFONE 1',
+    'TELEFONE 2',
+    'TELEFONE 3',
+    'TELEFONE 4',
+    'TELEFONE 5',
+    'PRESTADOR',
+    'PROCEDIMENTO',
+    'TP ATENDIMENTO',
+    'DT INTERNACAO',
+    'DT ENVIO',
+    'ULTIMO STATUS DE ENVIO',
+    'IDENTIFICACAO',
+    'RESPOSTA',
+    'LIDA_REPOSTA_SIM',
+    'LIDA_REPOSTA_NAO',
+    'LIDA_SEM_RESPOSTA',
+    'LIDA',
+    'ENTREGUE',
+    'ENVIADA',
+    'NAO_ENTREGUE_META',
+    'MENSAGEM_NAO_ENTREGUE',
+    'EXPERIMENTO',
+    'OPT_OUT',
+    'TELEFONE ENVIADO',
+    'TELEFONE PRIORIDADE',
+    'CHAVE RELATORIO',
+    'CHAVE STATUS',
+    'STATUS TELEFONE',
+    'STATUS CHAVE',
+    'PROCESSO',
+    'ACAO',
+    'QT LIDA',
+    'QT ENTREGUE',
+    'QT ENVIADA',
+    'QT NAO_ENTREGUE_META',
+    'QT MENSAGEM_NAO_ENTREGUE',
+    'QT EXPERIMENTO',
+    'QT OPT_OUT',
+    'QT TELEFONE',
+    'TELEFONE STATUS 1',
+    'TELEFONE STATUS 2',
+    'TELEFONE STATUS 3',
+    'TELEFONE STATUS 4',
+    'TELEFONE STATUS 5',
+]

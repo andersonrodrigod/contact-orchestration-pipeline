@@ -5,6 +5,7 @@ from src.pipelines.join_status_resposta_pipeline import (
     run_unificar_status_resposta_internacao_eletivo_pipeline,
 )
 from src.config.paths import DEFAULTS_INTERNACAO_ELETIVO
+from core.pipeline_result import ok_result
 
 
 def run_internacao_eletivo_pipeline(
@@ -41,15 +42,21 @@ def run_internacao_eletivo_pipeline(
         arquivo_origem_dataset=arquivo_dataset_origem_internacao,
         arquivo_saida_dataset=saida_dataset,
         nome_logger='criacao_dataset_internacao_eletivo',
+        contexto='internacao_eletivo',
     )
     if not resultado_dataset.get('ok'):
         return resultado_dataset
 
-    return {
-        **resultado_integracao,
-        **resultado_dataset,
-        'arquivo_saida': resultado_dataset.get('arquivo_saida'),
-    }
+    return ok_result(
+        mensagens=resultado_integracao.get('mensagens', []) + resultado_dataset.get('mensagens', []),
+        metricas={
+            'total_status': resultado_integracao.get('total_status', 0),
+            'com_match': resultado_integracao.get('com_match', 0),
+            'sem_match': resultado_integracao.get('sem_match', 0),
+            'total_linhas': resultado_dataset.get('total_linhas', 0),
+        },
+        arquivos={'arquivo_saida': resultado_dataset.get('arquivo_saida')},
+    )
 
 
 def run_pipeline_internacao_eletivo_com_resposta():
@@ -86,15 +93,21 @@ def run_pipeline_internacao_eletivo_somente_status():
         arquivo_origem_dataset=DEFAULTS_INTERNACAO_ELETIVO['arquivo_dataset_origem_internacao'],
         arquivo_saida_dataset=DEFAULTS_INTERNACAO_ELETIVO['saida_dataset'],
         nome_logger='criacao_dataset_internacao_eletivo_somente_status',
+        contexto='internacao_eletivo',
     )
     if not resultado_dataset.get('ok'):
         return resultado_dataset
 
-    return {
-        **resultado_status,
-        **resultado_dataset,
-        'arquivo_saida': resultado_dataset.get('arquivo_saida'),
-    }
+    return ok_result(
+        mensagens=resultado_status.get('mensagens', []) + resultado_dataset.get('mensagens', []),
+        metricas={
+            'total_status': resultado_status.get('total_status', 0),
+            'com_match': resultado_status.get('com_match', 0),
+            'sem_match': resultado_status.get('sem_match', 0),
+            'total_linhas': resultado_dataset.get('total_linhas', 0),
+        },
+        arquivos={'arquivo_saida': resultado_dataset.get('arquivo_saida')},
+    )
 
 
 def run_pipeline_internacao_eletivo():
