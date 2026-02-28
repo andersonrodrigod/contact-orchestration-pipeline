@@ -71,8 +71,8 @@ def integrar_status_com_resposta(
         if coluna in df_merge.columns:
             df_merge[coluna] = ''
 
-    match = int((df_merge['RESPOSTA'] != 'Sem resposta').sum())
-    sem_match = int((df_merge['RESPOSTA'] == 'Sem resposta').sum())
+    match = int(df_merge['resposta'].notna().sum())
+    sem_match = int(df_merge['resposta'].isna().sum())
 
     df_merge = df_merge.drop(
         columns=['nom_contato', '__CHAVE_DATA', 'resposta'],
