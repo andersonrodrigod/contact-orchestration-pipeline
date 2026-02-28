@@ -1,0 +1,47 @@
+[EXECUCAO] Inicio do relatorio de execucao
+
+[2026-02-28 19:59:03] [INFO] [LOGGER] Execucao iniciada
+
+[2026-02-28 19:59:03] [INFO] [MODO] Modo unificar iniciado
+[2026-02-28 19:59:03] [INFO] [MODO] arquivo_eletivo=src/data/status_respostas_eletivo.csv
+[2026-02-28 19:59:03] [INFO] [MODO] arquivo_internacao=src/data/status_resposta_internacao.csv
+[2026-02-28 19:59:03] [INFO] [MODO] arquivo_unificado=src/data/status_resposta_eletivo_internacao.csv
+
+[2026-02-28 19:59:04] [INFO] [CONCATENACAO] ok=True mensagens=['Concatenacao status_resposta_eletivo_internacao executada com sucesso.']
+[2026-02-28 19:59:04] [INFO] [CONCATENACAO] total_eletivo=12758
+[2026-02-28 19:59:04] [INFO] [CONCATENACAO] total_internacao=23530
+[2026-02-28 19:59:04] [INFO] [CONCATENACAO] total_concatenado=36288
+
+[2026-02-28 19:59:04] [INFO] [INICIO] arquivo_status=src/data/status.csv
+[2026-02-28 19:59:04] [INFO] [INICIO] arquivo_status_resposta=src/data/status_resposta_eletivo_internacao.csv
+[2026-02-28 19:59:04] [INFO] [INICIO] saida_status=src/data/arquivo_limpo/status_internacao_eletivo_limpo.csv
+[2026-02-28 19:59:04] [INFO] [INICIO] saida_status_resposta=src/data/arquivo_limpo/status_resposta_eletivo_internacao_limpo.csv
+
+[2026-02-28 19:59:04] [INFO] [LEITURA] Lendo arquivo status
+[2026-02-28 19:59:05] [INFO] [LEITURA] df_status: linhas=146248 colunas=17
+[2026-02-28 19:59:05] [INFO] [LEITURA] Lendo arquivo status_resposta
+[2026-02-28 19:59:06] [INFO] [LEITURA] df_status_resposta: linhas=36288 colunas=27
+
+[2026-02-28 19:59:06] [INFO] [VALIDACAO_ORIGEM] ok=True mensagens=['Colunas de origem para padronizacao foram encontradas com sucesso.']
+
+[2026-02-28 19:59:06] [INFO] [PADRONIZACAO] Padronizando nomes de colunas
+
+[2026-02-28 19:59:06] [INFO] [NORMALIZACAO] Convertendo tipos de colunas
+[2026-02-28 19:59:06] [INFO] [NORMALIZACAO] Data agendamento dtype=datetime64[ns]
+[2026-02-28 19:59:06] [INFO] [NORMALIZACAO] DT_ATENDIMENTO dtype=datetime64[ns]
+[2026-02-28 19:59:06] [INFO] [NORMALIZACAO] Data agendamento NaT=0.00% (0/146248)
+[2026-02-28 19:59:06] [INFO] [NORMALIZACAO] DT_ATENDIMENTO NaT=0.00% (0/36288)
+[2026-02-28 19:59:06] [INFO] [NORMALIZACAO] Limpando texto nas colunas nao-data
+
+[2026-02-28 19:59:15] [INFO] [FORMATACAO] Criando coluna DT ENVIO a partir de Data agendamento (sem hora)
+[2026-02-28 19:59:15] [INFO] [FORMATACAO] Exemplo DT ENVIO=['27/02/2026']
+
+[2026-02-28 19:59:15] [INFO] [VALIDACAO_DATA] ok=True mensagens=['Padronizacao de datas validada com sucesso.']
+
+[2026-02-28 19:59:15] [INFO] [FORMATACAO] Formatando DT_ATENDIMENTO para BR
+[2026-02-28 19:59:15] [INFO] [FORMATACAO] Exemplo DT_ATENDIMENTO=['27/02/2026']
+
+[2026-02-28 19:59:15] [INFO] [SAIDA] Salvando status em src/data/arquivo_limpo/status_internacao_eletivo_limpo.csv
+[2026-02-28 19:59:18] [INFO] [SAIDA] Salvando status_resposta em src/data/arquivo_limpo/status_resposta_eletivo_internacao_limpo.csv
+
+[2026-02-28 19:59:18] [INFO] [LOGGER] Execucao finalizada com status=SUCESSO em 0:00:14.756387
