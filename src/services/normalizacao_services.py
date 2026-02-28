@@ -40,13 +40,6 @@ def corrigir_texto_bugado(texto):
     return texto
 
 
-def limpar_texto_dataframe(df):
-    for coluna in df.columns:
-        if df[coluna].dtype == 'object':
-            df[coluna] = df[coluna].apply(corrigir_texto_bugado)
-    return df
-
-
 def normalizar_tipos_dataframe(df, colunas_data=None):
     if colunas_data is None:
         colunas_data = []

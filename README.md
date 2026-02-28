@@ -9,12 +9,9 @@ Pipeline em duas etapas:
 O projeto roda por `main.py` e escreve logs em `logs/`.
 
 ## Modos de execucao
-- `auto` (padrao):
-  - usa `complicacao` se existir arquivo de complicacao com dados.
-  - senao, usa `unificar` se existirem eletivo e internacao com dados.
-  - fallback final: `complicacao`.
+- `ambos` (padrao): executa `complicacao` e `internacao_eletivo` no mesmo run.
 - `complicacao`: ingestao/integracao com `status_resposta_complicacao.csv` e criacao de dataset usando `complicacao.xlsx`.
-- `unificar`: concatena `eletivo + internacao` e segue pipeline.
+- `internacao_eletivo`: concatena `eletivo + internacao` e segue pipeline.
 
 ## Entradas padrao
 - `src/data/status.csv`
@@ -24,12 +21,15 @@ O projeto roda por `main.py` e escreve logs em `logs/`.
 - `src/data/status_resposta_internacao.csv`
 
 ## Saidas padrao
-- `src/data/arquivo_limpo/status_limpo.csv`
+- `src/data/arquivo_limpo/status_complicacao_limpo.csv`
+- `src/data/arquivo_limpo/status_internacao_eletivo_limpo.csv`
 - `src/data/arquivo_limpo/status_resposta_complicacao_limpo.csv`
 - `src/data/arquivo_limpo/status_resposta_eletivo_internacao_limpo.csv`
-- `src/data/arquivo_limpo/status_complicacao_integrado.csv`
-- `src/data/arquivo_limpo/status_unificado_integrado.csv`
+- `src/data/arquivo_limpo/status_complicacao.csv`
+- `src/data/arquivo_limpo/status_internacao_eletivo.csv`
 - `src/data/arquivo_limpo/dataset_complicacao.xlsx`
+
+No modo `ambos`, cada fluxo usa arquivo intermediario proprio para evitar sobrescrita entre dependencias.
 
 ## Execucao
 ```bash
@@ -39,7 +39,8 @@ python main.py
 Forcar modo:
 ```bash
 python main.py --modo complicacao
-python main.py --modo unificar
+python main.py --modo internacao_eletivo
+python main.py --modo ambos
 ```
 
 ## Regras principais de dados
@@ -62,8 +63,11 @@ python main.py --modo unificar
 
 ## Estrutura
 - `main.py`: orquestracao dos modos e resumo final.
+- `src/pipelines/complicacao_pipeline.py`: dependencia exclusiva da complicacao.
+- `src/pipelines/internacao_eletivo_pipeline.py`: dependencia exclusiva de internacao+eletivo.
 - `src/pipelines/ingestao_pipeline.py`: ingestao.
 - `src/pipelines/integracao_pipeline.py`: integracao.
 - `src/pipelines/criacao_dataset_pipeline.py`: execucao da criacao de dataset (ativo no modo complicacao).
+- `src/services/integracao_service.py`: regras de negocio da integracao (filtro + merge).
 - `src/services/`: regras de schema, normalizacao, validacao, integracao e dataset.
 - `core/logger.py`: logger de execucao.
