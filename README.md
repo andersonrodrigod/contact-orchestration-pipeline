@@ -51,6 +51,23 @@ OK=True|False
 - mensagem 2
 ```
 
+## Concatenação de status_resposta
+
+No pipeline de ingestao existe uma etapa opcional para unificar:
+
+- `src/data/status_respostas_eletivo.csv`
+- `src/data/status_resposta_internacao.csv`
+
+Saida gerada quando os dois arquivos existem e possuem colunas identicas:
+
+- `src/data/status_resposta_eletivo_internacao.csv`
+
+Validacao aplicada nessa etapa:
+
+- compara se os dois arquivos possuem colunas identicas
+- se forem diferentes, a concatenacao e ignorada
+- a mensagem dessa validacao entra no `output_validacao_datas.txt`
+
 ## Saidas geradas
 
 - `src/data/arquivo_limpo/status_limpo.csv`
@@ -61,4 +78,10 @@ OK=True|False
 
 ```txt
 feat(ingestao): padroniza colunas de data e valida schema de status/status_resposta
+```
+
+## Sugestao de commit para a nova feature
+
+```txt
+feat(ingestao): adiciona concatenacao eletivo+internacao com validacao de colunas identicas
 ```

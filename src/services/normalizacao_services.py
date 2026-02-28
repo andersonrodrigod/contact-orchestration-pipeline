@@ -72,3 +72,10 @@ def limpar_texto_exceto_colunas(df, colunas_ignorar=None):
             df[coluna] = df[coluna].apply(corrigir_texto_bugado)
 
     return df
+
+
+def formatar_coluna_data_br(df, coluna):
+    if coluna in df.columns:
+        df[coluna] = df[coluna].dt.strftime('%d/%m/%Y %H:%M:%S')
+
+    return df

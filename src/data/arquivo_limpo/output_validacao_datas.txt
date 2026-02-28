@@ -1,3 +1,4 @@
 OK=True
+- Modo complicacao selecionado.
 - Colunas de origem para padronizacao foram encontradas com sucesso.
 - Padronizacao de datas validada com sucesso.

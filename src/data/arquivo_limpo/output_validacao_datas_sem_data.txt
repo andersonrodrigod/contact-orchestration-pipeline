@@ -1,2 +1,0 @@
-OK=False
-- Coluna obrigatoria dat_atendimento nao encontrada no arquivo status_resposta.
