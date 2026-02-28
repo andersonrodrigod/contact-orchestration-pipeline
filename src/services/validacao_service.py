@@ -1,3 +1,10 @@
+import pandas as pd
+
+
+def _tem_coluna_data_atendimento(df):
+    return 'dat_atendimento' in df.columns or 'DT_ATENDIMENTO' in df.columns
+
+
 def validar_colunas_origem_para_padronizacao(df_status, df_status_resposta):
     resultado = {
         'ok': True,
@@ -12,16 +19,12 @@ def validar_colunas_origem_para_padronizacao(df_status, df_status_resposta):
         'Contato',
         'Telefone',
     ]
-    colunas_status_resposta_obrigatorias = [
-        'dat_atendimento',
-        'resposta',
-        'nom_contato',
-    ]
+    colunas_status_resposta_obrigatorias = ['resposta', 'nom_contato']
 
     faltando_status = [c for c in colunas_status_obrigatorias if c not in df_status.columns]
-    faltando_status_resposta = [
-        c for c in colunas_status_resposta_obrigatorias if c not in df_status_resposta.columns
-    ]
+    faltando_status_resposta = [c for c in colunas_status_resposta_obrigatorias if c not in df_status_resposta.columns]
+    if not _tem_coluna_data_atendimento(df_status_resposta):
+        faltando_status_resposta.append('dat_atendimento ou DT_ATENDIMENTO')
 
     if faltando_status:
         resultado['ok'] = False
@@ -52,29 +55,31 @@ def validar_padronizacao_colunas_data(df_status, df_status_resposta):
         'mensagens': [],
     }
 
-    if 'DT_ENVIO' not in df_status.columns:
+    if 'Data agendamento' not in df_status.columns:
         resultado['ok'] = False
-        resultado['mensagens'].append('Coluna DT_ENVIO nao encontrada no arquivo status.')
-    else:
-        qtd_nulos = int(df_status['DT_ENVIO'].isna().sum())
-        if qtd_nulos > 0:
-            resultado['ok'] = False
-            resultado['mensagens'].append(
-                f'Coluna DT_ENVIO possui {qtd_nulos} valores invalidos ou vazios.'
-            )
+        resultado['mensagens'].append('Coluna Data agendamento nao encontrada no arquivo status.')
+
+    if 'Data agendamento' in df_status.columns and not pd.api.types.is_datetime64_any_dtype(
+        df_status['Data agendamento']
+    ):
+        resultado['ok'] = False
+        resultado['mensagens'].append('Coluna Data agendamento nao esta no tipo data.')
+
+    if 'DT ENVIO' not in df_status.columns:
+        resultado['ok'] = False
+        resultado['mensagens'].append('Coluna DT ENVIO nao encontrada no arquivo status.')
 
     if 'DT_ATENDIMENTO' not in df_status_resposta.columns:
         resultado['ok'] = False
         resultado['mensagens'].append(
             'Coluna DT_ATENDIMENTO nao encontrada no arquivo status_resposta.'
         )
-    else:
-        qtd_nulos = int(df_status_resposta['DT_ATENDIMENTO'].isna().sum())
-        if qtd_nulos > 0:
-            resultado['ok'] = False
-            resultado['mensagens'].append(
-                f'Coluna DT_ATENDIMENTO possui {qtd_nulos} valores invalidos ou vazios.'
-            )
+
+    if 'DT_ATENDIMENTO' in df_status_resposta.columns and not pd.api.types.is_datetime64_any_dtype(
+        df_status_resposta['DT_ATENDIMENTO']
+    ):
+        resultado['ok'] = False
+        resultado['mensagens'].append('Coluna DT_ATENDIMENTO nao esta no tipo data.')
 
     if resultado['ok']:
         resultado['mensagens'].append('Padronizacao de datas validada com sucesso.')
@@ -107,5 +112,30 @@ def validar_colunas_identicas(df_eletivo, df_internacao):
         mensagens.append(
             f'Colunas presentes no internacao e ausentes no eletivo: {faltando_no_eletivo}'
         )
+
+    return {'ok': False, 'mensagens': mensagens}
+
+
+def validar_colunas_minimas_status_resposta(df_eletivo, df_internacao):
+    colunas_minimas = {'resposta', 'nom_contato'}
+
+    faltando_eletivo = sorted(colunas_minimas - set(df_eletivo.columns))
+    faltando_internacao = sorted(colunas_minimas - set(df_internacao.columns))
+    if not _tem_coluna_data_atendimento(df_eletivo):
+        faltando_eletivo.append('dat_atendimento ou DT_ATENDIMENTO')
+    if not _tem_coluna_data_atendimento(df_internacao):
+        faltando_internacao.append('dat_atendimento ou DT_ATENDIMENTO')
+
+    if not faltando_eletivo and not faltando_internacao:
+        return {
+            'ok': True,
+            'mensagens': ['Colunas minimas obrigatorias encontradas para concatenacao.'],
+        }
+
+    mensagens = ['Concatenacao interrompida: colunas minimas obrigatorias nao encontradas.']
+    if faltando_eletivo:
+        mensagens.append(f'Faltando no arquivo eletivo: {faltando_eletivo}')
+    if faltando_internacao:
+        mensagens.append(f'Faltando no arquivo internacao: {faltando_internacao}')
 
     return {'ok': False, 'mensagens': mensagens}

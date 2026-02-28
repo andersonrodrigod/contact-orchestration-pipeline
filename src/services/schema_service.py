@@ -1,8 +1,5 @@
 def padronizar_colunas_status(df):
-    mapa_colunas = {
-        'Data agendamento': 'DT_ENVIO',
-    }
-    return df.rename(columns=mapa_colunas)
+    return df
 
 
 def padronizar_colunas_status_resposta(df):

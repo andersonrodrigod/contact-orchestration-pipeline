@@ -1,6 +1,7 @@
-from src.utils.arquivos import ler_arquivo_csv, salvar_output_validacao
+from src.utils.arquivos import ler_arquivo_csv
 from core.logger import PipelineLogger
 from src.services.normalizacao_services import (
+    criar_coluna_dt_envio_por_data_agendamento,
     formatar_coluna_data_br,
     limpar_texto_exceto_colunas,
     normalizar_tipos_dataframe,
@@ -21,7 +22,6 @@ def _executar_normalizacao_padronizacao(
     arquivo_status_resposta='src/data/status_resposta_complicacao.csv',
     saida_status='src/data/arquivo_limpo/status_limpo.csv',
     saida_status_resposta='src/data/arquivo_limpo/status_resposta_complicacao_limpo.csv',
-    output_validacao='src/data/arquivo_limpo/output_validacao_datas.txt',
     mensagens_iniciais=None,
     logger=None,
 ):
@@ -29,12 +29,10 @@ def _executar_normalizacao_padronizacao(
         mensagens_iniciais = []
     if logger is None:
         logger = PipelineLogger()
-
     logger.info('INICIO', f'arquivo_status={arquivo_status}')
     logger.info('INICIO', f'arquivo_status_resposta={arquivo_status_resposta}')
     logger.info('INICIO', f'saida_status={saida_status}')
     logger.info('INICIO', f'saida_status_resposta={saida_status_resposta}')
-    logger.info('INICIO', f'output_validacao={output_validacao}')
 
     try:
         logger.info('LEITURA', 'Lendo arquivo status')
@@ -57,7 +55,6 @@ def _executar_normalizacao_padronizacao(
                 'ok': False,
                 'mensagens': mensagens_iniciais + resultado_colunas_origem['mensagens'],
             }
-            salvar_output_validacao(resultado_final, output_validacao)
             logger.warning('VALIDACAO_ORIGEM', 'Falhou validacao de colunas de origem')
             logger.finalizar('FALHA_VALIDACAO_ORIGEM')
             return resultado_final
@@ -69,20 +66,44 @@ def _executar_normalizacao_padronizacao(
         logger.log_dataframe('PADRONIZACAO', 'df_status_resposta', df_status_resposta)
 
         logger.info('NORMALIZACAO', 'Convertendo tipos de colunas')
-        df_status = normalizar_tipos_dataframe(df_status, colunas_data=['DT_ENVIO'])
+        df_status = normalizar_tipos_dataframe(df_status, colunas_data=['Data agendamento'])
         df_status_resposta = normalizar_tipos_dataframe(
             df_status_resposta, colunas_data=['DT_ATENDIMENTO']
         )
-        logger.info('NORMALIZACAO', f"DT_ENVIO dtype={df_status['DT_ENVIO'].dtype if 'DT_ENVIO' in df_status.columns else 'NA'}")
+        logger.info(
+            'NORMALIZACAO',
+            f"Data agendamento dtype={df_status['Data agendamento'].dtype if 'Data agendamento' in df_status.columns else 'NA'}",
+        )
         logger.info(
             'NORMALIZACAO',
             f"DT_ATENDIMENTO dtype={df_status_resposta['DT_ATENDIMENTO'].dtype if 'DT_ATENDIMENTO' in df_status_resposta.columns else 'NA'}",
         )
+        if 'Data agendamento' in df_status.columns and len(df_status) > 0:
+            qtd_nat_status = int(df_status['Data agendamento'].isna().sum())
+            pct_nat_status = (qtd_nat_status / len(df_status)) * 100
+            logger.info(
+                'NORMALIZACAO',
+                f'Data agendamento NaT={pct_nat_status:.2f}% ({qtd_nat_status}/{len(df_status)})',
+            )
+        if 'DT_ATENDIMENTO' in df_status_resposta.columns and len(df_status_resposta) > 0:
+            qtd_nat_resposta = int(df_status_resposta['DT_ATENDIMENTO'].isna().sum())
+            pct_nat_resposta = (qtd_nat_resposta / len(df_status_resposta)) * 100
+            logger.info(
+                'NORMALIZACAO',
+                f'DT_ATENDIMENTO NaT={pct_nat_resposta:.2f}% ({qtd_nat_resposta}/{len(df_status_resposta)})',
+            )
 
         logger.info('NORMALIZACAO', 'Limpando texto nas colunas nao-data')
-        df_status = limpar_texto_exceto_colunas(df_status, colunas_ignorar=['DT_ENVIO'])
+        df_status = limpar_texto_exceto_colunas(df_status, colunas_ignorar=['Data agendamento'])
         df_status_resposta = limpar_texto_exceto_colunas(
             df_status_resposta, colunas_ignorar=['DT_ATENDIMENTO']
+        )
+
+        logger.info('FORMATACAO', 'Criando coluna DT ENVIO a partir de Data agendamento (sem hora)')
+        criar_coluna_dt_envio_por_data_agendamento(df_status)
+        logger.info(
+            'FORMATACAO',
+            f"Exemplo DT ENVIO={df_status['DT ENVIO'].head(1).tolist() if 'DT ENVIO' in df_status.columns else []}",
         )
 
         resultado_validacao = validar_padronizacao_colunas_data(df_status, df_status_resposta)
@@ -101,16 +122,9 @@ def _executar_normalizacao_padronizacao(
                 + resultado_validacao['mensagens']
             ),
         }
-        salvar_output_validacao(resultado_final, output_validacao)
-        logger.info('OUTPUT', f'Arquivo validacao salvo em {output_validacao}')
 
-        logger.info('FORMATACAO', 'Formatando colunas de data para BR')
-        formatar_coluna_data_br(df_status, 'DT_ENVIO')
+        logger.info('FORMATACAO', 'Formatando DT_ATENDIMENTO para BR')
         formatar_coluna_data_br(df_status_resposta, 'DT_ATENDIMENTO')
-        logger.info(
-            'FORMATACAO',
-            f"Exemplo DT_ENVIO={df_status['DT_ENVIO'].head(1).tolist() if 'DT_ENVIO' in df_status.columns else []}",
-        )
         logger.info(
             'FORMATACAO',
             f"Exemplo DT_ATENDIMENTO={df_status_resposta['DT_ATENDIMENTO'].head(1).tolist() if 'DT_ATENDIMENTO' in df_status_resposta.columns else []}",
@@ -130,8 +144,6 @@ def _executar_normalizacao_padronizacao(
             'ok': False,
             'mensagens': [f'Erro inesperado na execucao: {erro}'],
         }
-        salvar_output_validacao(resultado_erro, output_validacao)
-        logger.info('OUTPUT', f'Arquivo validacao salvo em {output_validacao}')
         logger.finalizar('ERRO')
         return resultado_erro
 
@@ -141,7 +153,6 @@ def run_ingestao_complicacao(
     arquivo_status_resposta_complicacao='src/data/status_resposta_complicacao.csv',
     saida_status='src/data/arquivo_limpo/status_limpo.csv',
     saida_status_resposta='src/data/arquivo_limpo/status_resposta_complicacao_limpo.csv',
-    output_validacao='src/data/arquivo_limpo/output_validacao_datas.txt',
 ):
     logger = PipelineLogger(nome_pipeline='ingestao_complicacao')
     logger.info('MODO', 'Modo complicacao iniciado')
@@ -150,7 +161,6 @@ def run_ingestao_complicacao(
         arquivo_status_resposta=arquivo_status_resposta_complicacao,
         saida_status=saida_status,
         saida_status_resposta=saida_status_resposta,
-        output_validacao=output_validacao,
         mensagens_iniciais=['Modo complicacao selecionado.'],
         logger=logger,
     )
@@ -162,8 +172,7 @@ def run_ingestao_unificar(
     arquivo_status_resposta_internacao='src/data/status_resposta_internacao.csv',
     arquivo_status_resposta_unificado='src/data/status_resposta_eletivo_internacao.csv',
     saida_status='src/data/arquivo_limpo/status_limpo.csv',
-    saida_status_resposta='src/data/arquivo_limpo/status_resposta_complicacao_limpo.csv',
-    output_validacao='src/data/arquivo_limpo/output_validacao_datas.txt',
+    saida_status_resposta='src/data/arquivo_limpo/status_resposta_eletivo_internacao_limpo.csv',
 ):
     logger = PipelineLogger(nome_pipeline='ingestao_unificar')
     logger.info('MODO', 'Modo unificar iniciado')
@@ -180,11 +189,15 @@ def run_ingestao_unificar(
         'CONCATENACAO',
         f"ok={resultado_concat['ok']} mensagens={resultado_concat['mensagens']}",
     )
+    if 'total_eletivo' in resultado_concat:
+        logger.info('CONCATENACAO', f"total_eletivo={resultado_concat['total_eletivo']}")
+    if 'total_internacao' in resultado_concat:
+        logger.info('CONCATENACAO', f"total_internacao={resultado_concat['total_internacao']}")
+    if 'total_concatenado' in resultado_concat:
+        logger.info('CONCATENACAO', f"total_concatenado={resultado_concat['total_concatenado']}")
 
     if not resultado_concat['ok']:
-        salvar_output_validacao(resultado_concat, output_validacao)
         logger.warning('CONCATENACAO', 'Concatenacao nao executada por validacao')
-        logger.info('OUTPUT', f'Arquivo validacao salvo em {output_validacao}')
         logger.finalizar('FALHA_CONCATENACAO')
         return resultado_concat
 
@@ -193,7 +206,6 @@ def run_ingestao_unificar(
         arquivo_status_resposta=arquivo_status_resposta_unificado,
         saida_status=saida_status,
         saida_status_resposta=saida_status_resposta,
-        output_validacao=output_validacao,
         mensagens_iniciais=resultado_concat['mensagens'],
         logger=logger,
     )

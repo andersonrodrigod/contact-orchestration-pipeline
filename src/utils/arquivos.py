@@ -1,21 +1,35 @@
 import pandas as pd
-import os
 
 
 def ler_arquivo_csv(caminho_arquivo, separador=';'):
     encodings = ['utf-8-sig', 'utf-8', 'cp1252', 'latin1']
+    separadores_teste = [separador]
+    if separador == ';':
+        separadores_teste.append(',')
+    elif separador == ',':
+        separadores_teste.append(';')
 
-    for encoding in encodings:
-        try:
-            return pd.read_csv(
-                caminho_arquivo,
-                sep=separador,
-                dtype=str,
-                encoding=encoding,
-                keep_default_na=False,
-            )
-        except UnicodeDecodeError:
-            continue
+    for sep in separadores_teste:
+        for encoding in encodings:
+            try:
+                df = pd.read_csv(
+                    caminho_arquivo,
+                    sep=sep,
+                    dtype=str,
+                    encoding=encoding,
+                    keep_default_na=False,
+                )
+
+                # Se leu com 1 coluna e o cabecalho ainda contem delimitador,
+                # tenta outro separador antes de aceitar o resultado.
+                if len(df.columns) == 1:
+                    nome_coluna = str(df.columns[0])
+                    if ';' in nome_coluna or ',' in nome_coluna:
+                        continue
+
+                return df
+            except UnicodeDecodeError:
+                continue
 
     raise UnicodeDecodeError(
         'csv',
@@ -25,13 +39,3 @@ def ler_arquivo_csv(caminho_arquivo, separador=';'):
         f'Nao foi possivel ler {caminho_arquivo} com os encodings: {encodings}',
     )
 
-
-def salvar_output_validacao(resultado, arquivo_output):
-    pasta = os.path.dirname(arquivo_output)
-    if pasta:
-        os.makedirs(pasta, exist_ok=True)
-
-    with open(arquivo_output, 'w', encoding='utf-8') as arquivo:
-        arquivo.write(f"OK={resultado['ok']}\n")
-        for mensagem in resultado['mensagens']:
-            arquivo.write(f"- {mensagem}\n")

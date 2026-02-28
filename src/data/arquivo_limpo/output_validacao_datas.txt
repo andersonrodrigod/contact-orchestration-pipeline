@@ -1,4 +1,3 @@
-OK=True
+OK=False
 - Modo complicacao selecionado.
-- Colunas de origem para padronizacao foram encontradas com sucesso.
-- Padronizacao de datas validada com sucesso.
+- Arquivo status_resposta com estrutura alterada. Colunas faltando: ['dat_atendimento ou DT_ATENDIMENTO']. O codigo do app precisa ser adaptado para a nova alteracao.

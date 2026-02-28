@@ -76,6 +76,18 @@ def limpar_texto_exceto_colunas(df, colunas_ignorar=None):
 
 def formatar_coluna_data_br(df, coluna):
     if coluna in df.columns:
-        df[coluna] = df[coluna].dt.strftime('%d/%m/%Y %H:%M:%S')
+        df[coluna] = df[coluna].dt.strftime('%d/%m/%Y')
+
+    return df
+
+
+def criar_coluna_dt_envio_por_data_agendamento(
+    df,
+    coluna_origem='Data agendamento',
+    coluna_destino='DT ENVIO',
+):
+    if coluna_origem in df.columns:
+        serie_data = pd.to_datetime(df[coluna_origem], errors='coerce', dayfirst=True)
+        df[coluna_destino] = serie_data.dt.strftime('%d/%m/%Y')
 
     return df
