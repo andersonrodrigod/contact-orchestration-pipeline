@@ -1,17 +1,36 @@
 import pandas as pd
 
 
+def _delimitador_mais_provavel(caminho_arquivo):
+    encodings = ['utf-8-sig', 'utf-8', 'cp1252', 'latin1']
+    for encoding in encodings:
+        try:
+            with open(caminho_arquivo, 'r', encoding=encoding) as arquivo:
+                primeira_linha = arquivo.readline()
+            if primeira_linha.count(';') >= primeira_linha.count(','):
+                return ';'
+            return ','
+        except UnicodeDecodeError:
+            continue
+        except OSError:
+            break
+    return ';'
+
+
 def ler_arquivo_csv(caminho_arquivo, separador=';'):
     caminho_texto = str(caminho_arquivo).lower()
     if caminho_texto.endswith('.xlsx') or caminho_texto.endswith('.xls'):
         return pd.read_excel(caminho_arquivo, dtype=str, keep_default_na=False)
 
     encodings = ['utf-8-sig', 'utf-8', 'cp1252', 'latin1']
-    separadores_teste = [separador]
-    if separador == ';':
-        separadores_teste.append(',')
-    elif separador == ',':
+    delimitador_provavel = _delimitador_mais_provavel(caminho_arquivo)
+    separadores_teste = [delimitador_provavel]
+    if separador not in separadores_teste:
+        separadores_teste.append(separador)
+    if ';' not in separadores_teste:
         separadores_teste.append(';')
+    if ',' not in separadores_teste:
+        separadores_teste.append(',')
 
     for sep in separadores_teste:
         for encoding in encodings:
@@ -32,7 +51,7 @@ def ler_arquivo_csv(caminho_arquivo, separador=';'):
                         continue
 
                 return df
-            except UnicodeDecodeError:
+            except (UnicodeDecodeError, pd.errors.ParserError, ValueError):
                 continue
 
     raise UnicodeDecodeError(

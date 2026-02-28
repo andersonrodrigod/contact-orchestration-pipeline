@@ -17,6 +17,9 @@ from src.services.validacao_service import (
 from src.pipelines.concatenar_status_respostas_pipeline import run_unificar_status_respostas_pipeline
 
 
+LIMITE_PERCENTUAL_NAT_DATA = 30.0
+
+
 def _executar_normalizacao_padronizacao(
     arquivo_status='src/data/status.csv',
     arquivo_status_resposta='src/data/status_resposta_complicacao.csv',
@@ -86,6 +89,17 @@ def _executar_normalizacao_padronizacao(
                 'NORMALIZACAO',
                 f'Data agendamento NaT={pct_nat_status:.2f}% ({qtd_nat_status}/{len(df_status)})',
             )
+            if pct_nat_status > LIMITE_PERCENTUAL_NAT_DATA:
+                mensagem_nat = (
+                    f'Abortado: Data agendamento com NaT acima de {LIMITE_PERCENTUAL_NAT_DATA:.0f}% '
+                    f'({pct_nat_status:.2f}%).'
+                )
+                logger.error('VALIDACAO_DATA', mensagem_nat)
+                logger.finalizar('FALHA_QUALIDADE_DATA')
+                return {
+                    'ok': False,
+                    'mensagens': mensagens_iniciais + [mensagem_nat],
+                }
         if 'DT_ATENDIMENTO' in df_status_resposta.columns and len(df_status_resposta) > 0:
             qtd_nat_resposta = int(df_status_resposta['DT_ATENDIMENTO'].isna().sum())
             pct_nat_resposta = (qtd_nat_resposta / len(df_status_resposta)) * 100
@@ -93,6 +107,17 @@ def _executar_normalizacao_padronizacao(
                 'NORMALIZACAO',
                 f'DT_ATENDIMENTO NaT={pct_nat_resposta:.2f}% ({qtd_nat_resposta}/{len(df_status_resposta)})',
             )
+            if pct_nat_resposta > LIMITE_PERCENTUAL_NAT_DATA:
+                mensagem_nat = (
+                    f'Abortado: DT_ATENDIMENTO com NaT acima de {LIMITE_PERCENTUAL_NAT_DATA:.0f}% '
+                    f'({pct_nat_resposta:.2f}%).'
+                )
+                logger.error('VALIDACAO_DATA', mensagem_nat)
+                logger.finalizar('FALHA_QUALIDADE_DATA')
+                return {
+                    'ok': False,
+                    'mensagens': mensagens_iniciais + [mensagem_nat],
+                }
 
         logger.info('NORMALIZACAO', 'Limpando texto nas colunas nao-data')
         df_status = limpar_texto_exceto_colunas(df_status, colunas_ignorar=['Data agendamento'])
@@ -181,6 +206,24 @@ def run_ingestao_somente_status(
 
         df_status = padronizar_colunas_status(df_status)
         df_status = normalizar_tipos_dataframe(df_status, colunas_data=['Data agendamento'])
+        if 'Data agendamento' in df_status.columns and len(df_status) > 0:
+            qtd_nat_status = int(df_status['Data agendamento'].isna().sum())
+            pct_nat_status = (qtd_nat_status / len(df_status)) * 100
+            logger.info(
+                'NORMALIZACAO',
+                f'Data agendamento NaT={pct_nat_status:.2f}% ({qtd_nat_status}/{len(df_status)})',
+            )
+            if pct_nat_status > LIMITE_PERCENTUAL_NAT_DATA:
+                mensagem_nat = (
+                    f'Abortado: Data agendamento com NaT acima de {LIMITE_PERCENTUAL_NAT_DATA:.0f}% '
+                    f'({pct_nat_status:.2f}%).'
+                )
+                logger.error('VALIDACAO_DATA', mensagem_nat)
+                logger.finalizar('FALHA_QUALIDADE_DATA')
+                return {
+                    'ok': False,
+                    'mensagens': [mensagem_nat],
+                }
         df_status = limpar_texto_exceto_colunas(df_status, colunas_ignorar=['Data agendamento'])
         criar_coluna_dt_envio_por_data_agendamento(df_status)
 

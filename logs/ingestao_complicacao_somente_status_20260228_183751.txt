@@ -1,0 +1,12 @@
+[EXECUCAO] Inicio do relatorio de execucao
+
+[2026-02-28 18:37:51] [INFO] [LOGGER] Execucao iniciada
+
+[2026-02-28 18:37:51] [INFO] [INICIO] arquivo_status=src/data/status.csv
+[2026-02-28 18:37:51] [INFO] [INICIO] saida_status=src/data/arquivo_limpo/status_complicacao_limpo.csv
+
+[2026-02-28 18:37:53] [INFO] [LEITURA] df_status: linhas=146248 colunas=17
+
+[2026-02-28 18:37:53] [INFO] [NORMALIZACAO] Data agendamento NaT=0.00% (0/146248)
+
+[2026-02-28 18:38:04] [INFO] [LOGGER] Execucao finalizada com status=SUCESSO em 0:00:13.189087
