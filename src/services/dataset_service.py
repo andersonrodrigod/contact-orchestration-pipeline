@@ -78,16 +78,27 @@ def _carregar_status_para_lookup(arquivo_status_integrado):
         dayfirst=True,
     )
 
-    df_status = df_status[df_status['NOME_MANIPULADO'] != '']
-    df_status = df_status[df_status['Telefone'] != '']
     df_status = df_status.sort_values('__DT_ENVIO_DATA', ascending=False, na_position='last')
-    df_status_ultimo = df_status.drop_duplicates(subset=['NOME_MANIPULADO', 'Telefone'], keep='first').copy()
-    df_status_ultimo['DT ENVIO'] = df_status_ultimo['__DT_ENVIO_DATA'].dt.strftime('%d/%m/%Y').fillna('')
+    df_status_por_contato = df_status.drop_duplicates(subset=['Contato'], keep='first').copy()
+    df_status_por_nome_tel = df_status[
+        (df_status['NOME_MANIPULADO'] != '') & (df_status['Telefone'] != '')
+    ].drop_duplicates(subset=['NOME_MANIPULADO', 'Telefone'], keep='first').copy()
 
-    return {'ok': True, 'df_status_ultimo': df_status_ultimo}
+    df_status_por_contato['DT ENVIO'] = (
+        df_status_por_contato['__DT_ENVIO_DATA'].dt.strftime('%d/%m/%Y').fillna('')
+    )
+    df_status_por_nome_tel['DT ENVIO'] = (
+        df_status_por_nome_tel['__DT_ENVIO_DATA'].dt.strftime('%d/%m/%Y').fillna('')
+    )
+
+    return {
+        'ok': True,
+        'df_status_por_contato': df_status_por_contato,
+        'df_status_por_nome_tel': df_status_por_nome_tel,
+    }
 
 
-def _enriquecer_dataset_com_status(df_dataset, df_status_ultimo):
+def _enriquecer_dataset_com_status(df_dataset, df_status_por_contato, df_status_por_nome_tel):
     df_saida = df_dataset.copy()
     if 'USUARIO' not in df_saida.columns:
         return {
@@ -103,72 +114,18 @@ def _enriquecer_dataset_com_status(df_dataset, df_status_ultimo):
         }
 
     df_saida['USUARIO'] = _normalizar_nome_serie(df_saida['USUARIO'])
-    df_status_ultimo = df_status_ultimo.copy()
-    df_status_ultimo['NOME_MANIPULADO'] = _normalizar_nome_serie(df_status_ultimo['NOME_MANIPULADO'])
-    df_status_ultimo['Telefone'] = _normalizar_texto_serie(df_status_ultimo['Telefone']).apply(
-        normalizar_telefone
-    )
+    if 'CHAVE RELATORIO' not in df_saida.columns:
+        df_saida['CHAVE RELATORIO'] = ''
+    df_saida['CHAVE RELATORIO'] = _normalizar_texto_serie(df_saida['CHAVE RELATORIO'])
 
-    frames_telefone = []
-    for coluna_tel in colunas_tel_existentes:
-        df_tel = pd.DataFrame(
-            {
-                '__ROW_ID': df_saida.index,
-                '__NOME_KEY': df_saida['USUARIO'],
-                '__TEL_KEY': _normalizar_texto_serie(df_saida[coluna_tel]).apply(normalizar_telefone),
-            }
-        )
-        frames_telefone.append(df_tel)
+    df_status_por_contato = df_status_por_contato.copy()
+    df_status_por_nome_tel = df_status_por_nome_tel.copy()
+    df_status_por_nome_tel['NOME_MANIPULADO'] = _normalizar_nome_serie(df_status_por_nome_tel['NOME_MANIPULADO'])
+    df_status_por_nome_tel['Telefone'] = _normalizar_texto_serie(
+        df_status_por_nome_tel['Telefone']
+    ).apply(normalizar_telefone)
 
-    df_chaves_dataset = pd.concat(frames_telefone, ignore_index=True)
-    df_chaves_dataset = df_chaves_dataset[
-        (df_chaves_dataset['__NOME_KEY'] != '') & (df_chaves_dataset['__TEL_KEY'] != '')
-    ]
     total_dataset = len(df_saida)
-    if len(df_chaves_dataset) == 0:
-        return {
-            'ok': False,
-            'mensagens': ['Dataset sem combinacao valida de USUARIO + TELEFONE 1..5 para match.'],
-            'total_dataset': total_dataset,
-            'total_match': 0,
-            'total_sem_match': total_dataset,
-        }
-
-    df_merge = df_chaves_dataset.merge(
-        df_status_ultimo[
-            [
-                'NOME_MANIPULADO',
-                'Telefone',
-                'Contato',
-                'Status',
-                'Respondido',
-                'RESPOSTA',
-                'DT ENVIO',
-                '__DT_ENVIO_DATA',
-            ]
-        ],
-        left_on=['__NOME_KEY', '__TEL_KEY'],
-        right_on=['NOME_MANIPULADO', 'Telefone'],
-        how='left',
-    )
-    df_merge = df_merge.sort_values('__DT_ENVIO_DATA', ascending=False, na_position='last')
-    df_melhor_match = df_merge.drop_duplicates(subset=['__ROW_ID'], keep='first').copy()
-    df_melhor_match = df_melhor_match.set_index('__ROW_ID')
-
-    mask_encontrado = df_melhor_match['Status'].notna()
-    total_match = int(mask_encontrado.sum())
-    total_sem_match = total_dataset - total_match
-
-    if total_match == 0:
-        return {
-            'ok': False,
-            'mensagens': [
-                'Nenhum match encontrado entre NOME_MANIPULADO+Telefone (status) e USUARIO+TELEFONE 1..5 (dataset).'
-            ],
-            'total_dataset': total_dataset,
-            'total_match': total_match,
-            'total_sem_match': total_sem_match,
-        }
 
     df_saida['ULTIMO STATUS DE ENVIO'] = ''
     df_saida['DT ENVIO'] = ''
@@ -176,18 +133,112 @@ def _enriquecer_dataset_com_status(df_dataset, df_status_ultimo):
     df_saida['IDENTIFICACAO'] = ''
     df_saida['TELEFONE ENVIADO'] = ''
     df_saida['CHAVE STATUS'] = ''
+    df_saida['STATUS CHAVE'] = ''
+    df_saida['TELEFONE PRIORIDADE'] = ''
 
-    idx_match = df_melhor_match.index[mask_encontrado]
-    df_saida.loc[idx_match, 'ULTIMO STATUS DE ENVIO'] = df_melhor_match.loc[idx_match, 'Status'].fillna('')
-    df_saida.loc[idx_match, 'DT ENVIO'] = (
-        pd.to_datetime(df_melhor_match.loc[idx_match, '__DT_ENVIO_DATA'], errors='coerce')
-        .dt.strftime('%d/%m/%Y')
-        .fillna('')
-    )
-    df_saida.loc[idx_match, 'RESPOSTA'] = df_melhor_match.loc[idx_match, 'RESPOSTA'].fillna('')
-    df_saida.loc[idx_match, 'IDENTIFICACAO'] = df_melhor_match.loc[idx_match, 'Respondido'].fillna('')
-    df_saida.loc[idx_match, 'TELEFONE ENVIADO'] = df_melhor_match.loc[idx_match, 'Telefone'].fillna('')
-    df_saida.loc[idx_match, 'CHAVE STATUS'] = df_melhor_match.loc[idx_match, 'Contato'].fillna('')
+    # Match principal: CHAVE RELATORIO -> Contato
+    mapa_principal = df_status_por_contato.set_index('Contato')
+    mask_principal = df_saida['CHAVE RELATORIO'].isin(mapa_principal.index)
+    idx_principal = df_saida.index[mask_principal]
+    if len(idx_principal) > 0:
+        chave = df_saida.loc[idx_principal, 'CHAVE RELATORIO']
+        df_saida.loc[idx_principal, 'ULTIMO STATUS DE ENVIO'] = chave.map(mapa_principal['Status']).fillna('')
+        df_saida.loc[idx_principal, 'DT ENVIO'] = chave.map(mapa_principal['DT ENVIO']).fillna('')
+        df_saida.loc[idx_principal, 'RESPOSTA'] = chave.map(mapa_principal['RESPOSTA']).fillna('')
+        df_saida.loc[idx_principal, 'IDENTIFICACAO'] = chave.map(mapa_principal['Respondido']).fillna('')
+        df_saida.loc[idx_principal, 'TELEFONE ENVIADO'] = chave.map(mapa_principal['Telefone']).fillna('')
+        df_saida.loc[idx_principal, 'CHAVE STATUS'] = df_saida.loc[idx_principal, 'CHAVE RELATORIO']
+        df_saida.loc[idx_principal, 'STATUS CHAVE'] = 'OK'
+
+    # Fallback: NOME_MANIPULADO+Telefone -> USUARIO+qualquer telefone 1..5
+    idx_sem_principal = df_saida.index[~mask_principal]
+    if len(idx_sem_principal) > 0:
+        frames_telefone = []
+        for coluna_tel in colunas_tel_existentes:
+            df_tel = pd.DataFrame(
+                {
+                    '__ROW_ID': idx_sem_principal,
+                    '__NOME_KEY': df_saida.loc[idx_sem_principal, 'USUARIO'],
+                    '__TEL_KEY': _normalizar_texto_serie(
+                        df_saida.loc[idx_sem_principal, coluna_tel]
+                    ).apply(normalizar_telefone),
+                }
+            )
+            frames_telefone.append(df_tel)
+
+        df_chaves_dataset = pd.concat(frames_telefone, ignore_index=True)
+        df_chaves_dataset = df_chaves_dataset[
+            (df_chaves_dataset['__NOME_KEY'] != '') & (df_chaves_dataset['__TEL_KEY'] != '')
+        ]
+
+        if len(df_chaves_dataset) > 0:
+            df_merge = df_chaves_dataset.merge(
+                df_status_por_nome_tel[
+                    [
+                        'NOME_MANIPULADO',
+                        'Telefone',
+                        'Contato',
+                        'Status',
+                        'Respondido',
+                        'RESPOSTA',
+                        'DT ENVIO',
+                        '__DT_ENVIO_DATA',
+                    ]
+                ],
+                left_on=['__NOME_KEY', '__TEL_KEY'],
+                right_on=['NOME_MANIPULADO', 'Telefone'],
+                how='left',
+            )
+            df_merge = df_merge.sort_values('__DT_ENVIO_DATA', ascending=False, na_position='last')
+            df_melhor_match = df_merge.drop_duplicates(subset=['__ROW_ID'], keep='first').copy()
+            df_melhor_match = df_melhor_match.set_index('__ROW_ID')
+            mask_encontrado = df_melhor_match['Status'].notna()
+            idx_fallback = df_melhor_match.index[mask_encontrado]
+
+            if len(idx_fallback) > 0:
+                df_saida.loc[idx_fallback, 'ULTIMO STATUS DE ENVIO'] = (
+                    df_melhor_match.loc[idx_fallback, 'Status'].fillna('')
+                )
+                df_saida.loc[idx_fallback, 'DT ENVIO'] = (
+                    pd.to_datetime(df_melhor_match.loc[idx_fallback, '__DT_ENVIO_DATA'], errors='coerce')
+                    .dt.strftime('%d/%m/%Y')
+                    .fillna('')
+                )
+                df_saida.loc[idx_fallback, 'RESPOSTA'] = (
+                    df_melhor_match.loc[idx_fallback, 'RESPOSTA'].fillna('')
+                )
+                df_saida.loc[idx_fallback, 'IDENTIFICACAO'] = (
+                    df_melhor_match.loc[idx_fallback, 'Respondido'].fillna('')
+                )
+                df_saida.loc[idx_fallback, 'TELEFONE ENVIADO'] = (
+                    df_melhor_match.loc[idx_fallback, 'Telefone'].fillna('')
+                )
+                df_saida.loc[idx_fallback, 'CHAVE STATUS'] = (
+                    df_melhor_match.loc[idx_fallback, 'Contato'].fillna('')
+                )
+                df_saida.loc[idx_fallback, 'STATUS CHAVE'] = 'ERROR'
+
+    total_match = int(_normalizar_texto_serie(df_saida['STATUS CHAVE']).ne('').sum())
+    total_sem_match = total_dataset - total_match
+    if total_match == 0:
+        return {
+            'ok': False,
+            'mensagens': ['Nenhum match encontrado no principal (CHAVE RELATORIO) nem no fallback.'],
+            'total_dataset': total_dataset,
+            'total_match': total_match,
+            'total_sem_match': total_sem_match,
+        }
+
+    # TELEFONE PRIORIDADE recebe o nome da coluna onde bate com TELEFONE ENVIADO
+    telefone_enviado_norm = _normalizar_texto_serie(df_saida['TELEFONE ENVIADO']).apply(normalizar_telefone)
+    for coluna_tel in colunas_tel_existentes:
+        tel_col_norm = _normalizar_texto_serie(df_saida[coluna_tel]).apply(normalizar_telefone)
+        mask_tel = (
+            (df_saida['TELEFONE PRIORIDADE'] == '')
+            & (telefone_enviado_norm != '')
+            & (tel_col_norm == telefone_enviado_norm)
+        )
+        df_saida.loc[mask_tel, 'TELEFONE PRIORIDADE'] = coluna_tel
 
     for coluna in [
         'ULTIMO STATUS DE ENVIO',
@@ -196,6 +247,8 @@ def _enriquecer_dataset_com_status(df_dataset, df_status_ultimo):
         'IDENTIFICACAO',
         'TELEFONE ENVIADO',
         'CHAVE STATUS',
+        'STATUS CHAVE',
+        'TELEFONE PRIORIDADE',
     ]:
         _limpar_coluna_texto(df_saida, coluna)
 
@@ -332,10 +385,15 @@ def criar_dataset_complicacao(
             'ok': False,
             'mensagens': resultado_status['mensagens'],
         }
-    df_status_ultimo = resultado_status['df_status_ultimo']
+    df_status_por_contato = resultado_status['df_status_por_contato']
+    df_status_por_nome_tel = resultado_status['df_status_por_nome_tel']
 
     df_usuarios = _montar_df_final_complicacao(df_sem_duplicados)
-    resultado_enriquecimento = _enriquecer_dataset_com_status(df_usuarios, df_status_ultimo)
+    resultado_enriquecimento = _enriquecer_dataset_com_status(
+        df_usuarios,
+        df_status_por_contato,
+        df_status_por_nome_tel,
+    )
     if not resultado_enriquecimento['ok']:
         return {
             'ok': False,
@@ -359,7 +417,11 @@ def criar_dataset_complicacao(
     else:
         df_lidos_base = df_sem_duplicados.iloc[0:0]
     df_usuarios_lidos = _montar_df_final_complicacao(df_lidos_base)
-    resultado_lidos = _enriquecer_dataset_com_status(df_usuarios_lidos, df_status_ultimo)
+    resultado_lidos = _enriquecer_dataset_com_status(
+        df_usuarios_lidos,
+        df_status_por_contato,
+        df_status_por_nome_tel,
+    )
     if resultado_lidos['ok']:
         df_usuarios_lidos = resultado_lidos['df_enriquecido']
 
@@ -372,12 +434,20 @@ def criar_dataset_complicacao(
     else:
         df_resp_base = df_sem_duplicados.iloc[0:0]
     df_usuarios_respondidos = _montar_df_final_complicacao(df_resp_base)
-    resultado_respondidos = _enriquecer_dataset_com_status(df_usuarios_respondidos, df_status_ultimo)
+    resultado_respondidos = _enriquecer_dataset_com_status(
+        df_usuarios_respondidos,
+        df_status_por_contato,
+        df_status_por_nome_tel,
+    )
     if resultado_respondidos['ok']:
         df_usuarios_respondidos = resultado_respondidos['df_enriquecido']
 
     df_usuarios_duplicados = _montar_df_final_complicacao(df_duplicados)
-    resultado_duplicados = _enriquecer_dataset_com_status(df_usuarios_duplicados, df_status_ultimo)
+    resultado_duplicados = _enriquecer_dataset_com_status(
+        df_usuarios_duplicados,
+        df_status_por_contato,
+        df_status_por_nome_tel,
+    )
     if resultado_duplicados['ok']:
         df_usuarios_duplicados = resultado_duplicados['df_enriquecido']
     df_usuarios_resolvidos = pd.DataFrame(columns=COLUNAS_FINAIS_DATASET)
