@@ -27,6 +27,7 @@ def _integrar_com_filtro_hsm(
     arquivo_saida,
     hsms_permitidos,
     nome_logger,
+    colunas_limpar=None,
 ):
     logger = PipelineLogger(nome_pipeline=nome_logger)
     logger.info('MODO', f'Integracao iniciada com HSM permitidos={hsms_permitidos}')
@@ -51,6 +52,7 @@ def _integrar_com_filtro_hsm(
             arquivo_status=arquivo_status_filtrado,
             arquivo_status_resposta=arquivo_status_resposta,
             arquivo_saida=arquivo_saida,
+            colunas_limpar=colunas_limpar,
         )
 
         logger.info('MATCH', f"total_status={resultado['total_status']}")
@@ -77,6 +79,15 @@ def integrar_dados_status_complicacao(
         arquivo_saida=arquivo_saida,
         hsms_permitidos=['Pesquisa Complicacoes Cirurgicas', 'Pesquisa Complica\u00e7\u00f5es Cirurgicas'],
         nome_logger='integracao_complicacao',
+        colunas_limpar=[
+            'Conta',
+            'Mensagem',
+            'Categoria',
+            'Template',
+            'Agendamento',
+            'Status agendamento',
+            'Agente',
+        ],
     )
 
 
@@ -91,4 +102,5 @@ def integrar_dados_status_unificar(
         arquivo_saida=arquivo_saida,
         hsms_permitidos=['Pesquisa_Pos_cir_urg_intern', 'Pesquisa_Pos_cir_eletivo'],
         nome_logger='integracao_unificar_execucao',
+        colunas_limpar=[],
     )

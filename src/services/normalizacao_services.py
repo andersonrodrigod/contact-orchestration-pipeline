@@ -29,6 +29,9 @@ def corrigir_texto_bugado(texto):
         '\u00c3\u00b3': '\u00f3',
         '\u00c3\u00ba': '\u00fa',
         '\u00c3\u00b5': '\u00f5',
+        '\u2013': '-',
+        '\u2014': '-',
+        '\u2212': '-',
     }
 
     for antigo, novo in trocas.items():

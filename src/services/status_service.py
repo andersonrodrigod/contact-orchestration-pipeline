@@ -22,6 +22,7 @@ def integrar_status_com_resposta(
     arquivo_status='src/data/arquivo_limpo/status_limpo.csv',
     arquivo_status_resposta='src/data/arquivo_limpo/status_resposta_complicacao_limpo.csv',
     arquivo_saida='src/data/arquivo_limpo/status.csv',
+    colunas_limpar=None,
 ):
     df_status = ler_arquivo_csv(arquivo_status)
     df_resposta = ler_arquivo_csv(arquivo_status_resposta)
@@ -63,6 +64,12 @@ def integrar_status_com_resposta(
     df_merge['NOME_MANIPULADO'] = (
         df_merge['Contato'].astype(str).str.split('_', n=1).str[0].str.strip()
     )
+
+    if colunas_limpar is None:
+        colunas_limpar = []
+    for coluna in colunas_limpar:
+        if coluna in df_merge.columns:
+            df_merge[coluna] = ''
 
     match = int((df_merge['RESPOSTA'] != 'Sem resposta').sum())
     sem_match = int((df_merge['RESPOSTA'] == 'Sem resposta').sum())
