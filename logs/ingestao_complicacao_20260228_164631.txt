@@ -1,0 +1,39 @@
+[EXECUCAO] Inicio do relatorio de execucao
+
+[2026-02-28 16:46:31] [INFO] [LOGGER] Execucao iniciada
+
+[2026-02-28 16:46:31] [INFO] [MODO] Modo complicacao iniciado
+
+[2026-02-28 16:46:31] [INFO] [INICIO] arquivo_status=src/data/status.csv
+[2026-02-28 16:46:31] [INFO] [INICIO] arquivo_status_resposta=src/data/status_resposta_complicacao.csv
+[2026-02-28 16:46:31] [INFO] [INICIO] saida_status=src/data/arquivo_limpo/status_complicacao_limpo.csv
+[2026-02-28 16:46:31] [INFO] [INICIO] saida_status_resposta=src/data/arquivo_limpo/status_resposta_complicacao_limpo.csv
+
+[2026-02-28 16:46:31] [INFO] [LEITURA] Lendo arquivo status
+[2026-02-28 16:46:33] [INFO] [LEITURA] df_status: linhas=146248 colunas=17
+[2026-02-28 16:46:33] [INFO] [LEITURA] Lendo arquivo status_resposta
+[2026-02-28 16:46:33] [INFO] [LEITURA] df_status_resposta: linhas=17088 colunas=27
+
+[2026-02-28 16:46:33] [INFO] [VALIDACAO_ORIGEM] ok=True mensagens=['Colunas de origem para padronizacao foram encontradas com sucesso.']
+
+[2026-02-28 16:46:33] [INFO] [PADRONIZACAO] Padronizando nomes de colunas
+
+[2026-02-28 16:46:33] [INFO] [NORMALIZACAO] Convertendo tipos de colunas
+[2026-02-28 16:46:33] [INFO] [NORMALIZACAO] Data agendamento dtype=datetime64[ns]
+[2026-02-28 16:46:33] [INFO] [NORMALIZACAO] DT_ATENDIMENTO dtype=datetime64[ns]
+[2026-02-28 16:46:33] [INFO] [NORMALIZACAO] Data agendamento NaT=0.00% (0/146248)
+[2026-02-28 16:46:33] [INFO] [NORMALIZACAO] DT_ATENDIMENTO NaT=0.00% (0/17088)
+[2026-02-28 16:46:33] [INFO] [NORMALIZACAO] Limpando texto nas colunas nao-data
+
+[2026-02-28 16:46:41] [INFO] [FORMATACAO] Criando coluna DT ENVIO a partir de Data agendamento (sem hora)
+[2026-02-28 16:46:41] [INFO] [FORMATACAO] Exemplo DT ENVIO=['27/02/2026']
+
+[2026-02-28 16:46:41] [INFO] [VALIDACAO_DATA] ok=True mensagens=['Padronizacao de datas validada com sucesso.']
+
+[2026-02-28 16:46:41] [INFO] [FORMATACAO] Formatando DT_ATENDIMENTO para BR
+[2026-02-28 16:46:41] [INFO] [FORMATACAO] Exemplo DT_ATENDIMENTO=['02/02/2026']
+
+[2026-02-28 16:46:41] [INFO] [SAIDA] Salvando status em src/data/arquivo_limpo/status_complicacao_limpo.csv
+[2026-02-28 16:46:43] [INFO] [SAIDA] Salvando status_resposta em src/data/arquivo_limpo/status_resposta_complicacao_limpo.csv
+
+[2026-02-28 16:46:44] [INFO] [LOGGER] Execucao finalizada com status=SUCESSO em 0:00:12.163462

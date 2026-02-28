@@ -1,0 +1,27 @@
+[EXECUCAO] Inicio do relatorio de execucao
+
+[2026-02-28 16:44:55] [INFO] [LOGGER] Execucao iniciada
+
+[2026-02-28 16:44:55] [INFO] [MODO] Integracao iniciada com HSM permitidos=['Pesquisa Complicacoes Cirurgicas', 'Pesquisa Complicações Cirurgicas']
+
+[2026-02-28 16:44:55] [INFO] [INICIO] arquivo_status=src/data/arquivo_limpo/status_complicacao_limpo.csv
+[2026-02-28 16:44:55] [INFO] [INICIO] arquivo_status_resposta=src/data/arquivo_limpo/status_resposta_complicacao_limpo.csv
+[2026-02-28 16:44:55] [INFO] [INICIO] arquivo_saida=src/data/arquivo_limpo/status_complicacao.csv
+
+[2026-02-28 16:44:58] [ERROR] [ERRO_EXECUCAO] Excecao: [WinError 32] O arquivo já está sendo usado por outro processo: 'src\\data\\arquivo_limpo\\_tmp_status_filtrado_integracao.csv'
+[2026-02-28 16:44:58] [ERROR] [ERRO_EXECUCAO] Traceback (most recent call last):
+[2026-02-28 16:44:58] [ERROR] [ERRO_EXECUCAO]   File "C:\Users\Rodrigo\Desktop\dev\contact-orchestration-pipeline\src\pipelines\integracao_pipeline.py", line 20, in _integrar_com_filtro_hsm
+[2026-02-28 16:44:58] [ERROR] [ERRO_EXECUCAO]     resultado = integrar_com_filtro_hsm(
+[2026-02-28 16:44:58] [ERROR] [ERRO_EXECUCAO]         arquivo_status=arquivo_status,
+[2026-02-28 16:44:58] [ERROR] [ERRO_EXECUCAO]     ...<3 lines>...
+[2026-02-28 16:44:58] [ERROR] [ERRO_EXECUCAO]         colunas_limpar=colunas_limpar,
+[2026-02-28 16:44:58] [ERROR] [ERRO_EXECUCAO]     )
+[2026-02-28 16:44:58] [ERROR] [ERRO_EXECUCAO]   File "C:\Users\Rodrigo\Desktop\dev\contact-orchestration-pipeline\src\services\integracao_service.py", line 48, in integrar_com_filtro_hsm
+[2026-02-28 16:44:58] [ERROR] [ERRO_EXECUCAO]     Path(arquivo_status_filtrado).unlink(missing_ok=True)
+[2026-02-28 16:44:58] [ERROR] [ERRO_EXECUCAO]     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+[2026-02-28 16:44:58] [ERROR] [ERRO_EXECUCAO]   File "C:\Users\Rodrigo\AppData\Local\Programs\Python\Python313\Lib\pathlib\_local.py", line 746, in unlink
+[2026-02-28 16:44:58] [ERROR] [ERRO_EXECUCAO]     os.unlink(self)
+[2026-02-28 16:44:58] [ERROR] [ERRO_EXECUCAO]     ~~~~~~~~~^^^^^^
+[2026-02-28 16:44:58] [ERROR] [ERRO_EXECUCAO] PermissionError: [WinError 32] O arquivo já está sendo usado por outro processo: 'src\\data\\arquivo_limpo\\_tmp_status_filtrado_integracao.csv'
+
+[2026-02-28 16:44:58] [INFO] [LOGGER] Execucao finalizada com status=ERRO em 0:00:02.342196

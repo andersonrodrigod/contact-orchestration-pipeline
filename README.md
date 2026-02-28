@@ -28,6 +28,7 @@ O projeto roda por `main.py` e escreve logs em `logs/`.
 - `src/data/arquivo_limpo/status_complicacao.csv`
 - `src/data/arquivo_limpo/status_internacao_eletivo.csv`
 - `src/data/arquivo_limpo/dataset_complicacao.xlsx`
+- `src/data/arquivo_limpo/dataset_internacao_eletivo.xlsx`
 
 No modo `ambos`, cada fluxo usa arquivo intermediario proprio para evitar sobrescrita entre dependencias.
 
@@ -42,6 +43,10 @@ python main.py --modo complicacao
 python main.py --modo internacao_eletivo
 python main.py --modo ambos
 ```
+
+Os caminhos padrao de cada fluxo ficam definidos nos respectivos arquivos:
+- `src/pipelines/complicacao_pipeline.py`
+- `src/pipelines/internacao_eletivo_pipeline.py`
 
 ## Regras principais de dados
 - `Data agendamento` permanece no status.

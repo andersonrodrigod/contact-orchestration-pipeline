@@ -5,16 +5,16 @@ from src.utils.arquivos import ler_arquivo_csv
 
 
 def run_criacao_dataset_pipeline(
-    arquivo_complicacao,
+    arquivo_origem_dataset,
     arquivo_saida_dataset,
     nome_logger='criacao_dataset',
 ):
     logger = PipelineLogger(nome_pipeline=nome_logger)
-    logger.info('INICIO', f'arquivo_complicacao={arquivo_complicacao}')
+    logger.info('INICIO', f'arquivo_origem_dataset={arquivo_origem_dataset}')
     logger.info('INICIO', f'arquivo_saida_dataset={arquivo_saida_dataset}')
 
     try:
-        df_origem = ler_arquivo_csv(arquivo_complicacao)
+        df_origem = ler_arquivo_csv(arquivo_origem_dataset)
         colunas_arquivo = [str(col).strip() for col in df_origem.columns]
         logger.info('VALIDACAO_COLUNAS', f'colunas_arquivo={colunas_arquivo}')
 
@@ -30,7 +30,7 @@ def run_criacao_dataset_pipeline(
             }
 
         resultado = criar_dataset_complicacao(
-            arquivo_complicacao=arquivo_complicacao,
+            arquivo_complicacao=arquivo_origem_dataset,
             arquivo_saida_dataset=arquivo_saida_dataset,
         )
         if not resultado.get('ok'):
