@@ -136,7 +136,16 @@ def _enriquecer_dataset_com_status(df_dataset, df_status_ultimo):
 
     df_merge = df_chaves_dataset.merge(
         df_status_ultimo[
-            ['NOME_MANIPULADO', 'Telefone', 'Status', 'Respondido', 'RESPOSTA', 'DT ENVIO', '__DT_ENVIO_DATA']
+            [
+                'NOME_MANIPULADO',
+                'Telefone',
+                'Contato',
+                'Status',
+                'Respondido',
+                'RESPOSTA',
+                'DT ENVIO',
+                '__DT_ENVIO_DATA',
+            ]
         ],
         left_on=['__NOME_KEY', '__TEL_KEY'],
         right_on=['NOME_MANIPULADO', 'Telefone'],
@@ -166,6 +175,7 @@ def _enriquecer_dataset_com_status(df_dataset, df_status_ultimo):
     df_saida['RESPOSTA'] = ''
     df_saida['IDENTIFICACAO'] = ''
     df_saida['TELEFONE ENVIADO'] = ''
+    df_saida['CHAVE STATUS'] = ''
 
     idx_match = df_melhor_match.index[mask_encontrado]
     df_saida.loc[idx_match, 'ULTIMO STATUS DE ENVIO'] = df_melhor_match.loc[idx_match, 'Status'].fillna('')
@@ -177,8 +187,16 @@ def _enriquecer_dataset_com_status(df_dataset, df_status_ultimo):
     df_saida.loc[idx_match, 'RESPOSTA'] = df_melhor_match.loc[idx_match, 'RESPOSTA'].fillna('')
     df_saida.loc[idx_match, 'IDENTIFICACAO'] = df_melhor_match.loc[idx_match, 'Respondido'].fillna('')
     df_saida.loc[idx_match, 'TELEFONE ENVIADO'] = df_melhor_match.loc[idx_match, 'Telefone'].fillna('')
+    df_saida.loc[idx_match, 'CHAVE STATUS'] = df_melhor_match.loc[idx_match, 'Contato'].fillna('')
 
-    for coluna in ['ULTIMO STATUS DE ENVIO', 'DT ENVIO', 'RESPOSTA', 'IDENTIFICACAO', 'TELEFONE ENVIADO']:
+    for coluna in [
+        'ULTIMO STATUS DE ENVIO',
+        'DT ENVIO',
+        'RESPOSTA',
+        'IDENTIFICACAO',
+        'TELEFONE ENVIADO',
+        'CHAVE STATUS',
+    ]:
         _limpar_coluna_texto(df_saida, coluna)
 
     qtd_identificacao = int(_normalizar_texto_serie(df_saida['IDENTIFICACAO']).ne('').sum())
