@@ -110,3 +110,45 @@ def validar_colunas_minimas_status_resposta(df_eletivo, df_internacao):
         mensagens.append(f'Faltando no arquivo internacao: {faltando_internacao}')
 
     return {'ok': False, 'mensagens': mensagens}
+
+
+def validar_colunas_origem_dataset_complicacao(colunas_arquivo):
+    colunas_obrigatorias = [
+        'BASE',
+        'COD USUARIO',
+        'USUARIO',
+        'TELEFONE 1',
+        'TELEFONE 2',
+        'TELEFONE 3',
+        'TELEFONE 4',
+        'TELEFONE 5',
+        'PRESTADOR',
+        'PROCEDIMENTO',
+        'TP ATENDIMENTO',
+        'DT INTERNACAO',
+        'DT ENVIO',
+        'CHAVE',
+        'STATUS',
+        'P1',
+    ]
+
+    set_colunas = {str(c).strip() for c in colunas_arquivo}
+    faltando = [col for col in colunas_obrigatorias if col not in set_colunas]
+
+    if faltando:
+        return {
+            'ok': False,
+            'mensagens': [
+                'Colunas obrigatorias do dataset de complicacao nao foram encontradas.',
+                f'Colunas faltando: {faltando}',
+            ],
+            'colunas_obrigatorias': colunas_obrigatorias,
+            'colunas_faltando': faltando,
+        }
+
+    return {
+        'ok': True,
+        'mensagens': ['Todas as colunas obrigatorias do dataset de complicacao foram encontradas.'],
+        'colunas_obrigatorias': colunas_obrigatorias,
+        'colunas_faltando': [],
+    }

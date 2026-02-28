@@ -2,6 +2,10 @@ import pandas as pd
 
 
 def ler_arquivo_csv(caminho_arquivo, separador=';'):
+    caminho_texto = str(caminho_arquivo).lower()
+    if caminho_texto.endswith('.xlsx') or caminho_texto.endswith('.xls'):
+        return pd.read_excel(caminho_arquivo, dtype=str, keep_default_na=False)
+
     encodings = ['utf-8-sig', 'utf-8', 'cp1252', 'latin1']
     separadores_teste = [separador]
     if separador == ';':

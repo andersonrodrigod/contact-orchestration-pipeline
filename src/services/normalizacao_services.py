@@ -1,3 +1,5 @@
+import re
+
 import pandas as pd
 
 
@@ -55,6 +57,7 @@ def normalizar_tipos_dataframe(df, colunas_data=None):
             df[coluna_data] = pd.to_datetime(
                 df[coluna_data],
                 errors='coerce',
+                format='mixed',
                 dayfirst=True,
             )
 
@@ -89,5 +92,27 @@ def criar_coluna_dt_envio_por_data_agendamento(
     if coluna_origem in df.columns:
         serie_data = pd.to_datetime(df[coluna_origem], errors='coerce', dayfirst=True)
         df[coluna_destino] = serie_data.dt.strftime('%d/%m/%Y')
+
+    return df
+
+
+def normalizar_telefone(valor):
+    if pd.isna(valor):
+        return ''
+
+    texto = str(valor).strip()
+    if texto.endswith('.0'):
+        texto = texto[:-2]
+
+    return re.sub(r'\D', '', texto)
+
+
+def normalizar_colunas_telefone_dataframe(df, colunas_telefone=None):
+    if colunas_telefone is None:
+        colunas_telefone = []
+
+    for coluna in colunas_telefone:
+        if coluna in df.columns:
+            df[coluna] = df[coluna].apply(normalizar_telefone)
 
     return df

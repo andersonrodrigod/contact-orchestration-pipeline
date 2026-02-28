@@ -4,6 +4,7 @@
 Pipeline em duas etapas:
 - `ingestao`: leitura, validacao, normalizacao e limpeza dos arquivos.
 - `integracao`: filtro por HSM e merge entre status e status_resposta.
+- `criacao_dataset`: prepara o arquivo final para relatorio.
 
 O projeto roda por `main.py` e escreve logs em `logs/`.
 
@@ -12,12 +13,13 @@ O projeto roda por `main.py` e escreve logs em `logs/`.
   - usa `complicacao` se existir arquivo de complicacao com dados.
   - senao, usa `unificar` se existirem eletivo e internacao com dados.
   - fallback final: `complicacao`.
-- `complicacao`: usa apenas `status_resposta_complicacao`.
+- `complicacao`: ingestao/integracao com `status_resposta_complicacao.csv` e criacao de dataset usando `complicacao.xlsx`.
 - `unificar`: concatena `eletivo + internacao` e segue pipeline.
 
 ## Entradas padrao
 - `src/data/status.csv`
 - `src/data/status_resposta_complicacao.csv`
+- `src/data/complicacao.xlsx` (origem da criacao de dataset)
 - `src/data/status_respostas_eletivo.csv`
 - `src/data/status_resposta_internacao.csv`
 
@@ -27,6 +29,7 @@ O projeto roda por `main.py` e escreve logs em `logs/`.
 - `src/data/arquivo_limpo/status_resposta_eletivo_internacao_limpo.csv`
 - `src/data/arquivo_limpo/status_complicacao_integrado.csv`
 - `src/data/arquivo_limpo/status_unificado_integrado.csv`
+- `src/data/arquivo_limpo/dataset_complicacao.xlsx`
 
 ## Execucao
 ```bash
@@ -46,6 +49,12 @@ python main.py --modo unificar
 - `DT_ATENDIMENTO` e formatado em `dd/mm/yyyy`.
 - merge na integracao usa `Contato + DT ENVIO` com `nom_contato + DT_ATENDIMENTO`.
 - `RESPOSTA` recebe `"Sem resposta"` quando vier vazia.
+- no dataset final, `DT INTERNACAO` e `DT ENVIO` ficam como data; o resto vira texto.
+- telefones (`Telefone`, `num_telefone`) sao normalizados removendo `.0` e caracteres nao numericos.
+- no modo `complicacao`, o dataset final segue o padrao do legado com abas:
+  `usuarios`, `usuarios_lidos`, `usuarios_respondidos`, `usuarios_duplicados`, `usuarios_resolvidos`.
+- na criacao de dataset, o logger valida e informa se todas as colunas obrigatorias
+  do mapeamento foram encontradas no arquivo de origem.
 
 ## Logs
 - Saida de execucao em `logs/<nome_pipeline>_<timestamp>.txt`.
@@ -55,5 +64,6 @@ python main.py --modo unificar
 - `main.py`: orquestracao dos modos e resumo final.
 - `src/pipelines/ingestao_pipeline.py`: ingestao.
 - `src/pipelines/integracao_pipeline.py`: integracao.
+- `src/pipelines/criacao_dataset_pipeline.py`: execucao da criacao de dataset (ativo no modo complicacao).
 - `src/services/`: regras de schema, normalizacao, validacao, integracao e dataset.
 - `core/logger.py`: logger de execucao.
