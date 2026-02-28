@@ -4,17 +4,7 @@ from src.pipelines.join_status_resposta_pipeline import (
     run_status_somente_complicacao_pipeline,
     run_unificar_status_resposta_complicacao_pipeline,
 )
-
-
-DEFAULTS_COMPLICACAO = {
-    'arquivo_status': 'src/data/status.csv',
-    'arquivo_status_resposta_complicacao': 'src/data/status_resposta_complicacao.csv',
-    'arquivo_dataset_origem_complicacao': 'src/data/complicacao.xlsx',
-    'saida_status': 'src/data/arquivo_limpo/status_complicacao_limpo.csv',
-    'saida_status_resposta': 'src/data/arquivo_limpo/status_resposta_complicacao_limpo.csv',
-    'saida_status_integrado': 'src/data/arquivo_limpo/status_complicacao.csv',
-    'saida_dataset': 'src/data/arquivo_limpo/dataset_complicacao.xlsx',
-}
+from src.config.paths import DEFAULTS_COMPLICACAO
 
 
 def run_complicacao_pipeline(

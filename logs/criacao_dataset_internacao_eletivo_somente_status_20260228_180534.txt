@@ -1,0 +1,15 @@
+[EXECUCAO] Inicio do relatorio de execucao
+
+[2026-02-28 18:05:34] [INFO] [LOGGER] Execucao iniciada
+
+[2026-02-28 18:05:34] [INFO] [INICIO] arquivo_origem_dataset=src/data/internacao.xlsx
+[2026-02-28 18:05:34] [INFO] [INICIO] arquivo_saida_dataset=src/data/arquivo_limpo/dataset_internacao_eletivo.xlsx
+
+[2026-02-28 18:05:43] [INFO] [VALIDACAO_COLUNAS] colunas_arquivo=['COD FILIAL', 'FILIAL', 'BASE FULL', 'BASE', 'SIGLA', 'ESTADO', 'SENHA', 'CD_USUARIO', 'COD USUARIO', 'USUARIO', 'CPF_BENEFICIARIO', 'DT NASCIMENTO', 'IDADE', 'COD PRESTADOR', 'PRESTADOR', 'COD PROCEDIMENTO', 'PROCEDIMENTO', 'REDE ATENDIMENTO', 'TP ATENDIMENTO', 'CATEGORIA DE INTERNACAO', 'STATUS RESPOSTA', 'DT INTERNACAO', 'DT ENVIO', 'CHAVE', 'OPERADOR', 'CONTATO', 'DT ENVIO MANUAL', 'DATA DO CONTATO', 'LIDA', 'RESPOSTA', 'STATUS', 'DATA DE ENVIO', 'P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'COMEN P1', 'COMEN P2', 'COMEN P3', 'COMEN P4', 'COMEN P5', 'COMEN P6', 'UF', 'DISTRITO', 'RESPONDIDO DO APP', 'TELEFONE 1', 'TELEFONE 2', 'TELEFONE 3', 'TELEFONE 4', 'TELEFONE 5', 'CHAVE ERRO P1', 'CHAVE ERRO P2', 'Unnamed: 54', 'Unnamed: 55', 'Unnamed: 56', 'Unnamed: 57', 'Unnamed: 58', 'Unnamed: 59']
+[2026-02-28 18:05:43] [INFO] [VALIDACAO_COLUNAS] ok=True
+[2026-02-28 18:05:43] [INFO] [VALIDACAO_COLUNAS] Todas as colunas obrigatorias do dataset de complicacao foram encontradas.
+
+[2026-02-28 18:06:20] [INFO] [SAIDA] arquivo_saida=src/data/arquivo_limpo/dataset_internacao_eletivo.xlsx
+[2026-02-28 18:06:20] [INFO] [SAIDA] total_linhas=29206
+
+[2026-02-28 18:06:20] [INFO] [LOGGER] Execucao finalizada com status=SUCESSO em 0:00:46.393028

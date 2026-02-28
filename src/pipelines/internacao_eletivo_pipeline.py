@@ -4,19 +4,7 @@ from src.pipelines.join_status_resposta_pipeline import (
     run_status_somente_internacao_eletivo_pipeline,
     run_unificar_status_resposta_internacao_eletivo_pipeline,
 )
-
-
-DEFAULTS_INTERNACAO_ELETIVO = {
-    'arquivo_status': 'src/data/status.csv',
-    'arquivo_status_resposta_eletivo': 'src/data/status_respostas_eletivo.csv',
-    'arquivo_status_resposta_internacao': 'src/data/status_resposta_internacao.csv',
-    'arquivo_status_resposta_unificado': 'src/data/status_resposta_eletivo_internacao.csv',
-    'arquivo_dataset_origem_internacao': 'src/data/internacao.xlsx',
-    'saida_status': 'src/data/arquivo_limpo/status_internacao_eletivo_limpo.csv',
-    'saida_status_resposta': 'src/data/arquivo_limpo/status_resposta_eletivo_internacao_limpo.csv',
-    'saida_status_integrado': 'src/data/arquivo_limpo/status_internacao_eletivo.csv',
-    'saida_dataset': 'src/data/arquivo_limpo/dataset_internacao_eletivo.xlsx',
-}
+from src.config.paths import DEFAULTS_INTERNACAO_ELETIVO
 
 
 def run_internacao_eletivo_pipeline(

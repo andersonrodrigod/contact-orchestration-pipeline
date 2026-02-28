@@ -1,0 +1,14 @@
+[EXECUCAO] Inicio do relatorio de execucao
+
+[2026-02-28 18:05:28] [INFO] [LOGGER] Execucao iniciada
+
+[2026-02-28 18:05:28] [INFO] [INICIO] arquivo_status=src/data/arquivo_limpo/status_internacao_eletivo_limpo.csv
+[2026-02-28 18:05:28] [INFO] [INICIO] arquivo_saida=src/data/arquivo_limpo/status_internacao_eletivo.csv
+[2026-02-28 18:05:28] [INFO] [INICIO] hsms_permitidos=['Pesquisa_Pos_cir_urg_intern', 'Pesquisa_Pos_cir_eletivo']
+
+[2026-02-28 18:05:34] [INFO] [FILTRO_HSM] status antes=146248
+[2026-02-28 18:05:34] [INFO] [FILTRO_HSM] status depois=121990
+
+[2026-02-28 18:05:34] [INFO] [RESULTADO] total_status=121990
+
+[2026-02-28 18:05:34] [INFO] [LOGGER] Execucao finalizada com status=SUCESSO em 0:00:05.772349

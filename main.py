@@ -11,6 +11,16 @@ from src.pipelines.internacao_eletivo_pipeline import (
 from src.utils.resumo_execucao import imprimir_resumo_execucao
 
 
+MODO_FUNCAO = {
+    'complicacao_com_resposta': run_pipeline_complicacao_com_resposta,
+    'complicacao': run_pipeline_complicacao_com_resposta,
+    'complicacao_somente_status': run_pipeline_complicacao_somente_status,
+    'internacao_eletivo_com_resposta': run_pipeline_internacao_eletivo_com_resposta,
+    'internacao_eletivo': run_pipeline_internacao_eletivo_com_resposta,
+    'internacao_eletivo_somente_status': run_pipeline_internacao_eletivo_somente_status,
+}
+
+
 def run_pipeline():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -30,17 +40,9 @@ def run_pipeline():
     )
     args = parser.parse_args()
 
-    if args.modo in ['complicacao_com_resposta', 'complicacao']:
-        return run_pipeline_complicacao_com_resposta()
-
-    if args.modo == 'complicacao_somente_status':
-        return run_pipeline_complicacao_somente_status()
-
-    if args.modo in ['internacao_eletivo_com_resposta', 'internacao_eletivo']:
-        return run_pipeline_internacao_eletivo_com_resposta()
-
-    if args.modo == 'internacao_eletivo_somente_status':
-        return run_pipeline_internacao_eletivo_somente_status()
+    funcao_modo = MODO_FUNCAO.get(args.modo)
+    if funcao_modo:
+        return funcao_modo()
 
     if args.modo in ['ambos_com_resposta', 'ambos']:
         resultado_complicacao = run_pipeline_complicacao_com_resposta()
