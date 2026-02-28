@@ -3,6 +3,25 @@ import re
 import pandas as pd
 
 
+def _tentar_redecodificar_mojibake(texto):
+    marcadores = ['Ã', 'Â', 'â', '�']
+    if not any(m in texto for m in marcadores):
+        return texto
+
+    tentativas = [
+        ('latin1', 'utf-8'),
+        ('cp1252', 'utf-8'),
+    ]
+    for origem, destino in tentativas:
+        try:
+            convertido = texto.encode(origem).decode(destino)
+            if convertido:
+                return convertido
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            continue
+    return texto
+
+
 def corrigir_texto_bugado(texto):
     if pd.isna(texto):
         return texto
@@ -12,7 +31,9 @@ def corrigir_texto_bugado(texto):
     trocas = {
         'Voc\u03a9s': 'Voc\u00eas',
         'N\u03c0o': 'N\u00e3o',
+        'N\ufffdo': 'Não',
         'n\u03c0o': 'n\u00e3o',
+        'n\ufffdo': 'não',
         'n\u00cf\u20aco': 'n\u00e3o',
         'Complica\u00cf\u201e\u00e2\u0152\u00a1es': 'Complica\u00e7\u00f5es',
         'N\u00c2\u00b7mero \u00ce\u02dc': 'N\u00famero \u00e9',
@@ -36,6 +57,8 @@ def corrigir_texto_bugado(texto):
 
     for antigo, novo in trocas.items():
         texto = texto.replace(antigo, novo)
+
+    texto = _tentar_redecodificar_mojibake(texto)
 
     return texto
 
