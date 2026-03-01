@@ -2,12 +2,15 @@ from pathlib import Path
 
 from core.logger import PipelineLogger
 from src.config.paths import DEFAULTS_COMPLICACAO, DEFAULTS_INTERNACAO_ELETIVO
-from src.pipelines.criacao_dataset_pipeline import run_criacao_dataset_pipeline
 from src.pipelines.finalizacao_pipeline import run_finalizacao_pipeline
 from src.pipelines.ingestao_pipeline import (
     run_ingestao_complicacao,
     run_ingestao_somente_status,
     run_ingestao_unificar,
+)
+from src.pipelines.complicacao_status_pipeline import run_complicacao_pipeline_criar_dataset_status
+from src.pipelines.internacao_eletivo_status_pipeline import (
+    run_internacao_eletivo_pipeline_criar_dataset_status,
 )
 from src.pipelines.join_status_resposta_pipeline import (
     run_status_somente_complicacao_pipeline,
@@ -273,7 +276,7 @@ def obter_modos_individuais(permitir_execucao=False):
         return _executar_modo_individual(
             'individual_criar_dataset_complicacao',
             permitir_execucao,
-            lambda: run_criacao_dataset_pipeline(
+            lambda: run_complicacao_pipeline_criar_dataset_status(
                 arquivo_origem_dataset=DEFAULTS_COMPLICACAO['arquivo_dataset_origem_complicacao'],
                 arquivo_status_integrado=DEFAULTS_COMPLICACAO['saida_status_integrado'],
                 arquivo_saida_dataset=DEFAULTS_COMPLICACAO['saida_dataset_status'],
@@ -286,7 +289,7 @@ def obter_modos_individuais(permitir_execucao=False):
         return _executar_modo_individual(
             'individual_criar_dataset_internacao_eletivo',
             permitir_execucao,
-            lambda: run_criacao_dataset_pipeline(
+            lambda: run_internacao_eletivo_pipeline_criar_dataset_status(
                 arquivo_origem_dataset=DEFAULTS_INTERNACAO_ELETIVO['arquivo_dataset_origem_internacao'],
                 arquivo_status_integrado=DEFAULTS_INTERNACAO_ELETIVO['saida_status_integrado'],
                 arquivo_saida_dataset=DEFAULTS_INTERNACAO_ELETIVO['saida_dataset_status'],

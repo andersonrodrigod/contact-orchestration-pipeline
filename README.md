@@ -80,7 +80,10 @@ Os caminhos padrao de cada fluxo ficam definidos nos respectivos arquivos:
 - `src/pipelines/join_status_resposta_pipeline.py`: unifica status + status_resposta (e versao somente status).
 - `src/pipelines/concatenar_status_respostas_pipeline.py`: unifica status_respostas (eletivo + internacao).
 - `src/pipelines/ingestao_pipeline.py`: ingestao.
-- `src/pipelines/criacao_dataset_pipeline.py`: execucao da criacao de dataset (ativo no modo complicacao).
+- `src/pipelines/complicacao_status_pipeline.py`: ingestao + envio status + criacao do dataset_status de complicacao.
+- `src/pipelines/internacao_eletivo_status_pipeline.py`: ingestao + envio status + criacao do dataset_status de internacao/eletivo.
+- `src/pipelines/complicacao_orquestracao_pipeline.py`: finalizacao/orquestracao de complicacao.
+- `src/pipelines/internacao_eletivo_orquestracao_pipeline.py`: finalizacao/orquestracao de internacao/eletivo.
 - `src/pipelines/finalizacao_pipeline.py`: etapa 3 (classificacao e orquestracao final de abas).
 - `src/services/integracao_service.py`: regras de negocio da integracao (filtro + merge).
 - `src/services/dataset_metricas_service.py`: contagens de status e agregados por chave/telefone.
