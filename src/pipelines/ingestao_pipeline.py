@@ -37,11 +37,14 @@ def _executar_normalizacao_padronizacao(
     logger.info('INICIO', f'saida_status={saida_status}')
     logger.info('INICIO', f'saida_status_resposta={saida_status_resposta}')
 
+    etapa_atual = 'INICIO'
     try:
+        etapa_atual = 'LEITURA_STATUS'
         logger.info('LEITURA', 'Lendo arquivo status')
         df_status = ler_arquivo_csv(arquivo_status)
         logger.info('LEITURA', f'df_status: linhas={len(df_status)} colunas={len(df_status.columns)}')
 
+        etapa_atual = 'LEITURA_STATUS_RESPOSTA'
         logger.info('LEITURA', 'Lendo arquivo status_resposta')
         df_status_resposta = ler_arquivo_csv(arquivo_status_resposta)
         logger.info(
@@ -65,10 +68,12 @@ def _executar_normalizacao_padronizacao(
             logger.finalizar('FALHA_VALIDACAO_ORIGEM')
             return resultado_final
 
+        etapa_atual = 'PADRONIZACAO'
         logger.info('PADRONIZACAO', 'Padronizando nomes de colunas')
         df_status = padronizar_colunas_status(df_status)
         df_status_resposta = padronizar_colunas_status_resposta(df_status_resposta)
 
+        etapa_atual = 'NORMALIZACAO_TIPOS'
         logger.info('NORMALIZACAO', 'Convertendo tipos de colunas')
         df_status = normalizar_tipos_dataframe(df_status, colunas_data=['Data agendamento'])
         df_status_resposta = normalizar_tipos_dataframe(
@@ -119,12 +124,14 @@ def _executar_normalizacao_padronizacao(
                     'mensagens': mensagens_iniciais + [mensagem_nat],
                 }
 
+        etapa_atual = 'LIMPEZA_TEXTO'
         logger.info('NORMALIZACAO', 'Limpando texto nas colunas nao-data')
         df_status = limpar_texto_exceto_colunas(df_status, colunas_ignorar=['Data agendamento'])
         df_status_resposta = limpar_texto_exceto_colunas(
             df_status_resposta, colunas_ignorar=['DT_ATENDIMENTO']
         )
 
+        etapa_atual = 'CRIAR_DT_ENVIO'
         logger.info('FORMATACAO', 'Criando coluna DT ENVIO a partir de Data agendamento (sem hora)')
         criar_coluna_dt_envio_por_data_agendamento(df_status)
         logger.info(
@@ -132,6 +139,7 @@ def _executar_normalizacao_padronizacao(
             f"Exemplo DT ENVIO={df_status['DT ENVIO'].head(1).tolist() if 'DT ENVIO' in df_status.columns else []}",
         )
 
+        etapa_atual = 'VALIDACAO_DATA'
         resultado_validacao = validar_padronizacao_colunas_data(df_status, df_status_resposta)
         logger.info(
             'VALIDACAO_DATA',
@@ -149,6 +157,7 @@ def _executar_normalizacao_padronizacao(
             ),
         }
 
+        etapa_atual = 'FORMATAR_DT_ATENDIMENTO'
         logger.info('FORMATACAO', 'Formatando DT_ATENDIMENTO para BR')
         formatar_coluna_data_br(df_status_resposta, 'DT_ATENDIMENTO')
         logger.info(
@@ -156,6 +165,7 @@ def _executar_normalizacao_padronizacao(
             f"Exemplo DT_ATENDIMENTO={df_status_resposta['DT_ATENDIMENTO'].head(1).tolist() if 'DT_ATENDIMENTO' in df_status_resposta.columns else []}",
         )
 
+        etapa_atual = 'SALVAR_ARQUIVOS'
         logger.info('SAIDA', f'Salvando status em {saida_status}')
         df_status.to_csv(saida_status, sep=';', index=False, encoding='utf-8-sig')
         logger.info('SAIDA', f'Salvando status_resposta em {saida_status_resposta}')
@@ -168,7 +178,7 @@ def _executar_normalizacao_padronizacao(
         logger.exception('ERRO_EXECUCAO', erro)
         resultado_erro = {
             'ok': False,
-            'mensagens': [f'Erro inesperado na execucao: {erro}'],
+            'mensagens': [f'Erro inesperado na execucao (etapa={etapa_atual}): {type(erro).__name__}: {erro}'],
         }
         logger.finalizar('ERRO')
         return resultado_erro
@@ -200,11 +210,15 @@ def run_ingestao_somente_status(
     logger = PipelineLogger(nome_pipeline=nome_logger)
     logger.info('INICIO', f'arquivo_status={arquivo_status}')
     logger.info('INICIO', f'saida_status={saida_status}')
+    etapa_atual = 'INICIO'
     try:
+        etapa_atual = 'LEITURA_STATUS'
         df_status = ler_arquivo_csv(arquivo_status)
         logger.info('LEITURA', f'df_status: linhas={len(df_status)} colunas={len(df_status.columns)}')
 
+        etapa_atual = 'PADRONIZACAO'
         df_status = padronizar_colunas_status(df_status)
+        etapa_atual = 'NORMALIZACAO_TIPOS'
         df_status = normalizar_tipos_dataframe(df_status, colunas_data=['Data agendamento'])
         if 'Data agendamento' in df_status.columns and len(df_status) > 0:
             qtd_nat_status = int(df_status['Data agendamento'].isna().sum())
@@ -224,9 +238,12 @@ def run_ingestao_somente_status(
                     'ok': False,
                     'mensagens': [mensagem_nat],
                 }
+        etapa_atual = 'LIMPEZA_TEXTO'
         df_status = limpar_texto_exceto_colunas(df_status, colunas_ignorar=['Data agendamento'])
+        etapa_atual = 'CRIAR_DT_ENVIO'
         criar_coluna_dt_envio_por_data_agendamento(df_status)
 
+        etapa_atual = 'SALVAR_ARQUIVO'
         df_status.to_csv(saida_status, sep=';', index=False, encoding='utf-8-sig')
         logger.finalizar('SUCESSO')
         return {
@@ -239,7 +256,7 @@ def run_ingestao_somente_status(
         logger.finalizar('ERRO')
         return {
             'ok': False,
-            'mensagens': [f'Erro na ingestao somente status: {erro}'],
+            'mensagens': [f'Erro na ingestao somente status (etapa={etapa_atual}): {type(erro).__name__}: {erro}'],
         }
 
 

@@ -38,7 +38,10 @@ def _run_unificar_status_resposta_pipeline(
     except Exception as erro:
         logger.exception('ERRO_EXECUCAO', erro)
         logger.finalizar('ERRO')
-        return {'ok': False, 'mensagens': [str(erro)]}
+        return {
+            'ok': False,
+            'mensagens': [f'Erro no pipeline {nome_logger}: {type(erro).__name__}: {erro}'],
+        }
 
 
 def run_unificar_status_resposta_complicacao_pipeline(
@@ -107,7 +110,10 @@ def _run_status_somente_pipeline(
     except Exception as erro:
         logger.exception('ERRO_EXECUCAO', erro)
         logger.finalizar('ERRO')
-        return {'ok': False, 'mensagens': [str(erro)]}
+        return {
+            'ok': False,
+            'mensagens': [f'Erro no pipeline {nome_logger}: {type(erro).__name__}: {erro}'],
+        }
 
 
 def run_status_somente_complicacao_pipeline(

@@ -33,4 +33,7 @@ def run_unificar_status_respostas_pipeline(
     except Exception as erro:
         logger.exception('ERRO_EXECUCAO', erro)
         logger.finalizar('ERRO')
-        return {'ok': False, 'mensagens': [str(erro)]}
+        return {
+            'ok': False,
+            'mensagens': [f'Erro no pipeline unificar_status_respostas: {type(erro).__name__}: {erro}'],
+        }
