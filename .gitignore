@@ -1,4 +1,8 @@
 
 *.xlsx
 *.csv
+*.pyc
+__pycache__/
+logs/
+.~lock.*#
 

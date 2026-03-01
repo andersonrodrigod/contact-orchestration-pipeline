@@ -7,10 +7,15 @@ from src.config.schemas import (
 
 from src.services.dataset_metricas_service import aplicar_contagens_status
 from src.services.normalizacao_services import (
-    corrigir_texto_bugado,
     normalizar_colunas_telefone_dataframe,
     normalizar_telefone,
     normalizar_tipos_dataframe,
+)
+from src.services.texto_service import (
+    limpar_coluna_texto as _limpar_coluna_texto,
+    limpar_valor_texto as _limpar_valor_texto,
+    normalizar_nome_serie as _normalizar_nome_serie,
+    normalizar_texto_serie as _normalizar_texto_serie,
 )
 from src.services.schema_service import padronizar_colunas_status_resposta
 from src.services.validacao_service import (
@@ -18,29 +23,6 @@ from src.services.validacao_service import (
     validar_colunas_origem_dataset_complicacao,
 )
 from src.utils.arquivos import ler_arquivo_csv
-
-def _normalizar_texto_serie(serie):
-    return serie.fillna('').astype(str).str.strip()
-
-
-def _normalizar_nome_serie(serie):
-    return _normalizar_texto_serie(serie).str.upper()
-
-
-def _limpar_valor_texto(valor):
-    if pd.isna(valor):
-        return ''
-    texto = str(valor).strip()
-    texto = corrigir_texto_bugado(texto)
-    if texto in {'0', '0.0', 'nan', 'NaN', 'None'}:
-        return ''
-    return texto
-
-
-def _limpar_coluna_texto(df, coluna):
-    if coluna in df.columns:
-        df[coluna] = df[coluna].apply(_limpar_valor_texto)
-    return df
 
 
 def _carregar_status_para_lookup(arquivo_status_integrado):

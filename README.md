@@ -77,8 +77,9 @@ Os caminhos padrao de cada fluxo ficam definidos nos respectivos arquivos:
 - `src/pipelines/join_status_resposta_pipeline.py`: unifica status + status_resposta (e versao somente status).
 - `src/pipelines/concatenar_status_respostas_pipeline.py`: unifica status_respostas (eletivo + internacao).
 - `src/pipelines/ingestao_pipeline.py`: ingestao.
-- `src/pipelines/integracao_pipeline.py`: integracao.
 - `src/pipelines/criacao_dataset_pipeline.py`: execucao da criacao de dataset (ativo no modo complicacao).
 - `src/services/integracao_service.py`: regras de negocio da integracao (filtro + merge).
+- `src/services/dataset_metricas_service.py`: contagens de status e agregados por chave/telefone.
+- `src/services/texto_service.py`: normalizacao e limpeza textual compartilhada.
 - `src/services/`: regras de schema, normalizacao, validacao, integracao e dataset.
 - `core/logger.py`: logger de execucao.
