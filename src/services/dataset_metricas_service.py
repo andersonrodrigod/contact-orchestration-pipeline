@@ -1,7 +1,7 @@
 ﻿import pandas as pd
 
 from src.services.normalizacao_services import normalizar_telefone
-from src.services.texto_service import normalizar_texto_serie, simplificar_texto
+from src.services.texto_service import limpar_valor_texto, normalizar_texto_serie, simplificar_texto
 
 
 STATUS_COLUNAS = {
@@ -20,7 +20,17 @@ COL_LIDA_SEM_RESPOSTA = 'LIDA_SEM_RESPOSTA'
 
 
 def _normalizar_status_para_mapa(valor_status):
-    return STATUS_COLUNAS.get(simplificar_texto(valor_status), '')
+    texto_original = limpar_valor_texto(valor_status)
+    if texto_original == '':
+        return ''
+
+    chave_status = simplificar_texto(texto_original)
+    status_mapeado = STATUS_COLUNAS.get(chave_status)
+    if status_mapeado:
+        return status_mapeado
+
+    # Fallback: preserva o valor original quando nao existir no dicionario.
+    return texto_original
 
 
 def _normalizar_resposta_lida(valor_resposta):
@@ -44,7 +54,12 @@ def _preencher_contagem_sem_zero(df, coluna, serie_contagem):
 
 
 def _preencher_contagens_status_mapeado(df_destino, df_origem, prefixo=''):
-    for coluna_destino in STATUS_COLUNAS.values():
+    status_unicos = [
+        str(valor).strip()
+        for valor in df_origem['__STATUS_MAPEADO'].dropna().unique().tolist()
+        if str(valor).strip() != ''
+    ]
+    for coluna_destino in status_unicos:
         serie = (
             df_origem[df_origem['__STATUS_MAPEADO'] == coluna_destino]
             .groupby('__ROW_ID')
