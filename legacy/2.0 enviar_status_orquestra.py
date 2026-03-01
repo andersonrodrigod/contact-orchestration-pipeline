@@ -41,7 +41,7 @@ status_colunas = {
     "A Meta decidiu não entregar a mensagem": "NAO_ENTREGUE_META",
     "Mensagem não pode ser entregue": "MENSAGEM_NAO_ENTREGUE",
     "Número é parte de um experimento": "EXPERIMENTO",
-    "MKT messages": "OPT_OUT"
+    "Usuário decidiu não receber MKT messages": "OPT_OUT"
 }
 
 # ============================================================
