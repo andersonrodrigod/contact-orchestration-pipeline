@@ -5,7 +5,7 @@ Pipeline em duas etapas:
 - `ingestao`: leitura, validacao, normalizacao e limpeza dos arquivos.
 - `integracao`: filtro por HSM e merge entre status e status_resposta.
 - `criacao_dataset`: prepara o arquivo final para relatorio.
-- `finalizacao`: aplica classificacao (`PROCESSO`/`ACAO`) e orquestracao entre abas.
+- `orquestracao`: aplica classificacao (`PROCESSO`/`ACAO`) e orquestracao entre abas.
 
 O projeto roda por `main.py` e escreve logs em `logs/`.
 
@@ -79,12 +79,13 @@ Os caminhos padrao de cada fluxo ficam definidos nos respectivos arquivos:
 - `src/pipelines/internacao_eletivo_pipeline.py`: dependencia exclusiva de internacao+eletivo.
 - `src/pipelines/join_status_resposta_pipeline.py`: unifica status + status_resposta (e versao somente status).
 - `src/pipelines/concatenar_status_respostas_pipeline.py`: unifica status_respostas (eletivo + internacao).
-- `src/pipelines/ingestao_pipeline.py`: ingestao.
+- `src/pipelines/ingestao_pipeline.py`: wrapper de execucao da ingestao.
 - `src/pipelines/complicacao_status_pipeline.py`: ingestao + envio status + criacao do dataset_status de complicacao.
 - `src/pipelines/internacao_eletivo_status_pipeline.py`: ingestao + envio status + criacao do dataset_status de internacao/eletivo.
-- `src/pipelines/complicacao_orquestracao_pipeline.py`: finalizacao/orquestracao de complicacao.
-- `src/pipelines/internacao_eletivo_orquestracao_pipeline.py`: finalizacao/orquestracao de internacao/eletivo.
-- `src/pipelines/finalizacao_pipeline.py`: etapa 3 (classificacao e orquestracao final de abas).
+- `src/pipelines/complicacao_orquestracao_pipeline.py`: orquestracao de complicacao.
+- `src/pipelines/internacao_eletivo_orquestracao_pipeline.py`: orquestracao de internacao/eletivo.
+- `src/pipelines/orquestracao_pipeline.py`: etapa 3 (classificacao e orquestracao final de abas).
+- `src/services/ingestao_service.py`: regras de ingestao (status e status_resposta).
 - `src/services/integracao_service.py`: regras de negocio da integracao (filtro + merge).
 - `src/services/dataset_metricas_service.py`: contagens de status e agregados por chave/telefone.
 - `src/services/finalizacao_service.py`: regras da etapa final (processo/acao e movimentacao para resolvidos).

@@ -2,13 +2,16 @@ from pathlib import Path
 
 from core.logger import PipelineLogger
 from src.config.paths import DEFAULTS_COMPLICACAO, DEFAULTS_INTERNACAO_ELETIVO
-from src.pipelines.finalizacao_pipeline import run_finalizacao_pipeline
 from src.pipelines.ingestao_pipeline import (
     run_ingestao_complicacao,
     run_ingestao_somente_status,
     run_ingestao_unificar,
 )
+from src.pipelines.complicacao_orquestracao_pipeline import run_complicacao_pipeline_orquestrar
 from src.pipelines.complicacao_status_pipeline import run_complicacao_pipeline_criar_dataset_status
+from src.pipelines.internacao_eletivo_orquestracao_pipeline import (
+    run_internacao_eletivo_pipeline_orquestrar,
+)
 from src.pipelines.internacao_eletivo_status_pipeline import (
     run_internacao_eletivo_pipeline_criar_dataset_status,
 )
@@ -302,10 +305,10 @@ def obter_modos_individuais(permitir_execucao=False):
         return _executar_modo_individual(
             'individual_orquestrar_complicacao',
             permitir_execucao,
-            lambda: run_finalizacao_pipeline(
-                arquivo_dataset_entrada=DEFAULTS_COMPLICACAO['saida_dataset_status'],
-                arquivo_dataset_saida=DEFAULTS_COMPLICACAO['saida_dataset_final'],
-                nome_logger='finalizacao_complicacao_individual',
+            lambda: run_complicacao_pipeline_orquestrar(
+                arquivo_dataset_status=DEFAULTS_COMPLICACAO['saida_dataset_status'],
+                arquivo_saida_final=DEFAULTS_COMPLICACAO['saida_dataset_final'],
+                nome_logger='orquestracao_complicacao_individual',
             ),
         )
 
@@ -313,10 +316,10 @@ def obter_modos_individuais(permitir_execucao=False):
         return _executar_modo_individual(
             'individual_orquestrar_internacao_eletivo',
             permitir_execucao,
-            lambda: run_finalizacao_pipeline(
-                arquivo_dataset_entrada=DEFAULTS_INTERNACAO_ELETIVO['saida_dataset_status'],
-                arquivo_dataset_saida=DEFAULTS_INTERNACAO_ELETIVO['saida_dataset_final'],
-                nome_logger='finalizacao_internacao_eletivo_individual',
+            lambda: run_internacao_eletivo_pipeline_orquestrar(
+                arquivo_dataset_status=DEFAULTS_INTERNACAO_ELETIVO['saida_dataset_status'],
+                arquivo_saida_final=DEFAULTS_INTERNACAO_ELETIVO['saida_dataset_final'],
+                nome_logger='orquestracao_internacao_eletivo_individual',
             ),
         )
 

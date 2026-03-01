@@ -3,10 +3,10 @@ from src.services.finalizacao_service import gerar_dataset_final
 from src.utils.arquivos import validar_arquivos_existem
 
 
-def run_finalizacao_pipeline(
+def run_orquestracao_pipeline(
     arquivo_dataset_entrada,
     arquivo_dataset_saida,
-    nome_logger='finalizacao_dataset',
+    nome_logger='orquestracao_dataset',
 ):
     logger = PipelineLogger(nome_pipeline=nome_logger)
     logger.info('INICIO', f'arquivo_dataset_entrada={arquivo_dataset_entrada}')
@@ -44,5 +44,5 @@ def run_finalizacao_pipeline(
         logger.finalizar('ERRO')
         return {
             'ok': False,
-            'mensagens': [f'Erro na finalizacao do dataset: {type(erro).__name__}: {erro}'],
+            'mensagens': [f'Erro na orquestracao do dataset: {type(erro).__name__}: {erro}'],
         }

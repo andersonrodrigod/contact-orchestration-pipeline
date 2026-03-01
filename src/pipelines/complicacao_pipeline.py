@@ -1,5 +1,5 @@
 from src.pipelines.complicacao_orquestracao_pipeline import (
-    run_complicacao_pipeline_finalizar,
+    run_complicacao_pipeline_orquestrar,
 )
 from src.pipelines.complicacao_status_pipeline import (
     run_complicacao_pipeline_gerar_status_dataset,
@@ -31,18 +31,18 @@ def run_complicacao_pipeline(
     if not resultado_status.get('ok'):
         return resultado_status
 
-    resultado_finalizacao = run_complicacao_pipeline_finalizar(
+    resultado_orquestracao = run_complicacao_pipeline_orquestrar(
         arquivo_dataset_status=saida_dataset_status,
         arquivo_saida_final=saida_dataset_final,
-        nome_logger='finalizacao_complicacao',
+        nome_logger='orquestracao_complicacao',
     )
-    if not resultado_finalizacao.get('ok'):
-        return resultado_finalizacao
+    if not resultado_orquestracao.get('ok'):
+        return resultado_orquestracao
 
     return ok_result(
         mensagens=(
             resultado_status.get('mensagens', [])
-            + resultado_finalizacao.get('mensagens', [])
+            + resultado_orquestracao.get('mensagens', [])
         ),
         metricas={
             'total_status': resultado_status.get('total_status', 0),
@@ -52,7 +52,7 @@ def run_complicacao_pipeline(
         },
         arquivos={
             'arquivo_status_dataset': resultado_status.get('arquivo_status_dataset'),
-            'arquivo_saida': resultado_finalizacao.get('arquivo_saida'),
+            'arquivo_saida': resultado_orquestracao.get('arquivo_saida'),
         },
     )
 
@@ -81,18 +81,18 @@ def run_pipeline_complicacao_somente_status():
     if not resultado_status.get('ok'):
         return resultado_status
 
-    resultado_finalizacao = run_complicacao_pipeline_finalizar(
+    resultado_orquestracao = run_complicacao_pipeline_orquestrar(
         arquivo_dataset_status=DEFAULTS_COMPLICACAO['saida_dataset_status'],
         arquivo_saida_final=DEFAULTS_COMPLICACAO['saida_dataset_final'],
-        nome_logger='finalizacao_complicacao_somente_status',
+        nome_logger='orquestracao_complicacao_somente_status',
     )
-    if not resultado_finalizacao.get('ok'):
-        return resultado_finalizacao
+    if not resultado_orquestracao.get('ok'):
+        return resultado_orquestracao
 
     return ok_result(
         mensagens=(
             resultado_status.get('mensagens', [])
-            + resultado_finalizacao.get('mensagens', [])
+            + resultado_orquestracao.get('mensagens', [])
         ),
         metricas={
             'total_status': resultado_status.get('total_status', 0),
@@ -100,7 +100,15 @@ def run_pipeline_complicacao_somente_status():
             'sem_match': resultado_status.get('sem_match', 0),
             'total_linhas': resultado_status.get('total_linhas', 0),
         },
-        arquivos={'arquivo_saida': resultado_finalizacao.get('arquivo_saida')},
+        arquivos={'arquivo_saida': resultado_orquestracao.get('arquivo_saida')},
+    )
+
+
+def run_pipeline_complicacao_orquestracao():
+    return run_complicacao_pipeline_orquestrar(
+        arquivo_dataset_status=DEFAULTS_COMPLICACAO['saida_dataset_status'],
+        arquivo_saida_final=DEFAULTS_COMPLICACAO['saida_dataset_final'],
+        nome_logger='orquestracao_complicacao',
     )
 
 
