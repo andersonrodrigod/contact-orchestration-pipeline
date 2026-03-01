@@ -65,7 +65,7 @@ Os caminhos padrao de cada fluxo ficam definidos nos respectivos arquivos:
 - no dataset final, `DT INTERNACAO` e `DT ENVIO` ficam como data; o resto vira texto.
 - telefones (`Telefone`, `num_telefone`) sao normalizados removendo `.0` e caracteres nao numericos.
 - no modo `complicacao`, o dataset final segue o padrao do legado com abas:
-  `usuarios`, `usuarios_lidos`, `usuarios_respondidos`, `usuarios_duplicados`, `usuarios_resolvidos`.
+  `usuarios`, `usuarios_respondidos`, `usuarios_duplicados`, `usuarios_resolvidos`.
 - na criacao de dataset, o logger valida e informa se todas as colunas obrigatorias
   do mapeamento foram encontradas no arquivo de origem.
 

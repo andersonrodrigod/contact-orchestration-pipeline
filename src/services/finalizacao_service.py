@@ -9,7 +9,12 @@ PROCESSO_RESOLVIDO = 'RESOLVIDO'
 
 ABAS_PADRAO = [
     'usuarios',
-    'usuarios_lidos',
+    'usuarios_respondidos',
+    'usuarios_duplicados',
+    'usuarios_resolvidos',
+]
+ABAS_OBRIGATORIAS_FINALIZACAO = [
+    'usuarios',
     'usuarios_respondidos',
     'usuarios_duplicados',
     'usuarios_resolvidos',
@@ -146,18 +151,17 @@ def gerar_dataset_final(arquivo_dataset_entrada, arquivo_dataset_saida):
             'ok': False,
             'mensagens': ['Arquivo de entrada nao possui abas para finalizacao.'],
         }
-    if 'usuarios' not in planilhas:
+    abas_faltando = [aba for aba in ABAS_OBRIGATORIAS_FINALIZACAO if aba not in planilhas]
+    if len(abas_faltando) > 0:
         return {
             'ok': False,
-            'mensagens': ['Aba obrigatoria "usuarios" nao encontrada no arquivo de entrada.'],
+            'mensagens': [
+                'Abas obrigatorias nao encontradas para finalizacao.',
+                f'Abas faltando: {abas_faltando}',
+            ],
         }
 
     mensagens = []
-
-    for aba in ABAS_PADRAO:
-        if aba not in planilhas:
-            planilhas[aba] = pd.DataFrame()
-            mensagens.append(f'Aba ausente criada automaticamente: {aba}')
 
     usuarios = planilhas['usuarios'].copy()
     usuarios_respondidos = planilhas['usuarios_respondidos'].copy()

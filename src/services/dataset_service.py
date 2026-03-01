@@ -26,6 +26,7 @@ from src.services.validacao_service import (
 from src.utils.arquivos import ler_arquivo_csv
 
 VALOR_SEM_TELEFONE_DISPONIVEL = 'SEM_TELEFONE_DISPONIVEL'
+VALOR_SEM_TELEFONE_PRIORIDADE = 'SEM TELEFONE'
 
 
 def _carregar_status_para_lookup(arquivo_status_integrado):
@@ -107,6 +108,36 @@ def _definir_proximo_telefone_disponivel(df_saida, colunas_tel_existentes):
     # Se nenhum telefone elegivel foi encontrado, marca explicitamente.
     mask_sem_disponivel = df_saida['PROXIMO TELEFONE DISPONIVEL'] == ''
     df_saida.loc[mask_sem_disponivel, 'PROXIMO TELEFONE DISPONIVEL'] = VALOR_SEM_TELEFONE_DISPONIVEL
+
+
+def _preencher_telefone_prioridade_fallback(df_saida, colunas_tel_existentes):
+    # 1) Se nao houve match por TELEFONE ENVIADO, usa a primeira coluna com status ENVIADO.
+    for i, coluna_tel in enumerate(colunas_tel_existentes, start=1):
+        coluna_status_tel = f'TELEFONE STATUS {i}'
+        if coluna_status_tel not in df_saida.columns:
+            continue
+
+        tel_col_norm = _normalizar_texto_serie(df_saida[coluna_tel]).apply(normalizar_telefone)
+        status_col = _normalizar_texto_serie(df_saida[coluna_status_tel]).str.upper()
+        mask = (
+            (_normalizar_texto_serie(df_saida['TELEFONE PRIORIDADE']) == '')
+            & (status_col == 'ENVIADO')
+            & (tel_col_norm != '')
+        )
+        df_saida.loc[mask, 'TELEFONE PRIORIDADE'] = coluna_tel
+
+    # 2) Se ainda vazio, usa a primeira coluna que tenha telefone preenchido.
+    for coluna_tel in colunas_tel_existentes:
+        tel_col_norm = _normalizar_texto_serie(df_saida[coluna_tel]).apply(normalizar_telefone)
+        mask = (
+            (_normalizar_texto_serie(df_saida['TELEFONE PRIORIDADE']) == '')
+            & (tel_col_norm != '')
+        )
+        df_saida.loc[mask, 'TELEFONE PRIORIDADE'] = coluna_tel
+
+    # 3) Se nao houver nenhum telefone nas colunas 1..5, marca explicitamente.
+    mask_sem_prioridade = _normalizar_texto_serie(df_saida['TELEFONE PRIORIDADE']) == ''
+    df_saida.loc[mask_sem_prioridade, 'TELEFONE PRIORIDADE'] = VALOR_SEM_TELEFONE_PRIORIDADE
 
 
 def _enriquecer_dataset_com_status(
@@ -286,6 +317,7 @@ def _enriquecer_dataset_com_status(
         )
         df_saida.loc[mask_enviado, coluna_status_tel] = 'ENVIADO'
 
+    _preencher_telefone_prioridade_fallback(df_saida, colunas_tel_existentes)
     _definir_proximo_telefone_disponivel(df_saida, colunas_tel_existentes)
 
     resultado_contagens = aplicar_contagens_status(df_saida, df_status_full)
@@ -486,22 +518,6 @@ def criar_dataset_complicacao(
     df_usuarios = df_usuarios.sort_values('__DT_ENVIO_ORDENACAO', ascending=False, na_position='last')
     df_usuarios = df_usuarios.drop(columns=['__DT_ENVIO_ORDENACAO'])
 
-    status_lidos = {'lida', 'nao quis', 'obito'}
-    if 'STATUS' in df_sem_duplicados.columns:
-        status_norm = df_sem_duplicados['STATUS'].apply(_simplificar_texto)
-        df_lidos_base = df_sem_duplicados[status_norm.isin(status_lidos)]
-    else:
-        df_lidos_base = df_sem_duplicados.iloc[0:0]
-    df_usuarios_lidos = _montar_df_final_complicacao(df_lidos_base)
-    resultado_lidos = _enriquecer_dataset_com_status(
-        df_usuarios_lidos,
-        df_status_full,
-        df_status_por_contato,
-        df_status_por_nome_tel,
-    )
-    if resultado_lidos['ok']:
-        df_usuarios_lidos = resultado_lidos['df_enriquecido']
-
     if 'P1' in df_sem_duplicados.columns:
         p1_preenchido = _normalizar_texto_serie(df_sem_duplicados['P1']) != ''
         if 'STATUS' in df_sem_duplicados.columns:
@@ -540,7 +556,6 @@ def criar_dataset_complicacao(
 
     with pd.ExcelWriter(arquivo_saida_dataset, engine='openpyxl') as writer:
         df_usuarios.to_excel(writer, sheet_name='usuarios', index=False)
-        df_usuarios_lidos.to_excel(writer, sheet_name='usuarios_lidos', index=False)
         df_usuarios_respondidos.to_excel(writer, sheet_name='usuarios_respondidos', index=False)
         df_usuarios_duplicados.to_excel(writer, sheet_name='usuarios_duplicados', index=False)
         df_usuarios_resolvidos.to_excel(writer, sheet_name='usuarios_resolvidos', index=False)
