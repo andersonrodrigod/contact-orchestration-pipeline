@@ -1,12 +1,12 @@
 from core.logger import PipelineLogger
 from core.pipeline_result import error_result
 from core.pipeline_result import ok_result
-from src.pipelines.ingestao_pipeline import run_ingestao_complicacao, run_ingestao_somente_status
 from src.pipelines.join_status_resposta_pipeline import (
     run_status_somente_complicacao_pipeline,
     run_unificar_status_resposta_complicacao_pipeline,
 )
 from src.services.dataset_service import criar_dataset_complicacao
+from src.services.ingestao_service import executar_ingestao_complicacao, executar_ingestao_somente_status
 from src.services.validacao_service import validar_colunas_origem_dataset_complicacao
 from src.utils.arquivos import ler_arquivo_csv, validar_arquivos_existem
 
@@ -75,7 +75,7 @@ def run_complicacao_pipeline_enviar_status_com_resposta(
     saida_status_resposta='src/data/arquivo_limpo/status_resposta_complicacao_limpo.csv',
     saida_status_integrado='src/data/arquivo_limpo/status_complicacao.csv',
 ):
-    resultado_ingestao = run_ingestao_complicacao(
+    resultado_ingestao = executar_ingestao_complicacao(
         arquivo_status=arquivo_status,
         arquivo_status_resposta_complicacao=arquivo_status_resposta_complicacao,
         saida_status=saida_status,
@@ -108,7 +108,7 @@ def run_complicacao_pipeline_enviar_status_somente_status(
     saida_status='src/data/arquivo_limpo/status_limpo.csv',
     saida_status_integrado='src/data/arquivo_limpo/status_complicacao.csv',
 ):
-    resultado_ingestao = run_ingestao_somente_status(
+    resultado_ingestao = executar_ingestao_somente_status(
         arquivo_status=arquivo_status,
         saida_status=saida_status,
         nome_logger='ingestao_complicacao_somente_status',

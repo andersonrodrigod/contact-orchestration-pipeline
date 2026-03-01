@@ -1,12 +1,12 @@
 from core.logger import PipelineLogger
 from core.pipeline_result import error_result
 from core.pipeline_result import ok_result
-from src.pipelines.ingestao_pipeline import run_ingestao_somente_status, run_ingestao_unificar
 from src.pipelines.join_status_resposta_pipeline import (
     run_status_somente_internacao_eletivo_pipeline,
     run_unificar_status_resposta_internacao_eletivo_pipeline,
 )
 from src.services.dataset_service import criar_dataset_complicacao
+from src.services.ingestao_service import executar_ingestao_somente_status, executar_ingestao_unificar
 from src.services.validacao_service import validar_colunas_origem_dataset_complicacao
 from src.utils.arquivos import ler_arquivo_csv, validar_arquivos_existem
 
@@ -77,7 +77,7 @@ def run_internacao_eletivo_pipeline_enviar_status_com_resposta(
     saida_status_resposta='src/data/arquivo_limpo/status_resposta_eletivo_internacao_limpo.csv',
     saida_status_integrado='src/data/arquivo_limpo/status_internacao_eletivo.csv',
 ):
-    resultado_ingestao = run_ingestao_unificar(
+    resultado_ingestao = executar_ingestao_unificar(
         arquivo_status=arquivo_status,
         arquivo_status_resposta_eletivo=arquivo_status_resposta_eletivo,
         arquivo_status_resposta_internacao=arquivo_status_resposta_internacao,
@@ -112,7 +112,7 @@ def run_internacao_eletivo_pipeline_enviar_status_somente_status(
     saida_status='src/data/arquivo_limpo/status_limpo.csv',
     saida_status_integrado='src/data/arquivo_limpo/status_internacao_eletivo.csv',
 ):
-    resultado_ingestao = run_ingestao_somente_status(
+    resultado_ingestao = executar_ingestao_somente_status(
         arquivo_status=arquivo_status,
         saida_status=saida_status,
         nome_logger='ingestao_internacao_eletivo_somente_status',

@@ -1,12 +1,5 @@
-from pathlib import Path
-
-from core.logger import PipelineLogger
+﻿from core.logger import PipelineLogger
 from src.config.paths import DEFAULTS_COMPLICACAO, DEFAULTS_INTERNACAO_ELETIVO
-from src.pipelines.ingestao_pipeline import (
-    run_ingestao_complicacao,
-    run_ingestao_somente_status,
-    run_ingestao_unificar,
-)
 from src.pipelines.complicacao_orquestracao_pipeline import run_complicacao_pipeline_orquestrar
 from src.pipelines.complicacao_status_pipeline import run_complicacao_pipeline_criar_dataset_status
 from src.pipelines.internacao_eletivo_orquestracao_pipeline import (
@@ -15,13 +8,23 @@ from src.pipelines.internacao_eletivo_orquestracao_pipeline import (
 from src.pipelines.internacao_eletivo_status_pipeline import (
     run_internacao_eletivo_pipeline_criar_dataset_status,
 )
+from src.pipelines.status_normalizar_complicacao_pipeline import (
+    run_status_normalizar_complicacao_pipeline,
+)
+from src.pipelines.status_normalizar_internacao_eletivo_pipeline import (
+    run_status_normalizar_internacao_eletivo_pipeline,
+)
+from src.services.ingestao_service import (
+    executar_ingestao_complicacao,
+    executar_ingestao_somente_status,
+    executar_ingestao_unificar,
+)
 from src.pipelines.join_status_resposta_pipeline import (
     run_status_somente_complicacao_pipeline,
     run_status_somente_internacao_eletivo_pipeline,
     run_unificar_status_resposta_complicacao_pipeline,
     run_unificar_status_resposta_internacao_eletivo_pipeline,
 )
-from src.utils.arquivos import ler_arquivo_csv
 
 
 def _combinar_etapas(resultado_etapa_1, resultado_etapa_2):
@@ -31,47 +34,6 @@ def _combinar_etapas(resultado_etapa_1, resultado_etapa_2):
         + resultado_etapa_2.get('mensagens', [])
     )
     return combinado
-
-
-def _normalizar_status_e_excluir_hsm(hsms_excluir, arquivo_saida, nome_logger):
-    resultado_ingestao = run_ingestao_somente_status(
-        arquivo_status=DEFAULTS_COMPLICACAO['arquivo_status'],
-        saida_status=DEFAULTS_COMPLICACAO['saida_status'],
-        nome_logger=nome_logger,
-    )
-    if not resultado_ingestao.get('ok'):
-        return resultado_ingestao
-
-    df_status = ler_arquivo_csv(DEFAULTS_COMPLICACAO['saida_status'])
-    if 'HSM' not in df_status.columns:
-        return {
-            'ok': False,
-            'mensagens': ['Coluna HSM nao encontrada no status normalizado para exclusao.'],
-        }
-
-    hsms_excluir_set = {str(hsm).strip() for hsm in hsms_excluir}
-    total_antes = len(df_status)
-    mask_manter = ~df_status['HSM'].astype(str).str.strip().isin(hsms_excluir_set)
-    df_filtrado = df_status[mask_manter].copy()
-    total_depois = len(df_filtrado)
-    total_excluido = total_antes - total_depois
-
-    Path(arquivo_saida).parent.mkdir(parents=True, exist_ok=True)
-    df_filtrado.to_csv(arquivo_saida, sep=';', index=False, encoding='utf-8-sig')
-
-    return {
-        'ok': True,
-        'arquivo_saida': arquivo_saida,
-        'total_antes': total_antes,
-        'total_depois': total_depois,
-        'total_excluido': total_excluido,
-        'mensagens': [
-            'Status normalizado e filtrado por exclusao de HSM com sucesso.',
-            f'total_antes={total_antes}',
-            f'total_depois={total_depois}',
-            f'total_excluido={total_excluido}',
-        ],
-    }
 
 
 def _modo_individual_bloqueado(nome_modo):
@@ -115,7 +77,7 @@ def obter_modos_individuais(permitir_execucao=False):
         return _executar_modo_individual(
             'individual_unificar_status_respostas',
             permitir_execucao,
-            lambda: run_ingestao_unificar(
+            lambda: executar_ingestao_unificar(
                 arquivo_status=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status'],
                 arquivo_status_resposta_eletivo=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status_resposta_eletivo'],
                 arquivo_status_resposta_internacao=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status_resposta_internacao'],
@@ -129,7 +91,7 @@ def obter_modos_individuais(permitir_execucao=False):
         return _executar_modo_individual(
             'individual_ingestao_complicacao',
             permitir_execucao,
-            lambda: run_ingestao_complicacao(
+            lambda: executar_ingestao_complicacao(
                 arquivo_status=DEFAULTS_COMPLICACAO['arquivo_status'],
                 arquivo_status_resposta_complicacao=DEFAULTS_COMPLICACAO['arquivo_status_resposta_complicacao'],
                 saida_status=DEFAULTS_COMPLICACAO['saida_status'],
@@ -141,7 +103,7 @@ def obter_modos_individuais(permitir_execucao=False):
         return _executar_modo_individual(
             'individual_ingestao_internacao_eletivo',
             permitir_execucao,
-            lambda: run_ingestao_unificar(
+            lambda: executar_ingestao_unificar(
                 arquivo_status=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status'],
                 arquivo_status_resposta_eletivo=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status_resposta_eletivo'],
                 arquivo_status_resposta_internacao=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status_resposta_internacao'],
@@ -155,7 +117,7 @@ def obter_modos_individuais(permitir_execucao=False):
         return _executar_modo_individual(
             'individual_status_somente_complicacao',
             permitir_execucao,
-            lambda: run_ingestao_somente_status(
+            lambda: executar_ingestao_somente_status(
                 arquivo_status=DEFAULTS_COMPLICACAO['arquivo_status'],
                 saida_status=DEFAULTS_COMPLICACAO['saida_status'],
                 nome_logger='ingestao_complicacao_individual_status',
@@ -166,7 +128,7 @@ def obter_modos_individuais(permitir_execucao=False):
         return _executar_modo_individual(
             'individual_status_somente_internacao_eletivo',
             permitir_execucao,
-            lambda: run_ingestao_somente_status(
+            lambda: executar_ingestao_somente_status(
                 arquivo_status=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status'],
                 saida_status=DEFAULTS_INTERNACAO_ELETIVO['saida_status'],
                 nome_logger='ingestao_internacao_eletivo_individual_status',
@@ -175,7 +137,7 @@ def obter_modos_individuais(permitir_execucao=False):
 
     def _run_individual_enviar_status_complicacao():
         def _executar():
-            resultado_ingestao = run_ingestao_complicacao(
+            resultado_ingestao = executar_ingestao_complicacao(
                 arquivo_status=DEFAULTS_COMPLICACAO['arquivo_status'],
                 arquivo_status_resposta_complicacao=DEFAULTS_COMPLICACAO['arquivo_status_resposta_complicacao'],
                 saida_status=DEFAULTS_COMPLICACAO['saida_status'],
@@ -201,7 +163,7 @@ def obter_modos_individuais(permitir_execucao=False):
 
     def _run_individual_enviar_status_internacao_eletivo():
         def _executar():
-            resultado_ingestao = run_ingestao_unificar(
+            resultado_ingestao = executar_ingestao_unificar(
                 arquivo_status=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status'],
                 arquivo_status_resposta_eletivo=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status_resposta_eletivo'],
                 arquivo_status_resposta_internacao=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status_resposta_internacao'],
@@ -229,7 +191,7 @@ def obter_modos_individuais(permitir_execucao=False):
 
     def _run_individual_status_filtrado_complicacao():
         def _executar():
-            resultado_ingestao = run_ingestao_somente_status(
+            resultado_ingestao = executar_ingestao_somente_status(
                 arquivo_status=DEFAULTS_COMPLICACAO['arquivo_status'],
                 saida_status=DEFAULTS_COMPLICACAO['saida_status'],
                 nome_logger='ingestao_complicacao_individual_status_filtrado',
@@ -253,7 +215,7 @@ def obter_modos_individuais(permitir_execucao=False):
 
     def _run_individual_status_filtrado_internacao_eletivo():
         def _executar():
-            resultado_ingestao = run_ingestao_somente_status(
+            resultado_ingestao = executar_ingestao_somente_status(
                 arquivo_status=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status'],
                 saida_status=DEFAULTS_INTERNACAO_ELETIVO['saida_status'],
                 nome_logger='ingestao_internacao_eletivo_individual_status_filtrado',
@@ -327,10 +289,11 @@ def obter_modos_individuais(permitir_execucao=False):
         return _executar_modo_individual(
             'individual_normalizar_status_excluir_internacao_eletivo',
             permitir_execucao,
-            lambda: _normalizar_status_e_excluir_hsm(
-                hsms_excluir=['Pesquisa_Pos_cir_urg_intern', 'Pesquisa_Pos_cir_eletivo'],
-                arquivo_saida=DEFAULTS_COMPLICACAO['saida_status_sem_internacao_eletivo'],
-                nome_logger='ingestao_individual_excluir_internacao_eletivo',
+            lambda: run_status_normalizar_internacao_eletivo_pipeline(
+                arquivo_status=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status'],
+                arquivo_status_normalizado=DEFAULTS_INTERNACAO_ELETIVO['saida_status'],
+                arquivo_saida=DEFAULTS_INTERNACAO_ELETIVO['saida_status_sem_internacao_eletivo'],
+                nome_logger='status_normalizar_internacao_eletivo_pipeline',
             ),
         )
 
@@ -338,10 +301,11 @@ def obter_modos_individuais(permitir_execucao=False):
         return _executar_modo_individual(
             'individual_normalizar_status_excluir_complicacao',
             permitir_execucao,
-            lambda: _normalizar_status_e_excluir_hsm(
-                hsms_excluir=['Pesquisa Complicações Cirurgicas', 'Pesquisa Complicacoes Cirurgicas'],
+            lambda: run_status_normalizar_complicacao_pipeline(
+                arquivo_status=DEFAULTS_COMPLICACAO['arquivo_status'],
+                arquivo_status_normalizado=DEFAULTS_COMPLICACAO['saida_status'],
                 arquivo_saida=DEFAULTS_COMPLICACAO['saida_status_sem_complicacao'],
-                nome_logger='ingestao_individual_excluir_complicacao',
+                nome_logger='status_normalizar_complicacao_pipeline',
             ),
         )
 
@@ -366,3 +330,4 @@ def obter_modos_individuais(permitir_execucao=False):
             _run_individual_normalizar_status_excluir_complicacao
         ),
     }
+
