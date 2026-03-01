@@ -16,6 +16,7 @@ from src.services.texto_service import (
     limpar_valor_texto as _limpar_valor_texto,
     normalizar_nome_serie as _normalizar_nome_serie,
     normalizar_texto_serie as _normalizar_texto_serie,
+    simplificar_texto as _simplificar_texto,
 )
 from src.services.schema_service import padronizar_colunas_status_resposta
 from src.services.validacao_service import (
@@ -23,6 +24,8 @@ from src.services.validacao_service import (
     validar_colunas_origem_dataset_complicacao,
 )
 from src.utils.arquivos import ler_arquivo_csv
+
+VALOR_SEM_TELEFONE_DISPONIVEL = 'SEM_TELEFONE_DISPONIVEL'
 
 
 def _carregar_status_para_lookup(arquivo_status_integrado):
@@ -79,6 +82,31 @@ def _carregar_status_para_lookup(arquivo_status_integrado):
         'df_status_por_contato': df_status_por_contato,
         'df_status_por_nome_tel': df_status_por_nome_tel,
     }
+
+
+def _definir_proximo_telefone_disponivel(df_saida, colunas_tel_existentes):
+    if 'PROXIMO TELEFONE DISPONIVEL' not in df_saida.columns:
+        df_saida['PROXIMO TELEFONE DISPONIVEL'] = ''
+
+    for i, coluna_tel in enumerate(colunas_tel_existentes, start=1):
+        coluna_status_tel = f'TELEFONE STATUS {i}'
+        if coluna_status_tel not in df_saida.columns:
+            continue
+
+        tel_disponivel = _normalizar_texto_serie(df_saida[coluna_tel]).apply(normalizar_telefone)
+        status_tel = _normalizar_texto_serie(df_saida[coluna_status_tel]).str.upper()
+
+        # Menor indice vence: primeiro telefone valido com status vazio.
+        mask_proximo = (
+            (df_saida['PROXIMO TELEFONE DISPONIVEL'] == '')
+            & (status_tel == '')
+            & (tel_disponivel != '')
+        )
+        df_saida.loc[mask_proximo, 'PROXIMO TELEFONE DISPONIVEL'] = coluna_tel
+
+    # Se nenhum telefone elegivel foi encontrado, marca explicitamente.
+    mask_sem_disponivel = df_saida['PROXIMO TELEFONE DISPONIVEL'] == ''
+    df_saida.loc[mask_sem_disponivel, 'PROXIMO TELEFONE DISPONIVEL'] = VALOR_SEM_TELEFONE_DISPONIVEL
 
 
 def _enriquecer_dataset_com_status(
@@ -258,16 +286,7 @@ def _enriquecer_dataset_com_status(
         )
         df_saida.loc[mask_enviado, coluna_status_tel] = 'ENVIADO'
 
-    # Seleciona o menor indice de telefone ainda nao enviado para orientar proximo disparo.
-    for i, coluna_tel in enumerate(colunas_tel_existentes, start=1):
-        coluna_status_tel = f'TELEFONE STATUS {i}'
-        tel_disponivel = _normalizar_texto_serie(df_saida[coluna_tel]).apply(normalizar_telefone)
-        mask_proximo = (
-            (df_saida['PROXIMO TELEFONE DISPONIVEL'] == '')
-            & (df_saida[coluna_status_tel] != 'ENVIADO')
-            & (tel_disponivel != '')
-        )
-        df_saida.loc[mask_proximo, 'PROXIMO TELEFONE DISPONIVEL'] = coluna_tel
+    _definir_proximo_telefone_disponivel(df_saida, colunas_tel_existentes)
 
     resultado_contagens = aplicar_contagens_status(df_saida, df_status_full)
     if not resultado_contagens['ok']:
@@ -453,9 +472,10 @@ def criar_dataset_complicacao(
     df_usuarios = df_usuarios.sort_values('__DT_ENVIO_ORDENACAO', ascending=False, na_position='last')
     df_usuarios = df_usuarios.drop(columns=['__DT_ENVIO_ORDENACAO'])
 
-    status_lidos = ['Lida', 'Não quis', 'Obito', 'Óbito']
+    status_lidos = {'lida', 'nao quis', 'obito'}
     if 'STATUS' in df_sem_duplicados.columns:
-        df_lidos_base = df_sem_duplicados[df_sem_duplicados['STATUS'].isin(status_lidos)]
+        status_norm = df_sem_duplicados['STATUS'].apply(_simplificar_texto)
+        df_lidos_base = df_sem_duplicados[status_norm.isin(status_lidos)]
     else:
         df_lidos_base = df_sem_duplicados.iloc[0:0]
     df_usuarios_lidos = _montar_df_final_complicacao(df_lidos_base)
@@ -468,10 +488,11 @@ def criar_dataset_complicacao(
     if resultado_lidos['ok']:
         df_usuarios_lidos = resultado_lidos['df_enriquecido']
 
-    status_respondidos = ['Obito', 'Óbito', 'Não quis']
+    status_respondidos = {'obito', 'nao quis'}
     if 'STATUS' in df_sem_duplicados.columns and 'P1' in df_sem_duplicados.columns:
+        status_norm = df_sem_duplicados['STATUS'].apply(_simplificar_texto)
         df_resp_base = df_sem_duplicados[
-            df_sem_duplicados['STATUS'].isin(status_respondidos)
+            status_norm.isin(status_respondidos)
             & df_sem_duplicados['P1'].notna()
         ]
     else:

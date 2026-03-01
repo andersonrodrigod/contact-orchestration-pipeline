@@ -5,6 +5,7 @@ Pipeline em duas etapas:
 - `ingestao`: leitura, validacao, normalizacao e limpeza dos arquivos.
 - `integracao`: filtro por HSM e merge entre status e status_resposta.
 - `criacao_dataset`: prepara o arquivo final para relatorio.
+- `finalizacao`: aplica classificacao (`PROCESSO`/`ACAO`) e orquestracao entre abas.
 
 O projeto roda por `main.py` e escreve logs em `logs/`.
 
@@ -30,6 +31,8 @@ O projeto roda por `main.py` e escreve logs em `logs/`.
 - `src/data/arquivo_limpo/status_internacao_eletivo.csv`
 - `src/data/arquivo_limpo/dataset_complicacao.xlsx`
 - `src/data/arquivo_limpo/dataset_internacao_eletivo.xlsx`
+- `src/data/arquivo_limpo/complicacao_final.xlsx`
+- `src/data/arquivo_limpo/internacao_final.xlsx`
 
 No modo `ambos`, cada fluxo usa arquivo intermediario proprio para evitar sobrescrita entre dependencias.
 
@@ -78,8 +81,10 @@ Os caminhos padrao de cada fluxo ficam definidos nos respectivos arquivos:
 - `src/pipelines/concatenar_status_respostas_pipeline.py`: unifica status_respostas (eletivo + internacao).
 - `src/pipelines/ingestao_pipeline.py`: ingestao.
 - `src/pipelines/criacao_dataset_pipeline.py`: execucao da criacao de dataset (ativo no modo complicacao).
+- `src/pipelines/finalizacao_pipeline.py`: etapa 3 (classificacao e orquestracao final de abas).
 - `src/services/integracao_service.py`: regras de negocio da integracao (filtro + merge).
 - `src/services/dataset_metricas_service.py`: contagens de status e agregados por chave/telefone.
+- `src/services/finalizacao_service.py`: regras da etapa final (processo/acao e movimentacao para resolvidos).
 - `src/services/texto_service.py`: normalizacao e limpeza textual compartilhada.
 - `src/services/`: regras de schema, normalizacao, validacao, integracao e dataset.
 - `core/logger.py`: logger de execucao.

@@ -14,8 +14,8 @@ STATUS_COLUNAS = {
     'usuario decidiu nao receber mkt messages': 'OPT_OUT',
 }
 
-COL_LIDA_REPOSTA_SIM = 'LIDA_REPOSTA_SIM'
-COL_LIDA_REPOSTA_NAO = 'LIDA_REPOSTA_NAO'
+COL_LIDA_RESPOSTA_SIM = 'LIDA_RESPOSTA_SIM'
+COL_LIDA_RESPOSTA_NAO = 'LIDA_RESPOSTA_NAO'
 COL_LIDA_SEM_RESPOSTA = 'LIDA_SEM_RESPOSTA'
 
 
@@ -29,8 +29,8 @@ def _normalizar_status_para_mapa(valor_status):
     if status_mapeado:
         return status_mapeado
 
-    # Fallback: preserva o valor original quando nao existir no dicionario.
-    return texto_original
+    # Ignora status fora do dicionario para nao criar colunas fora do schema final.
+    return ''
 
 
 def _normalizar_resposta_lida(valor_resposta):
@@ -72,12 +72,12 @@ def _preencher_contagens_lida_resposta(df_destino, df_origem, prefixo=''):
     df_lida = df_origem[df_origem['__STATUS_MAPEADO'] == 'LIDA']
     _preencher_contagem_sem_zero(
         df_destino,
-        f'{prefixo}{COL_LIDA_REPOSTA_SIM}',
+        f'{prefixo}{COL_LIDA_RESPOSTA_SIM}',
         df_lida[df_lida['__RESPOSTA_LIDA'] == 'SIM'].groupby('__ROW_ID').size(),
     )
     _preencher_contagem_sem_zero(
         df_destino,
-        f'{prefixo}{COL_LIDA_REPOSTA_NAO}',
+        f'{prefixo}{COL_LIDA_RESPOSTA_NAO}',
         df_lida[df_lida['__RESPOSTA_LIDA'] == 'NAO'].groupby('__ROW_ID').size(),
     )
     _preencher_contagem_sem_zero(
