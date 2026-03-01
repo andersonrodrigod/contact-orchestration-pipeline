@@ -86,7 +86,8 @@ Os caminhos padrao de cada fluxo ficam definidos nos respectivos arquivos:
 - `src/services/ingestao_service.py`: regras de ingestao (status e status_resposta).
 - `src/services/integracao_service.py`: regras de negocio da integracao (filtro + merge).
 - `src/services/dataset_metricas_service.py`: contagens de status e agregados por chave/telefone.
-- `src/services/finalizacao_service.py`: regras da etapa final (processo/acao e movimentacao para resolvidos).
+- `src/services/orquestracao_service.py`: regras da etapa final (processo/acao e movimentacao para resolvidos).
+- `src/services/padronizacao_service.py`: padronizacao de nomes de colunas das fontes.
 - `src/services/texto_service.py`: normalizacao e limpeza textual compartilhada.
-- `src/services/`: regras de schema, normalizacao, validacao, integracao e dataset.
+- `src/services/`: regras de padronizacao, normalizacao, validacao, integracao e dataset.
 - `core/logger.py`: logger de execucao.

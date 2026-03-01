@@ -6,7 +6,7 @@ from src.services.normalizacao_services import (
     limpar_texto_exceto_colunas,
     normalizar_tipos_dataframe,
 )
-from src.services.schema_service import (
+from src.services.padronizacao_service import (
     padronizar_colunas_status,
     padronizar_colunas_status_resposta,
 )

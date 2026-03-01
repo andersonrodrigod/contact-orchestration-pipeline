@@ -18,7 +18,7 @@ from src.services.texto_service import (
     normalizar_texto_serie as _normalizar_texto_serie,
     simplificar_texto as _simplificar_texto,
 )
-from src.services.schema_service import padronizar_colunas_status_resposta
+from src.services.padronizacao_service import padronizar_colunas_status_resposta
 from src.services.validacao_service import (
     validar_colunas_minimas_status_resposta,
     validar_colunas_origem_dataset_complicacao,
