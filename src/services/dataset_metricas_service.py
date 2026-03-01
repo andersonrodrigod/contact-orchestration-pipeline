@@ -13,6 +13,7 @@ STATUS_COLUNAS = {
     'numero e parte de um experimento': 'EXPERIMENTO',
     'usuario decidiu nao receber mkt messages': 'OPT_OUT',
 }
+COLUNAS_STATUS_MAPEADAS = list(dict.fromkeys(STATUS_COLUNAS.values()))
 
 COL_LIDA_RESPOSTA_SIM = 'LIDA_RESPOSTA_SIM'
 COL_LIDA_RESPOSTA_NAO = 'LIDA_RESPOSTA_NAO'
@@ -54,12 +55,7 @@ def _preencher_contagem_sem_zero(df, coluna, serie_contagem):
 
 
 def _preencher_contagens_status_mapeado(df_destino, df_origem, prefixo=''):
-    status_unicos = [
-        str(valor).strip()
-        for valor in df_origem['__STATUS_MAPEADO'].dropna().unique().tolist()
-        if str(valor).strip() != ''
-    ]
-    for coluna_destino in status_unicos:
+    for coluna_destino in COLUNAS_STATUS_MAPEADAS:
         serie = (
             df_origem[df_origem['__STATUS_MAPEADO'] == coluna_destino]
             .groupby('__ROW_ID')
@@ -106,6 +102,7 @@ def _normalizar_status_para_contagens(df_status_full):
 
 def aplicar_contagens_status(df_saida, df_status_full):
     df_status = _normalizar_status_para_contagens(df_status_full)
+    colunas_status_join = ['Contato', 'Telefone', '__STATUS_MAPEADO', '__RESPOSTA_LIDA']
 
     df_base = df_saida.copy()
     df_base['__ROW_ID'] = df_base.index
@@ -114,7 +111,7 @@ def aplicar_contagens_status(df_saida, df_status_full):
 
     # Join principal: CHAVE STATUS + TELEFONE ENVIADO
     df_join_envio = df_base.merge(
-        df_status[['Contato', 'Telefone', '__STATUS_MAPEADO', '__RESPOSTA_LIDA']],
+        df_status[colunas_status_join],
         left_on=['__CHAVE_STATUS_NORM', '__TEL_ENVIADO_NORM'],
         right_on=['Contato', 'Telefone'],
         how='left',
@@ -133,7 +130,7 @@ def aplicar_contagens_status(df_saida, df_status_full):
 
     # Contagem geral por CHAVE STATUS (sem telefone)
     df_join_chave = df_base.merge(
-        df_status[['Contato', 'Telefone', '__STATUS_MAPEADO', '__RESPOSTA_LIDA']],
+        df_status[colunas_status_join],
         left_on='__CHAVE_STATUS_NORM',
         right_on='Contato',
         how='left',

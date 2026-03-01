@@ -488,13 +488,19 @@ def criar_dataset_complicacao(
     if resultado_lidos['ok']:
         df_usuarios_lidos = resultado_lidos['df_enriquecido']
 
-    status_respondidos = {'obito', 'nao quis'}
-    if 'STATUS' in df_sem_duplicados.columns and 'P1' in df_sem_duplicados.columns:
+    if 'P1' in df_sem_duplicados.columns:
+        p1_preenchido = _normalizar_texto_serie(df_sem_duplicados['P1']) != ''
+        if 'STATUS' in df_sem_duplicados.columns:
+            status_respondidos = {'obito', 'nao quis'}
+            status_norm = df_sem_duplicados['STATUS'].apply(_simplificar_texto)
+            mask_respondidos = p1_preenchido | status_norm.isin(status_respondidos)
+        else:
+            mask_respondidos = p1_preenchido
+        df_resp_base = df_sem_duplicados[mask_respondidos]
+    elif 'STATUS' in df_sem_duplicados.columns:
+        status_respondidos = {'obito', 'nao quis'}
         status_norm = df_sem_duplicados['STATUS'].apply(_simplificar_texto)
-        df_resp_base = df_sem_duplicados[
-            status_norm.isin(status_respondidos)
-            & df_sem_duplicados['P1'].notna()
-        ]
+        df_resp_base = df_sem_duplicados[status_norm.isin(status_respondidos)]
     else:
         df_resp_base = df_sem_duplicados.iloc[0:0]
     df_usuarios_respondidos = _montar_df_final_complicacao(df_resp_base)
