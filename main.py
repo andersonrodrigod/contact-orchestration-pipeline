@@ -2,10 +2,14 @@ import argparse
 from core.pipeline_result import PipelineResult
 
 from src.pipelines.complicacao_pipeline import (
+    run_complicacao_pipeline_finalizar,
+    run_complicacao_pipeline_gerar_status_dataset,
     run_pipeline_complicacao_com_resposta,
     run_pipeline_complicacao_somente_status,
 )
 from src.pipelines.internacao_eletivo_pipeline import (
+    run_internacao_eletivo_pipeline_finalizar,
+    run_internacao_eletivo_pipeline_gerar_status_dataset,
     run_pipeline_internacao_eletivo_com_resposta,
     run_pipeline_internacao_eletivo_somente_status,
 )
@@ -16,9 +20,13 @@ MODO_FUNCAO = {
     'complicacao_com_resposta': run_pipeline_complicacao_com_resposta,
     'complicacao': run_pipeline_complicacao_com_resposta,
     'complicacao_somente_status': run_pipeline_complicacao_somente_status,
+    'complicacao_gerar_status_dataset': run_complicacao_pipeline_gerar_status_dataset,
+    'complicacao_finalizar_status': run_complicacao_pipeline_finalizar,
     'internacao_eletivo_com_resposta': run_pipeline_internacao_eletivo_com_resposta,
     'internacao_eletivo': run_pipeline_internacao_eletivo_com_resposta,
     'internacao_eletivo_somente_status': run_pipeline_internacao_eletivo_somente_status,
+    'internacao_eletivo_gerar_status_dataset': run_internacao_eletivo_pipeline_gerar_status_dataset,
+    'internacao_eletivo_finalizar_status': run_internacao_eletivo_pipeline_finalizar,
 }
 
 
@@ -29,8 +37,12 @@ def run_pipeline():
         choices=[
             'complicacao_com_resposta',
             'complicacao_somente_status',
+            'complicacao_gerar_status_dataset',
+            'complicacao_finalizar_status',
             'internacao_eletivo_com_resposta',
             'internacao_eletivo_somente_status',
+            'internacao_eletivo_gerar_status_dataset',
+            'internacao_eletivo_finalizar_status',
             'ambos_com_resposta',
             'ambos_somente_status',
             'complicacao',

@@ -16,8 +16,55 @@ def run_complicacao_pipeline(
     saida_status='src/data/arquivo_limpo/status_limpo.csv',
     saida_status_resposta='src/data/arquivo_limpo/status_resposta_complicacao_limpo.csv',
     saida_status_integrado='src/data/arquivo_limpo/status_complicacao.csv',
-    saida_dataset='src/data/arquivo_limpo/dataset_complicacao.xlsx',
+    saida_dataset_status='src/data/arquivo_limpo/complicacao_status.xlsx',
     saida_dataset_final='src/data/arquivo_limpo/complicacao_final.xlsx',
+):
+    resultado_status = run_complicacao_pipeline_gerar_status_dataset(
+        arquivo_status=arquivo_status,
+        arquivo_status_resposta_complicacao=arquivo_status_resposta_complicacao,
+        arquivo_dataset_origem_complicacao=arquivo_dataset_origem_complicacao,
+        saida_status=saida_status,
+        saida_status_resposta=saida_status_resposta,
+        saida_status_integrado=saida_status_integrado,
+        saida_dataset_status=saida_dataset_status,
+    )
+    if not resultado_status.get('ok'):
+        return resultado_status
+
+    resultado_finalizacao = run_complicacao_pipeline_finalizar(
+        arquivo_dataset_status=saida_dataset_status,
+        arquivo_saida_final=saida_dataset_final,
+        nome_logger='finalizacao_complicacao',
+    )
+    if not resultado_finalizacao.get('ok'):
+        return resultado_finalizacao
+
+    return ok_result(
+        mensagens=(
+            resultado_status.get('mensagens', [])
+            + resultado_finalizacao.get('mensagens', [])
+        ),
+        metricas={
+            'total_status': resultado_status.get('total_status', 0),
+            'com_match': resultado_status.get('com_match', 0),
+            'sem_match': resultado_status.get('sem_match', 0),
+            'total_linhas': resultado_status.get('total_linhas', 0),
+        },
+        arquivos={
+            'arquivo_status_dataset': resultado_status.get('arquivo_status_dataset'),
+            'arquivo_saida': resultado_finalizacao.get('arquivo_saida'),
+        },
+    )
+
+
+def run_complicacao_pipeline_gerar_status_dataset(
+    arquivo_status='src/data/status.csv',
+    arquivo_status_resposta_complicacao='src/data/status_resposta_complicacao.csv',
+    arquivo_dataset_origem_complicacao='src/data/complicacao.xlsx',
+    saida_status='src/data/arquivo_limpo/status_limpo.csv',
+    saida_status_resposta='src/data/arquivo_limpo/status_resposta_complicacao_limpo.csv',
+    saida_status_integrado='src/data/arquivo_limpo/status_complicacao.csv',
+    saida_dataset_status='src/data/arquivo_limpo/complicacao_status.xlsx',
 ):
     resultado_ingestao = run_ingestao_complicacao(
         arquivo_status=arquivo_status,
@@ -39,26 +86,17 @@ def run_complicacao_pipeline(
     resultado_dataset = run_criacao_dataset_pipeline(
         arquivo_origem_dataset=arquivo_dataset_origem_complicacao,
         arquivo_status_integrado=saida_status_integrado,
-        arquivo_saida_dataset=saida_dataset,
+        arquivo_saida_dataset=saida_dataset_status,
         nome_logger='criacao_dataset_complicacao',
         contexto='complicacao',
     )
     if not resultado_dataset.get('ok'):
         return resultado_dataset
 
-    resultado_finalizacao = run_finalizacao_pipeline(
-        arquivo_dataset_entrada=saida_dataset,
-        arquivo_dataset_saida=saida_dataset_final,
-        nome_logger='finalizacao_complicacao',
-    )
-    if not resultado_finalizacao.get('ok'):
-        return resultado_finalizacao
-
     return ok_result(
         mensagens=(
             resultado_integracao.get('mensagens', [])
             + resultado_dataset.get('mensagens', [])
-            + resultado_finalizacao.get('mensagens', [])
         ),
         metricas={
             'total_status': resultado_integracao.get('total_status', 0),
@@ -66,8 +104,24 @@ def run_complicacao_pipeline(
             'sem_match': resultado_integracao.get('sem_match', 0),
             'total_linhas': resultado_dataset.get('total_linhas', 0),
         },
-        arquivos={'arquivo_saida': resultado_finalizacao.get('arquivo_saida')},
+        arquivos={'arquivo_status_dataset': resultado_dataset.get('arquivo_saida')},
     )
+
+
+def run_complicacao_pipeline_finalizar(
+    arquivo_dataset_status='src/data/arquivo_limpo/complicacao_status.xlsx',
+    arquivo_saida_final='src/data/arquivo_limpo/complicacao_final.xlsx',
+    nome_logger='finalizacao_complicacao',
+):
+    resultado_finalizacao = run_finalizacao_pipeline(
+        arquivo_dataset_entrada=arquivo_dataset_status,
+        arquivo_dataset_saida=arquivo_saida_final,
+        nome_logger=nome_logger,
+    )
+    if not resultado_finalizacao.get('ok'):
+        return resultado_finalizacao
+
+    return resultado_finalizacao
 
 
 def run_pipeline_complicacao_com_resposta():
@@ -78,7 +132,7 @@ def run_pipeline_complicacao_com_resposta():
         saida_status=DEFAULTS_COMPLICACAO['saida_status'],
         saida_status_resposta=DEFAULTS_COMPLICACAO['saida_status_resposta'],
         saida_status_integrado=DEFAULTS_COMPLICACAO['saida_status_integrado'],
-        saida_dataset=DEFAULTS_COMPLICACAO['saida_dataset'],
+        saida_dataset_status=DEFAULTS_COMPLICACAO['saida_dataset_status'],
         saida_dataset_final=DEFAULTS_COMPLICACAO['saida_dataset_final'],
     )
 
@@ -102,7 +156,7 @@ def run_pipeline_complicacao_somente_status():
     resultado_dataset = run_criacao_dataset_pipeline(
         arquivo_origem_dataset=DEFAULTS_COMPLICACAO['arquivo_dataset_origem_complicacao'],
         arquivo_status_integrado=DEFAULTS_COMPLICACAO['saida_status_integrado'],
-        arquivo_saida_dataset=DEFAULTS_COMPLICACAO['saida_dataset'],
+        arquivo_saida_dataset=DEFAULTS_COMPLICACAO['saida_dataset_status'],
         nome_logger='criacao_dataset_complicacao_somente_status',
         contexto='complicacao',
     )
@@ -110,7 +164,7 @@ def run_pipeline_complicacao_somente_status():
         return resultado_dataset
 
     resultado_finalizacao = run_finalizacao_pipeline(
-        arquivo_dataset_entrada=DEFAULTS_COMPLICACAO['saida_dataset'],
+        arquivo_dataset_entrada=DEFAULTS_COMPLICACAO['saida_dataset_status'],
         arquivo_dataset_saida=DEFAULTS_COMPLICACAO['saida_dataset_final'],
         nome_logger='finalizacao_complicacao_somente_status',
     )
