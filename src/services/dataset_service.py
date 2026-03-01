@@ -123,6 +123,7 @@ def _enriquecer_dataset_com_status(
     df_saida['CHAVE STATUS'] = ''
     df_saida['STATUS CHAVE'] = ''
     df_saida['TELEFONE PRIORIDADE'] = ''
+    df_saida['PROXIMO TELEFONE DISPONIVEL'] = ''
     df_saida['STATUS TELEFONE'] = ''
     for i in range(1, 6):
         col_status_tel = f'TELEFONE STATUS {i}'
@@ -257,6 +258,17 @@ def _enriquecer_dataset_com_status(
         )
         df_saida.loc[mask_enviado, coluna_status_tel] = 'ENVIADO'
 
+    # Seleciona o menor indice de telefone ainda nao enviado para orientar proximo disparo.
+    for i, coluna_tel in enumerate(colunas_tel_existentes, start=1):
+        coluna_status_tel = f'TELEFONE STATUS {i}'
+        tel_disponivel = _normalizar_texto_serie(df_saida[coluna_tel]).apply(normalizar_telefone)
+        mask_proximo = (
+            (df_saida['PROXIMO TELEFONE DISPONIVEL'] == '')
+            & (df_saida[coluna_status_tel] != 'ENVIADO')
+            & (tel_disponivel != '')
+        )
+        df_saida.loc[mask_proximo, 'PROXIMO TELEFONE DISPONIVEL'] = coluna_tel
+
     resultado_contagens = aplicar_contagens_status(df_saida, df_status_full)
     if not resultado_contagens['ok']:
         return resultado_contagens
@@ -270,6 +282,7 @@ def _enriquecer_dataset_com_status(
         'CHAVE STATUS',
         'STATUS CHAVE',
         'TELEFONE PRIORIDADE',
+        'PROXIMO TELEFONE DISPONIVEL',
         'STATUS TELEFONE',
         'TELEFONE STATUS 1',
         'TELEFONE STATUS 2',
