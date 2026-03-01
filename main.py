@@ -47,7 +47,13 @@ def _modo_individual_bloqueado(nome_modo):
 def _executar_modo_individual(nome_modo, funcao_execucao):
     if not ALLOW_MODOS_INDIVIDUAIS:
         return _modo_individual_bloqueado(nome_modo)
-    return funcao_execucao()
+    try:
+        return funcao_execucao()
+    except Exception as erro:
+        return {
+            'ok': False,
+            'mensagens': [f'Erro no modo individual "{nome_modo}": {type(erro).__name__}: {erro}'],
+        }
 
 
 def _run_individual_unificar_status_respostas():
@@ -216,7 +222,7 @@ MODOS_INDIVIDUAIS = {
 }
 
 
-MODO_FUNCAO = {
+MODO_FUNCAO_PRINCIPAL = {
     'complicacao_com_resposta': run_pipeline_complicacao_com_resposta,
     'complicacao': run_pipeline_complicacao_com_resposta,
     'complicacao_somente_status': run_pipeline_complicacao_somente_status,
@@ -228,29 +234,20 @@ MODO_FUNCAO = {
     'internacao_eletivo_gerar_status_dataset': run_internacao_eletivo_pipeline_gerar_status_dataset,
     'internacao_eletivo_finalizar_status': run_internacao_eletivo_pipeline_finalizar,
 }
+MODO_FUNCAO = dict(MODO_FUNCAO_PRINCIPAL)
 MODO_FUNCAO.update(MODOS_INDIVIDUAIS)
 
 
 def run_pipeline():
     parser = argparse.ArgumentParser()
+    modos_principais = list(MODO_FUNCAO_PRINCIPAL.keys())
+    modos_agregados = ['ambos_com_resposta', 'ambos_somente_status', 'ambos']
+    modos_individuais = list(MODOS_INDIVIDUAIS.keys())
+    escolhas_modo = modos_principais + modos_agregados + modos_individuais
+
     parser.add_argument(
         '--modo',
-        choices=[
-            'complicacao_com_resposta',
-            'complicacao_somente_status',
-            'complicacao_gerar_status_dataset',
-            'complicacao_finalizar_status',
-            'internacao_eletivo_com_resposta',
-            'internacao_eletivo_somente_status',
-            'internacao_eletivo_gerar_status_dataset',
-            'internacao_eletivo_finalizar_status',
-            'ambos_com_resposta',
-            'ambos_somente_status',
-            'complicacao',
-            'internacao_eletivo',
-            'ambos',
-            *MODOS_INDIVIDUAIS.keys(),
-        ],
+        choices=escolhas_modo,
         default='ambos_com_resposta',
     )
     args = parser.parse_args()

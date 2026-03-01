@@ -148,10 +148,23 @@ def orquestrar_usuarios_respondidos(df_usuarios, df_usuarios_respondidos):
 
 def gerar_dataset_final(arquivo_dataset_entrada, arquivo_dataset_saida):
     planilhas = pd.read_excel(arquivo_dataset_entrada, sheet_name=None)
+    if len(planilhas) == 0:
+        return {
+            'ok': False,
+            'mensagens': ['Arquivo de entrada nao possui abas para finalizacao.'],
+        }
+    if 'usuarios' not in planilhas:
+        return {
+            'ok': False,
+            'mensagens': ['Aba obrigatoria "usuarios" nao encontrada no arquivo de entrada.'],
+        }
+
+    mensagens = []
 
     for aba in ABAS_PADRAO:
         if aba not in planilhas:
             planilhas[aba] = pd.DataFrame()
+            mensagens.append(f'Aba ausente criada automaticamente: {aba}')
 
     usuarios = planilhas['usuarios'].copy()
     usuarios_respondidos = planilhas['usuarios_respondidos'].copy()
@@ -181,10 +194,19 @@ def gerar_dataset_final(arquivo_dataset_entrada, arquivo_dataset_saida):
         for aba, df in planilhas.items():
             df.to_excel(writer, sheet_name=aba[:31], index=False)
 
+    if len(planilhas['usuarios']) == 0:
+        mensagens.append('Aba usuarios foi gerada vazia.')
+    if len(planilhas['usuarios_respondidos']) == 0:
+        mensagens.append('Aba usuarios_respondidos esta vazia; nenhuma movimentacao para resolvidos foi feita.')
+    if len(mensagens) == 0:
+        mensagens = ['Finalizacao de dataset executada com sucesso.']
+    else:
+        mensagens.insert(0, 'Finalizacao de dataset executada com sucesso.')
+
     return {
         'ok': True,
         'arquivo_saida': arquivo_dataset_saida,
         'total_usuarios': len(planilhas['usuarios']),
         'total_usuarios_resolvidos': len(planilhas['usuarios_resolvidos']),
-        'mensagens': ['Finalizacao de dataset executada com sucesso.'],
+        'mensagens': mensagens,
     }

@@ -101,6 +101,22 @@ def _normalizar_status_para_contagens(df_status_full):
 
 
 def aplicar_contagens_status(df_saida, df_status_full):
+    colunas_obrigatorias_saida = ['CHAVE STATUS', 'TELEFONE ENVIADO']
+    faltando_saida = [c for c in colunas_obrigatorias_saida if c not in df_saida.columns]
+    if len(faltando_saida) > 0:
+        return {
+            'ok': False,
+            'mensagens': [f'Colunas obrigatorias ausentes no dataset para contagem: {faltando_saida}'],
+        }
+
+    colunas_obrigatorias_status = ['Contato', 'Telefone', 'Status']
+    faltando_status = [c for c in colunas_obrigatorias_status if c not in df_status_full.columns]
+    if len(faltando_status) > 0:
+        return {
+            'ok': False,
+            'mensagens': [f'Colunas obrigatorias ausentes no status para contagem: {faltando_status}'],
+        }
+
     df_status = _normalizar_status_para_contagens(df_status_full)
     colunas_status_join = ['Contato', 'Telefone', '__STATUS_MAPEADO', '__RESPOSTA_LIDA']
 

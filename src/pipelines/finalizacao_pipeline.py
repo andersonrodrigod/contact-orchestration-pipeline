@@ -1,5 +1,6 @@
 from core.logger import PipelineLogger
 from src.services.finalizacao_service import gerar_dataset_final
+from src.utils.arquivos import validar_arquivos_existem
 
 
 def run_finalizacao_pipeline(
@@ -12,6 +13,18 @@ def run_finalizacao_pipeline(
     logger.info('INICIO', f'arquivo_dataset_saida={arquivo_dataset_saida}')
 
     try:
+        validacao_arquivos = validar_arquivos_existem(
+            {'arquivo_dataset_entrada': arquivo_dataset_entrada}
+        )
+        if not validacao_arquivos['ok']:
+            for mensagem in validacao_arquivos['mensagens']:
+                logger.error('VALIDACAO_ARQUIVOS', mensagem)
+            logger.finalizar('FALHA_VALIDACAO_ARQUIVOS')
+            return {
+                'ok': False,
+                'mensagens': validacao_arquivos['mensagens'],
+            }
+
         resultado = gerar_dataset_final(
             arquivo_dataset_entrada=arquivo_dataset_entrada,
             arquivo_dataset_saida=arquivo_dataset_saida,

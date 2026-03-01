@@ -1,4 +1,5 @@
 import pandas as pd
+from pathlib import Path
 
 
 def _delimitador_mais_provavel(caminho_arquivo):
@@ -61,4 +62,31 @@ def ler_arquivo_csv(caminho_arquivo, separador=';'):
         1,
         f'Nao foi possivel ler {caminho_arquivo} com os encodings: {encodings}',
     )
+
+
+def arquivo_existe(caminho_arquivo):
+    try:
+        return Path(caminho_arquivo).exists()
+    except OSError:
+        return False
+
+
+def validar_arquivos_existem(caminhos_por_nome):
+    faltando = []
+    for nome, caminho in caminhos_por_nome.items():
+        if not arquivo_existe(caminho):
+            faltando.append(f'{nome}: {caminho}')
+
+    if len(faltando) > 0:
+        return {
+            'ok': False,
+            'mensagens': ['Arquivos obrigatorios nao encontrados:'] + faltando,
+            'faltando': faltando,
+        }
+
+    return {
+        'ok': True,
+        'mensagens': ['Todos os arquivos obrigatorios foram encontrados.'],
+        'faltando': [],
+    }
 

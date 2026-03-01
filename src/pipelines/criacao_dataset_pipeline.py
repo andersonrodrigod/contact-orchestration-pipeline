@@ -2,7 +2,7 @@ from core.logger import PipelineLogger
 from core.pipeline_result import error_result
 from src.services.dataset_service import criar_dataset_complicacao
 from src.services.validacao_service import validar_colunas_origem_dataset_complicacao
-from src.utils.arquivos import ler_arquivo_csv
+from src.utils.arquivos import ler_arquivo_csv, validar_arquivos_existem
 
 
 def run_criacao_dataset_pipeline(
@@ -18,6 +18,18 @@ def run_criacao_dataset_pipeline(
     logger.info('INICIO', f'arquivo_saida_dataset={arquivo_saida_dataset}')
 
     try:
+        validacao_arquivos = validar_arquivos_existem(
+            {
+                'arquivo_origem_dataset': arquivo_origem_dataset,
+                'arquivo_status_integrado': arquivo_status_integrado,
+            }
+        )
+        if not validacao_arquivos['ok']:
+            for mensagem in validacao_arquivos['mensagens']:
+                logger.error('VALIDACAO_ARQUIVOS', mensagem)
+            logger.finalizar('FALHA_VALIDACAO_ARQUIVOS')
+            return error_result(mensagens=validacao_arquivos['mensagens'])
+
         df_origem = ler_arquivo_csv(arquivo_origem_dataset)
         colunas_arquivo = [str(col).strip() for col in df_origem.columns]
         logger.info('VALIDACAO_COLUNAS', f'colunas_arquivo={colunas_arquivo}')
