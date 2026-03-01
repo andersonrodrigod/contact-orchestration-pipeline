@@ -5,9 +5,7 @@ from src.services.texto_service import normalizar_texto_serie
 VALOR_SEM_TELEFONE_DISPONIVEL = 'SEM_TELEFONE_DISPONIVEL'
 MARCADOR_ACAO_PROXIMO = '__PROXIMO__'
 MARCADOR_ACAO_PRIORIDADE = '__PRIORIDADE__'
-PROCESSO_SEM_TELEFONE = 'SEM_TELEFONE_PARA_MAIS_DISPARO'
 PROCESSO_RESOLVIDO = 'RESOLVIDO'
-PROCESSOS_PRIORITARIOS = {'ENCERRAR_CONTATO_LIDO_SIM', 'ENCERRAR_CONTATO_NAO_QUIS'}
 
 ABAS_PADRAO = [
     'usuarios',
@@ -120,11 +118,6 @@ def aplicar_classificacao_processo_acao(df):
         else:
             df.loc[mask, 'ACAO'] = acao
 
-    mask_sem_telefone = (
-        (proximo_tel == VALOR_SEM_TELEFONE_DISPONIVEL)
-        & (~df['PROCESSO'].isin(PROCESSOS_PRIORITARIOS))
-    )
-    df.loc[mask_sem_telefone, 'PROCESSO'] = PROCESSO_SEM_TELEFONE
     return df
 
 

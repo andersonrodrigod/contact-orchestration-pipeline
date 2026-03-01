@@ -434,6 +434,20 @@ def criar_dataset_complicacao(
             'colunas_faltando': validacao_colunas['colunas_faltando'],
         }
 
+    colunas_criticas_segmentacao = ['STATUS', 'P1']
+    colunas_criticas_faltando = [c for c in colunas_criticas_segmentacao if c not in df.columns]
+    if len(colunas_criticas_faltando) > 0:
+        return {
+            'ok': False,
+            'mensagens': [
+                'Estrutura de segmentacao invalida para abas secundarias.',
+                f'Colunas obrigatorias ausentes: {colunas_criticas_faltando}',
+                'Ajuste os nomes das colunas para STATUS e P1 no arquivo de origem.',
+            ],
+            'colunas_arquivo': list(df.columns),
+            'colunas_faltando': colunas_criticas_faltando,
+        }
+
     mask_duplicados = df.duplicated(subset=['COD USUARIO'], keep=False)
     df_duplicados = df[mask_duplicados].copy()
     df_sem_duplicados = df[~mask_duplicados].copy()

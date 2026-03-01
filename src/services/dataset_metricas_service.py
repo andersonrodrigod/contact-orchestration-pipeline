@@ -85,7 +85,7 @@ def _preencher_contagens_lida_resposta(df_destino, df_origem, prefixo=''):
 
 def _normalizar_status_para_contagens(df_status_full):
     df_status = df_status_full.copy()
-    col_resposta = 'Resposta' if 'Resposta' in df_status.columns else 'RESPOSTA'
+    col_resposta = 'RESPOSTA' if 'RESPOSTA' in df_status.columns else 'Resposta'
     if col_resposta not in df_status.columns:
         df_status[col_resposta] = ''
 

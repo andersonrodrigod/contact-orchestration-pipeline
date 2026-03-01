@@ -1,4 +1,5 @@
 import argparse
+from core.logger import PipelineLogger
 from core.pipeline_result import PipelineResult
 
 from src.config.paths import DEFAULTS_COMPLICACAO, DEFAULTS_INTERNACAO_ELETIVO
@@ -35,6 +36,9 @@ ALLOW_MODOS_INDIVIDUAIS = False
 
 
 def _modo_individual_bloqueado(nome_modo):
+    logger = PipelineLogger(nome_pipeline=f'main_{nome_modo}')
+    logger.warning('MODO_INDIVIDUAL', 'Modo individual desabilitado por configuracao')
+    logger.finalizar('BLOQUEADO')
     return {
         'ok': False,
         'mensagens': [
@@ -47,9 +51,18 @@ def _modo_individual_bloqueado(nome_modo):
 def _executar_modo_individual(nome_modo, funcao_execucao):
     if not ALLOW_MODOS_INDIVIDUAIS:
         return _modo_individual_bloqueado(nome_modo)
+    logger = PipelineLogger(nome_pipeline=f'main_{nome_modo}')
+    logger.info('MODO_INDIVIDUAL', 'Modo individual habilitado')
     try:
-        return funcao_execucao()
+        resultado = funcao_execucao()
+        logger.info('RESULTADO', f"ok={resultado.get('ok', False)}")
+        for mensagem in resultado.get('mensagens', []):
+            logger.info('RESULTADO', mensagem)
+        logger.finalizar('SUCESSO' if resultado.get('ok') else 'FALHA')
+        return resultado
     except Exception as erro:
+        logger.exception('ERRO_EXECUCAO', erro)
+        logger.finalizar('ERRO')
         return {
             'ok': False,
             'mensagens': [f'Erro no modo individual "{nome_modo}": {type(erro).__name__}: {erro}'],
@@ -257,16 +270,54 @@ def run_pipeline():
         return funcao_modo()
 
     if args.modo in ['ambos_com_resposta', 'ambos']:
+        logger_ambos = PipelineLogger(nome_pipeline='main_ambos_com_resposta')
         resultado_complicacao = run_pipeline_complicacao_com_resposta()
         resultado_internacao_eletivo = run_pipeline_internacao_eletivo_com_resposta()
     else:
+        logger_ambos = PipelineLogger(nome_pipeline='main_ambos_somente_status')
         resultado_complicacao = run_pipeline_complicacao_somente_status()
         resultado_internacao_eletivo = run_pipeline_internacao_eletivo_somente_status()
 
-    ok_geral = resultado_complicacao.get('ok', False) and resultado_internacao_eletivo.get('ok', False)
+    ok_complicacao = resultado_complicacao.get('ok', False)
+    ok_internacao = resultado_internacao_eletivo.get('ok', False)
+    ok_geral = ok_complicacao and ok_internacao
+
+    logger_ambos.info('RESULTADO_EXECUCAO', f'complicacao_ok={ok_complicacao}')
+    logger_ambos.info('RESULTADO_EXECUCAO', f'internacao_eletivo_ok={ok_internacao}')
+
+    mensagens_complicacao = resultado_complicacao.get('mensagens', [])
+    mensagens_internacao = resultado_internacao_eletivo.get('mensagens', [])
+
+    if not ok_complicacao:
+        logger_ambos.error('FALHA_PARCIAL', 'Falha na execucao: complicacao')
+        for mensagem in mensagens_complicacao:
+            logger_ambos.error('FALHA_PARCIAL', f'complicacao: {mensagem}')
+
+    if not ok_internacao:
+        logger_ambos.error('FALHA_PARCIAL', 'Falha na execucao: internacao_eletivo')
+        for mensagem in mensagens_internacao:
+            logger_ambos.error('FALHA_PARCIAL', f'internacao_eletivo: {mensagem}')
+
+    if ok_geral:
+        mensagem_resumo = 'Execucao em modo ambos finalizada com sucesso.'
+        logger_ambos.finalizar('SUCESSO')
+    elif ok_complicacao != ok_internacao:
+        mensagem_resumo = (
+            'Execucao em modo ambos finalizada com falha parcial. '
+            'Verifique qual pipeline falhou nas mensagens e no log.'
+        )
+        logger_ambos.finalizar('FALHA_PARCIAL')
+    else:
+        mensagem_resumo = 'Execucao em modo ambos finalizada com falha total.'
+        logger_ambos.finalizar('FALHA_TOTAL')
+
     return PipelineResult(
         ok=ok_geral,
-        mensagens=['Execucao em modo ambos finalizada.'],
+        mensagens=[
+            mensagem_resumo,
+            f'complicacao_ok={ok_complicacao}',
+            f'internacao_eletivo_ok={ok_internacao}',
+        ],
         dados={
             'resultados': {
                 'complicacao': resultado_complicacao,
