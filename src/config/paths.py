@@ -7,6 +7,8 @@ DEFAULTS_COMPLICACAO = {
     'saida_status_integrado': 'src/data/arquivo_limpo/status_complicacao.csv',
     'saida_dataset_status': 'src/data/arquivo_limpo/complicacao_status.xlsx',
     'saida_dataset_final': 'src/data/arquivo_limpo/complicacao_final.xlsx',
+    'saida_status_sem_internacao_eletivo': 'src/data/arquivo_limpo/status_sem_internacao_eletivo.csv',
+    'saida_status_sem_complicacao': 'src/data/arquivo_limpo/status_sem_complicacao.csv',
 }
 
 
@@ -21,4 +23,6 @@ DEFAULTS_INTERNACAO_ELETIVO = {
     'saida_status_integrado': 'src/data/arquivo_limpo/status_internacao_eletivo.csv',
     'saida_dataset_status': 'src/data/arquivo_limpo/internacao_status.xlsx',
     'saida_dataset_final': 'src/data/arquivo_limpo/internacao_final.xlsx',
+    'saida_status_sem_internacao_eletivo': 'src/data/arquivo_limpo/status_sem_internacao_eletivo.csv',
+    'saida_status_sem_complicacao': 'src/data/arquivo_limpo/status_sem_complicacao.csv',
 }

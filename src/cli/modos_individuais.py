@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from core.logger import PipelineLogger
 from src.config.paths import DEFAULTS_COMPLICACAO, DEFAULTS_INTERNACAO_ELETIVO
 from src.pipelines.criacao_dataset_pipeline import run_criacao_dataset_pipeline
@@ -13,6 +15,7 @@ from src.pipelines.join_status_resposta_pipeline import (
     run_unificar_status_resposta_complicacao_pipeline,
     run_unificar_status_resposta_internacao_eletivo_pipeline,
 )
+from src.utils.arquivos import ler_arquivo_csv
 
 
 def _combinar_etapas(resultado_etapa_1, resultado_etapa_2):
@@ -22,6 +25,47 @@ def _combinar_etapas(resultado_etapa_1, resultado_etapa_2):
         + resultado_etapa_2.get('mensagens', [])
     )
     return combinado
+
+
+def _normalizar_status_e_excluir_hsm(hsms_excluir, arquivo_saida, nome_logger):
+    resultado_ingestao = run_ingestao_somente_status(
+        arquivo_status=DEFAULTS_COMPLICACAO['arquivo_status'],
+        saida_status=DEFAULTS_COMPLICACAO['saida_status'],
+        nome_logger=nome_logger,
+    )
+    if not resultado_ingestao.get('ok'):
+        return resultado_ingestao
+
+    df_status = ler_arquivo_csv(DEFAULTS_COMPLICACAO['saida_status'])
+    if 'HSM' not in df_status.columns:
+        return {
+            'ok': False,
+            'mensagens': ['Coluna HSM nao encontrada no status normalizado para exclusao.'],
+        }
+
+    hsms_excluir_set = {str(hsm).strip() for hsm in hsms_excluir}
+    total_antes = len(df_status)
+    mask_manter = ~df_status['HSM'].astype(str).str.strip().isin(hsms_excluir_set)
+    df_filtrado = df_status[mask_manter].copy()
+    total_depois = len(df_filtrado)
+    total_excluido = total_antes - total_depois
+
+    Path(arquivo_saida).parent.mkdir(parents=True, exist_ok=True)
+    df_filtrado.to_csv(arquivo_saida, sep=';', index=False, encoding='utf-8-sig')
+
+    return {
+        'ok': True,
+        'arquivo_saida': arquivo_saida,
+        'total_antes': total_antes,
+        'total_depois': total_depois,
+        'total_excluido': total_excluido,
+        'mensagens': [
+            'Status normalizado e filtrado por exclusao de HSM com sucesso.',
+            f'total_antes={total_antes}',
+            f'total_depois={total_depois}',
+            f'total_excluido={total_excluido}',
+        ],
+    }
 
 
 def _modo_individual_bloqueado(nome_modo):
@@ -273,6 +317,28 @@ def obter_modos_individuais(permitir_execucao=False):
             ),
         )
 
+    def _run_individual_normalizar_status_excluir_internacao_eletivo():
+        return _executar_modo_individual(
+            'individual_normalizar_status_excluir_internacao_eletivo',
+            permitir_execucao,
+            lambda: _normalizar_status_e_excluir_hsm(
+                hsms_excluir=['Pesquisa_Pos_cir_urg_intern', 'Pesquisa_Pos_cir_eletivo'],
+                arquivo_saida=DEFAULTS_COMPLICACAO['saida_status_sem_internacao_eletivo'],
+                nome_logger='ingestao_individual_excluir_internacao_eletivo',
+            ),
+        )
+
+    def _run_individual_normalizar_status_excluir_complicacao():
+        return _executar_modo_individual(
+            'individual_normalizar_status_excluir_complicacao',
+            permitir_execucao,
+            lambda: _normalizar_status_e_excluir_hsm(
+                hsms_excluir=['Pesquisa Complicações Cirurgicas', 'Pesquisa Complicacoes Cirurgicas'],
+                arquivo_saida=DEFAULTS_COMPLICACAO['saida_status_sem_complicacao'],
+                nome_logger='ingestao_individual_excluir_complicacao',
+            ),
+        )
+
     return {
         'individual_unificar_status_respostas': _run_individual_unificar_status_respostas,
         'individual_ingestao_complicacao': _run_individual_ingestao_complicacao,
@@ -287,4 +353,10 @@ def obter_modos_individuais(permitir_execucao=False):
         'individual_criar_dataset_internacao_eletivo': _run_individual_criar_dataset_internacao_eletivo,
         'individual_orquestrar_complicacao': _run_individual_orquestrar_complicacao,
         'individual_orquestrar_internacao_eletivo': _run_individual_orquestrar_internacao_eletivo,
+        'individual_normalizar_status_excluir_internacao_eletivo': (
+            _run_individual_normalizar_status_excluir_internacao_eletivo
+        ),
+        'individual_normalizar_status_excluir_complicacao': (
+            _run_individual_normalizar_status_excluir_complicacao
+        ),
     }
