@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from core.logger import PipelineLogger
 from src.services.ingestao_service import executar_ingestao_somente_status
 from src.utils.arquivos import ler_arquivo_csv
 
@@ -10,16 +11,20 @@ def run_status_normalizar_internacao_eletivo_pipeline(
     arquivo_saida='src/data/arquivo_limpo/status_sem_internacao_eletivo.csv',
     nome_logger='ingestao_individual_excluir_internacao_eletivo',
 ):
+    logger = PipelineLogger(nome_pipeline=nome_logger)
     resultado_ingestao = executar_ingestao_somente_status(
         arquivo_status=arquivo_status,
         saida_status=arquivo_status_normalizado,
         nome_logger=nome_logger,
+        logger=logger,
     )
     if not resultado_ingestao.get('ok'):
+        logger.finalizar('FALHA_INGESTAO')
         return resultado_ingestao
 
     df_status = ler_arquivo_csv(arquivo_status_normalizado)
     if 'HSM' not in df_status.columns:
+        logger.finalizar('FALHA_VALIDACAO_HSM')
         return {
             'ok': False,
             'mensagens': ['Coluna HSM nao encontrada no status normalizado para exclusao.'],
@@ -35,7 +40,7 @@ def run_status_normalizar_internacao_eletivo_pipeline(
     Path(arquivo_saida).parent.mkdir(parents=True, exist_ok=True)
     df_filtrado.to_csv(arquivo_saida, sep=';', index=False, encoding='utf-8-sig')
 
-    return {
+    resultado = {
         'ok': True,
         'arquivo_saida': arquivo_saida,
         'total_antes': total_antes,
@@ -48,3 +53,5 @@ def run_status_normalizar_internacao_eletivo_pipeline(
             f'total_excluido={total_excluido}',
         ],
     }
+    logger.finalizar('SUCESSO')
+    return resultado

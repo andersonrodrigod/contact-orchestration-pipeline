@@ -27,6 +27,7 @@ def executar_normalizacao_padronizacao(
     saida_status_resposta='src/data/arquivo_limpo/status_resposta_complicacao_limpo.csv',
     mensagens_iniciais=None,
     logger=None,
+    finalizar_logger=True,
 ):
     if mensagens_iniciais is None:
         mensagens_iniciais = []
@@ -172,7 +173,8 @@ def executar_normalizacao_padronizacao(
         df_status_resposta.to_csv(saida_status_resposta, sep=';', index=False, encoding='utf-8-sig')
 
         status_final = 'SUCESSO' if resultado_final['ok'] else 'FALHA_VALIDACAO_DATA'
-        logger.finalizar(status_final)
+        if finalizar_logger:
+            logger.finalizar(status_final)
         return resultado_final
     except Exception as erro:
         logger.exception('ERRO_EXECUCAO', erro)
@@ -180,7 +182,8 @@ def executar_normalizacao_padronizacao(
             'ok': False,
             'mensagens': [f'Erro inesperado na execucao (etapa={etapa_atual}): {type(erro).__name__}: {erro}'],
         }
-        logger.finalizar('ERRO')
+        if finalizar_logger:
+            logger.finalizar('ERRO')
         return resultado_erro
 
 
@@ -189,25 +192,33 @@ def executar_ingestao_complicacao(
     arquivo_status_resposta_complicacao='src/data/status_resposta_complicacao.csv',
     saida_status='src/data/arquivo_limpo/status_limpo.csv',
     saida_status_resposta='src/data/arquivo_limpo/status_resposta_complicacao_limpo.csv',
+    logger=None,
 ):
-    logger = PipelineLogger(nome_pipeline='ingestao_complicacao')
+    logger_externo = logger is not None
+    if logger is None:
+        logger = PipelineLogger(nome_pipeline='ingestao_complicacao')
     logger.info('MODO', 'Modo complicacao iniciado')
-    return executar_normalizacao_padronizacao(
+    resultado = executar_normalizacao_padronizacao(
         arquivo_status=arquivo_status,
         arquivo_status_resposta=arquivo_status_resposta_complicacao,
         saida_status=saida_status,
         saida_status_resposta=saida_status_resposta,
         mensagens_iniciais=['Modo complicacao selecionado.'],
         logger=logger,
+        finalizar_logger=not logger_externo,
     )
+    return resultado
 
 
 def executar_ingestao_somente_status(
     arquivo_status='src/data/status.csv',
     saida_status='src/data/arquivo_limpo/status_limpo.csv',
     nome_logger='ingestao_somente_status',
+    logger=None,
 ):
-    logger = PipelineLogger(nome_pipeline=nome_logger)
+    logger_externo = logger is not None
+    if logger is None:
+        logger = PipelineLogger(nome_pipeline=nome_logger)
     logger.info('INICIO', f'arquivo_status={arquivo_status}')
     logger.info('INICIO', f'saida_status={saida_status}')
     etapa_atual = 'INICIO'
@@ -245,7 +256,8 @@ def executar_ingestao_somente_status(
 
         etapa_atual = 'SALVAR_ARQUIVO'
         df_status.to_csv(saida_status, sep=';', index=False, encoding='utf-8-sig')
-        logger.finalizar('SUCESSO')
+        if not logger_externo:
+            logger.finalizar('SUCESSO')
         return {
             'ok': True,
             'arquivo_saida': saida_status,
@@ -253,7 +265,8 @@ def executar_ingestao_somente_status(
         }
     except Exception as erro:
         logger.exception('ERRO_EXECUCAO', erro)
-        logger.finalizar('ERRO')
+        if not logger_externo:
+            logger.finalizar('ERRO')
         return {
             'ok': False,
             'mensagens': [f'Erro na ingestao somente status (etapa={etapa_atual}): {type(erro).__name__}: {erro}'],
@@ -267,8 +280,11 @@ def executar_ingestao_unificar(
     arquivo_status_resposta_unificado='src/data/status_resposta_eletivo_internacao.csv',
     saida_status='src/data/arquivo_limpo/status_limpo.csv',
     saida_status_resposta='src/data/arquivo_limpo/status_resposta_eletivo_internacao_limpo.csv',
+    logger=None,
 ):
-    logger = PipelineLogger(nome_pipeline='ingestao_unificar')
+    logger_externo = logger is not None
+    if logger is None:
+        logger = PipelineLogger(nome_pipeline='ingestao_unificar')
     logger.info('MODO', 'Modo unificar iniciado')
     logger.info('MODO', f'arquivo_eletivo={arquivo_status_resposta_eletivo}')
     logger.info('MODO', f'arquivo_internacao={arquivo_status_resposta_internacao}')
@@ -278,6 +294,7 @@ def executar_ingestao_unificar(
         arquivo_eletivo=arquivo_status_resposta_eletivo,
         arquivo_internacao=arquivo_status_resposta_internacao,
         arquivo_saida=arquivo_status_resposta_unificado,
+        logger=logger,
     )
     logger.info(
         'CONCATENACAO',
@@ -292,7 +309,8 @@ def executar_ingestao_unificar(
 
     if not resultado_concat['ok']:
         logger.warning('CONCATENACAO', 'Concatenacao nao executada por validacao')
-        logger.finalizar('FALHA_CONCATENACAO')
+        if not logger_externo:
+            logger.finalizar('FALHA_CONCATENACAO')
         return resultado_concat
 
     return executar_normalizacao_padronizacao(
@@ -302,4 +320,5 @@ def executar_ingestao_unificar(
         saida_status_resposta=saida_status_resposta,
         mensagens_iniciais=resultado_concat['mensagens'],
         logger=logger,
+        finalizar_logger=not logger_externo,
     )
