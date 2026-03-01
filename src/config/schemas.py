@@ -92,3 +92,21 @@ COLUNAS_FINAIS_DATASET = [
     'TELEFONE STATUS 4',
     'TELEFONE STATUS 5',
 ]
+
+
+COLUNAS_STATUS_FONTE_DATASET = [
+    'Contato',
+    'DT ENVIO',
+    'Status',
+    'Respondido',
+    'RESPOSTA',
+]
+
+
+COLUNAS_TELEFONE_DATASET = [
+    'TELEFONE 1',
+    'TELEFONE 2',
+    'TELEFONE 3',
+    'TELEFONE 4',
+    'TELEFONE 5',
+]

@@ -1,0 +1,17 @@
+[EXECUCAO] Inicio do relatorio de execucao
+
+[2026-03-01 09:38:48] [INFO] [LOGGER] Execucao iniciada
+
+[2026-03-01 09:38:48] [INFO] [INICIO] arquivo_status=src/data/arquivo_limpo/status_complicacao_limpo.csv
+[2026-03-01 09:38:48] [INFO] [INICIO] arquivo_status_resposta=src/data/arquivo_limpo/status_resposta_complicacao_limpo.csv
+[2026-03-01 09:38:48] [INFO] [INICIO] arquivo_saida=src/data/arquivo_limpo/status_complicacao.csv
+[2026-03-01 09:38:48] [INFO] [INICIO] hsms_permitidos=['Pesquisa Complicacoes Cirurgicas', 'Pesquisa Complicações Cirurgicas']
+
+[2026-03-01 09:38:52] [INFO] [FILTRO_HSM] status antes=146248
+[2026-03-01 09:38:52] [INFO] [FILTRO_HSM] status depois=24258
+
+[2026-03-01 09:38:52] [INFO] [MATCH] total_status=24258
+[2026-03-01 09:38:52] [INFO] [MATCH] com_match=16009
+[2026-03-01 09:38:52] [INFO] [MATCH] sem_match=8249
+
+[2026-03-01 09:38:52] [INFO] [LOGGER] Execucao finalizada com status=SUCESSO em 0:00:03.424225
