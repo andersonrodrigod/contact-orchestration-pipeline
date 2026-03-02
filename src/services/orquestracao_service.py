@@ -101,6 +101,7 @@ def aplicar_classificacao_processo_acao(df):
     regras = [
         (s_lida_sim >= 1, 'ENCERRAR_CONTATO_LIDO_SIM', 'ENCERRADO'),
         (s_lida_nao >= 1, 'MUDAR_CONTATO_LIDO_NAO', MARCADOR_ACAO_PROXIMO),
+        (s_lida_sem == 1, 'SEGUNDO_ENVIO', MARCADOR_ACAO_PRIORIDADE),
         (s_lida_sem >= 2, 'MUDAR_CONTATO_LIDO_SEM_RESPOSTA', MARCADOR_ACAO_PROXIMO),
         (s_lida_envio == 1, 'SEGUNDO_ENVIO_LIDO', MARCADOR_ACAO_PRIORIDADE),
         (s_entregue >= 3, 'MUDAR_CONTATO_ENTREGUE', MARCADOR_ACAO_PROXIMO),
