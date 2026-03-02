@@ -1,16 +1,29 @@
 import pandas as pd
+import re
+from decimal import Decimal, InvalidOperation
 
 # =========================================================
 # 1. Ler os arquivos
 # =========================================================
-df_main = pd.read_excel("COMPLICAÇÃO JANEIRO 27.02.xlsx")
-df_senhas = pd.read_csv("telefone_janeiro_internacoes.csv")
+df_main = pd.read_excel("COMPLICACAO FEVEREIRO 02.03.xlsx")
+df_senhas = pd.read_csv("telefone_fevereiro_internacoes.csv")
 
 # =========================================================
 # 2. Limpar e padronizar chave SENHA
 # =========================================================
-df_main["SENHA"] = df_main["SENHA"].astype(str).str.strip()
-df_senhas["CD_SENHA"] = df_senhas["CD_SENHA"].astype(str).str.strip()
+def normalizar_chave(v) -> str:
+    if pd.isna(v):
+        return ""
+    texto = str(v).strip()
+    if texto.lower() in {"nan", "none", "<na>"}:
+        return ""
+    # Remove apenas sufixo decimal sem valor real: 123.0 -> 123
+    if re.fullmatch(r"\d+\.0+", texto):
+        return texto.split(".")[0]
+    return texto
+
+df_main["SENHA"] = df_main["SENHA"].apply(normalizar_chave)
+df_senhas["CD_SENHA"] = df_senhas["CD_SENHA"].apply(normalizar_chave)
 
 # =========================================================
 # 3. Selecionar apenas colunas necessárias do CSV
@@ -23,11 +36,41 @@ df_senhas = df_senhas[colunas_csv]
 # =========================================================
 # 4. Limpar telefones (preserva NaN reais)
 # =========================================================
+def normalizar_telefone(v) -> str:
+    if pd.isna(v):
+        return ""
+    if isinstance(v, bool):
+        return ""
+    if isinstance(v, int):
+        return str(v)
+    if isinstance(v, float):
+        if pd.isna(v):
+            return ""
+        # Evita bug de adicionar zero no final quando vem como 1234567890.0
+        if float(v).is_integer():
+            return str(int(v))
+        texto_float = format(v, "f").rstrip("0").rstrip(".")
+        return re.sub(r"\D", "", texto_float)
+
+    texto = str(v).strip()
+    if texto.lower() in {"nan", "none", "<na>"}:
+        return ""
+
+    # Trata strings numericas (inclusive notacao cientifica) sem criar zero extra.
+    texto_num = texto.replace(",", ".")
+    if re.fullmatch(r"[+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?", texto_num):
+        try:
+            valor = Decimal(texto_num)
+            if valor == valor.to_integral_value():
+                return str(int(valor))
+        except (InvalidOperation, ValueError):
+            pass
+
+    # Fallback para formatos com mascara/sinais.
+    return re.sub(r"\D", "", texto)
+
 for col in telefones:
-    df_senhas[col] = df_senhas[col].where(
-        df_senhas[col].notna(),
-        ""
-    ).astype(str).str.strip()
+    df_senhas[col] = df_senhas[col].apply(normalizar_telefone)
 
 # =========================================================
 # 5. Adicionar prefixo 55 (somente quando existir)
@@ -62,6 +105,23 @@ for col in telefones:
     df_senhas[col] = df_senhas[col].apply(ajustar_nono_digito)
 
 # =========================================================
+# 5.2 Deduplicar CD_SENHA antes do merge
+# =========================================================
+def primeiro_nao_vazio(serie: pd.Series) -> str:
+    for v in serie:
+        if isinstance(v, str) and v != "":
+            return v
+    return ""
+
+aggs = {col: primeiro_nao_vazio for col in telefones}
+aggs["CD_PESSOA"] = "first"
+df_senhas = (
+    df_senhas
+    .groupby("CD_SENHA", as_index=False, dropna=False)
+    .agg(aggs)
+)
+
+# =========================================================
 # 6. Merge mantendo todas as linhas da base principal
 # =========================================================
 df_final = df_main.merge(
@@ -84,6 +144,10 @@ df_final[telefones] = (
     .replace(["nan", "None", "<NA>"], "")
     .fillna("")
 )
+
+# Limpeza final defensiva: garante que nao saia valor com ".0".
+for col in telefones:
+    df_final[col] = df_final[col].apply(normalizar_telefone)
 
 # =========================================================
 # 9. Flags e contagens
