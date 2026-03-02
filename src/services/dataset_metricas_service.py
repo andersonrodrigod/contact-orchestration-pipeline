@@ -101,7 +101,7 @@ def _normalizar_status_para_contagens(df_status_full):
 
 
 def aplicar_contagens_status(df_saida, df_status_full):
-    colunas_obrigatorias_saida = ['CHAVE STATUS', 'TELEFONE ENVIADO']
+    colunas_obrigatorias_saida = ['CHAVE STATUS']
     faltando_saida = [c for c in colunas_obrigatorias_saida if c not in df_saida.columns]
     if len(faltando_saida) > 0:
         return {
@@ -123,28 +123,7 @@ def aplicar_contagens_status(df_saida, df_status_full):
     df_base = df_saida.copy()
     df_base['__ROW_ID'] = df_base.index
     df_base['__CHAVE_STATUS_NORM'] = normalizar_texto_serie(df_base['CHAVE STATUS'])
-    df_base['__TEL_ENVIADO_NORM'] = normalizar_texto_serie(df_base['TELEFONE ENVIADO']).apply(normalizar_telefone)
-
-    # Join principal: CHAVE STATUS + TELEFONE ENVIADO
-    df_join_envio = df_base.merge(
-        df_status[colunas_status_join],
-        left_on=['__CHAVE_STATUS_NORM', '__TEL_ENVIADO_NORM'],
-        right_on=['Contato', 'Telefone'],
-        how='left',
-    )
-    df_join_envio_ok = df_join_envio[
-        df_join_envio['__STATUS_MAPEADO'].notna() & (df_join_envio['__STATUS_MAPEADO'] != '')
-    ]
-    if len(df_join_envio_ok) == 0:
-        return {
-            'ok': False,
-            'mensagens': ['Nenhuma correspondencia encontrada para CHAVE STATUS e TELEFONE ENVIADO no arquivo status.'],
-        }
-
-    _preencher_contagens_status_mapeado(df_saida, df_join_envio_ok)
-    _preencher_contagens_lida_resposta(df_saida, df_join_envio_ok)
-
-    # Contagem geral por CHAVE STATUS (sem telefone)
+    # Contagem por CHAVE STATUS (sem depender de TELEFONE ENVIADO)
     df_join_chave = df_base.merge(
         df_status[colunas_status_join],
         left_on='__CHAVE_STATUS_NORM',
@@ -154,7 +133,14 @@ def aplicar_contagens_status(df_saida, df_status_full):
     df_join_chave_ok = df_join_chave[
         df_join_chave['__STATUS_MAPEADO'].notna() & (df_join_chave['__STATUS_MAPEADO'] != '')
     ]
+    if len(df_join_chave_ok) == 0:
+        return {
+            'ok': False,
+            'mensagens': ['Nenhuma correspondencia encontrada para CHAVE STATUS no arquivo status.'],
+        }
 
+    _preencher_contagens_status_mapeado(df_saida, df_join_chave_ok)
+    _preencher_contagens_lida_resposta(df_saida, df_join_chave_ok)
     _preencher_contagens_status_mapeado(df_saida, df_join_chave_ok, prefixo='QT ')
     _preencher_contagens_lida_resposta(df_saida, df_join_chave_ok, prefixo='QT ')
 
