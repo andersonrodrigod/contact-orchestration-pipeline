@@ -372,7 +372,7 @@ def _enriquecer_dataset_com_status(
 
 
 def concatenar_status_resposta_eletivo_internacao(
-    arquivo_eletivo='src/data/status_respostas_eletivo.csv',
+    arquivo_eletivo='src/data/status_resposta_eletivo.csv',
     arquivo_internacao='src/data/status_resposta_internacao.csv',
     arquivo_saida='src/data/status_resposta_eletivo_internacao.csv',
 ):

@@ -9,5 +9,10 @@ def padronizar_colunas_status(df):
 def padronizar_colunas_status_resposta(df):
     mapa_colunas = {
         'dat_atendimento': 'DT_ATENDIMENTO',
+        'Resposta': 'resposta',
+        'RESPOSTA': 'resposta',
     }
-    return df.rename(columns=mapa_colunas)
+    df = df.rename(columns=mapa_colunas)
+    if 'resposta' not in df.columns:
+        df['resposta'] = ''
+    return df

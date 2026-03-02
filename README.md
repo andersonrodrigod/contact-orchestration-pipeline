@@ -19,7 +19,7 @@ O projeto roda por `main.py` e escreve logs em `logs/`.
 - `src/data/status.csv`
 - `src/data/status_resposta_complicacao.csv`
 - `src/data/complicacao.xlsx` (origem da criacao de dataset)
-- `src/data/status_respostas_eletivo.csv`
+- `src/data/status_resposta_eletivo.csv`
 - `src/data/status_resposta_internacao.csv`
 
 ## Saidas padrao

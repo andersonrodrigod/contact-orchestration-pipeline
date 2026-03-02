@@ -275,7 +275,7 @@ def executar_ingestao_somente_status(
 
 def executar_ingestao_unificar(
     arquivo_status='src/data/status.csv',
-    arquivo_status_resposta_eletivo='src/data/status_respostas_eletivo.csv',
+    arquivo_status_resposta_eletivo='src/data/status_resposta_eletivo.csv',
     arquivo_status_resposta_internacao='src/data/status_resposta_internacao.csv',
     arquivo_status_resposta_unificado='src/data/status_resposta_eletivo_internacao.csv',
     saida_status='src/data/arquivo_limpo/status_limpo.csv',

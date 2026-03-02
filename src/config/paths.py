@@ -14,7 +14,7 @@ DEFAULTS_COMPLICACAO = {
 
 DEFAULTS_INTERNACAO_ELETIVO = {
     'arquivo_status': 'src/data/status.csv',
-    'arquivo_status_resposta_eletivo': 'src/data/status_respostas_eletivo.csv',
+    'arquivo_status_resposta_eletivo': 'src/data/status_resposta_eletivo.csv',
     'arquivo_status_resposta_internacao': 'src/data/status_resposta_internacao.csv',
     'arquivo_status_resposta_unificado': 'src/data/status_resposta_eletivo_internacao.csv',
     'arquivo_dataset_origem_internacao': 'src/data/internacao.xlsx',

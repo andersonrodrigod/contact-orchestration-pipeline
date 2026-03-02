@@ -3,12 +3,15 @@ from src.config.schemas import (
     COLUNAS_MINIMAS_STATUS_RESPOSTA_CONCATENACAO,
     COLUNAS_OBRIGATORIAS_DATASET_ORIGEM,
     COLUNAS_STATUS_OBRIGATORIAS_PADRONIZACAO,
-    COLUNAS_STATUS_RESPOSTA_OBRIGATORIAS_PADRONIZACAO,
 )
 
 
 def _tem_coluna_data_atendimento(df):
     return 'dat_atendimento' in df.columns or 'DT_ATENDIMENTO' in df.columns
+
+
+def _tem_coluna_resposta(df):
+    return 'resposta' in df.columns or 'Resposta' in df.columns or 'RESPOSTA' in df.columns
 
 
 def validar_colunas_origem_para_padronizacao(df_status, df_status_resposta):
@@ -18,10 +21,10 @@ def validar_colunas_origem_para_padronizacao(df_status, df_status_resposta):
     }
 
     colunas_status_obrigatorias = COLUNAS_STATUS_OBRIGATORIAS_PADRONIZACAO
-    colunas_status_resposta_obrigatorias = COLUNAS_STATUS_RESPOSTA_OBRIGATORIAS_PADRONIZACAO
-
     faltando_status = [c for c in colunas_status_obrigatorias if c not in df_status.columns]
-    faltando_status_resposta = [c for c in colunas_status_resposta_obrigatorias if c not in df_status_resposta.columns]
+    faltando_status_resposta = []
+    if 'nom_contato' not in df_status_resposta.columns:
+        faltando_status_resposta.append('nom_contato')
     if not _tem_coluna_data_atendimento(df_status_resposta):
         faltando_status_resposta.append('dat_atendimento ou DT_ATENDIMENTO')
 
@@ -44,6 +47,10 @@ def validar_colunas_origem_para_padronizacao(df_status, df_status_resposta):
         resultado['mensagens'].append(
             'Colunas de origem para padronizacao foram encontradas com sucesso.'
         )
+        if not _tem_coluna_resposta(df_status_resposta):
+            resultado['mensagens'].append(
+                'Coluna resposta ausente no status_resposta; sera preenchida como vazia.'
+            )
 
     return resultado
 

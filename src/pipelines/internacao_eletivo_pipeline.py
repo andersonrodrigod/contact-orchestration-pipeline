@@ -11,7 +11,7 @@ from core.pipeline_result import ok_result
 
 def run_internacao_eletivo_pipeline(
     arquivo_status='src/data/status.csv',
-    arquivo_status_resposta_eletivo='src/data/status_respostas_eletivo.csv',
+    arquivo_status_resposta_eletivo='src/data/status_resposta_eletivo.csv',
     arquivo_status_resposta_internacao='src/data/status_resposta_internacao.csv',
     arquivo_status_resposta_unificado='src/data/status_resposta_eletivo_internacao.csv',
     arquivo_dataset_origem_internacao='src/data/internacao.xlsx',

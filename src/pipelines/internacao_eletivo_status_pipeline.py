@@ -79,7 +79,7 @@ def _run_criacao_dataset_status(
 
 def run_internacao_eletivo_pipeline_enviar_status_com_resposta(
     arquivo_status='src/data/status.csv',
-    arquivo_status_resposta_eletivo='src/data/status_respostas_eletivo.csv',
+    arquivo_status_resposta_eletivo='src/data/status_resposta_eletivo.csv',
     arquivo_status_resposta_internacao='src/data/status_resposta_internacao.csv',
     arquivo_status_resposta_unificado='src/data/status_resposta_eletivo_internacao.csv',
     saida_status='src/data/arquivo_limpo/status_limpo.csv',
@@ -175,7 +175,7 @@ def run_internacao_eletivo_pipeline_enviar_status_somente_status(
 
 def run_internacao_eletivo_pipeline_gerar_status_dataset(
     arquivo_status='src/data/status.csv',
-    arquivo_status_resposta_eletivo='src/data/status_respostas_eletivo.csv',
+    arquivo_status_resposta_eletivo='src/data/status_resposta_eletivo.csv',
     arquivo_status_resposta_internacao='src/data/status_resposta_internacao.csv',
     arquivo_status_resposta_unificado='src/data/status_resposta_eletivo_internacao.csv',
     arquivo_dataset_origem_internacao='src/data/internacao.xlsx',
