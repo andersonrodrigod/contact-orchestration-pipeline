@@ -27,6 +27,9 @@ from src.utils.arquivos import ler_arquivo_csv
 
 VALOR_SEM_TELEFONE_DISPONIVEL = 'SEM_TELEFONE_DISPONIVEL'
 VALOR_SEM_TELEFONE_PRIORIDADE = 'SEM TELEFONE'
+STATUS_CHAVE_OK_PRINCIPAL = 'OK_PRINCIPAL'
+STATUS_CHAVE_OK_FALLBACK = 'OK_FALLBACK'
+STATUS_CHAVE_SEM_MATCH = 'SEM_MATCH'
 
 
 def _carregar_status_para_lookup(arquivo_status_integrado):
@@ -180,7 +183,7 @@ def _enriquecer_dataset_com_status(
     df_saida['IDENTIFICACAO'] = ''
     df_saida['TELEFONE ENVIADO'] = ''
     df_saida['CHAVE STATUS'] = ''
-    df_saida['STATUS CHAVE'] = ''
+    df_saida['STATUS CHAVE'] = STATUS_CHAVE_SEM_MATCH
     df_saida['TELEFONE PRIORIDADE'] = ''
     df_saida['PROXIMO TELEFONE DISPONIVEL'] = ''
     df_saida['STATUS TELEFONE'] = ''
@@ -201,7 +204,7 @@ def _enriquecer_dataset_com_status(
         df_saida.loc[idx_principal, 'IDENTIFICACAO'] = chave.map(mapa_principal['Respondido']).fillna('')
         df_saida.loc[idx_principal, 'TELEFONE ENVIADO'] = chave.map(mapa_principal['Telefone']).fillna('')
         df_saida.loc[idx_principal, 'CHAVE STATUS'] = df_saida.loc[idx_principal, 'CHAVE RELATORIO']
-        df_saida.loc[idx_principal, 'STATUS CHAVE'] = 'OK'
+        df_saida.loc[idx_principal, 'STATUS CHAVE'] = STATUS_CHAVE_OK_PRINCIPAL
 
     # Fallback: NOME_MANIPULADO+Telefone -> USUARIO+qualquer telefone 1..5
     idx_sem_principal = df_saida.index[~mask_principal]
@@ -269,10 +272,11 @@ def _enriquecer_dataset_com_status(
                 df_saida.loc[idx_fallback, 'CHAVE STATUS'] = (
                     df_melhor_match.loc[idx_fallback, 'Contato'].fillna('')
                 )
-                df_saida.loc[idx_fallback, 'STATUS CHAVE'] = 'ERROR'
+                df_saida.loc[idx_fallback, 'STATUS CHAVE'] = STATUS_CHAVE_OK_FALLBACK
 
-    total_match = int(_normalizar_texto_serie(df_saida['STATUS CHAVE']).ne('').sum())
-    total_sem_match = total_dataset - total_match
+    serie_status_chave = _normalizar_texto_serie(df_saida['STATUS CHAVE'])
+    total_match = int(serie_status_chave.isin([STATUS_CHAVE_OK_PRINCIPAL, STATUS_CHAVE_OK_FALLBACK]).sum())
+    total_sem_match = int((serie_status_chave == STATUS_CHAVE_SEM_MATCH).sum())
     if total_match == 0:
         return {
             'ok': False,
