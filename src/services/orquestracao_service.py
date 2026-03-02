@@ -81,8 +81,10 @@ def aplicar_classificacao_processo_acao(df):
     col_lida_sim = _coluna_existente(df, 'LIDA_RESPOSTA_SIM', 'LIDA_REPOSTA_SIM')
     col_lida_nao = _coluna_existente(df, 'LIDA_RESPOSTA_NAO', 'LIDA_REPOSTA_NAO')
 
+
     s_lida_sim = _serie_numerica(df, col_lida_sim)
     s_lida_nao = _serie_numerica(df, col_lida_nao)
+    s_lida_envio = _serie_numerica(df, 'SEGUNDO_ENVIO')
     s_lida_sem = _serie_numerica(df, 'LIDA_SEM_RESPOSTA')
     s_entregue = _serie_numerica(df, 'ENTREGUE')
     s_enviada = _serie_numerica(df, 'ENVIADA')
@@ -100,14 +102,15 @@ def aplicar_classificacao_processo_acao(df):
         (s_lida_sim >= 1, 'ENCERRAR_CONTATO_LIDO_SIM', 'ENCERRADO'),
         (s_lida_nao >= 1, 'MUDAR_CONTATO_LIDO_NAO', MARCADOR_ACAO_PROXIMO),
         (s_lida_sem >= 2, 'MUDAR_CONTATO_LIDO_SEM_RESPOSTA', MARCADOR_ACAO_PROXIMO),
-        (s_entregue >= 3, 'MUDAR_CONTATO_ENTREGRUE', MARCADOR_ACAO_PROXIMO),
+        (s_lida_envio == 1, 'SEGUNDO_ENVIO_LIDO', MARCADOR_ACAO_PRIORIDADE),
+        (s_entregue >= 3, 'MUDAR_CONTATO_ENTREGUE', MARCADOR_ACAO_PROXIMO),
         (s_enviada >= 3, 'MUDAR_CONTATO_ENVIADO', MARCADOR_ACAO_PROXIMO),
         (s_nao_entregue_meta >= 3, 'MUDAR_CONTATO_NAO_ENTREGUE_META', MARCADOR_ACAO_PROXIMO),
         (s_msg_nao_entregue >= 3, 'MUDAR_CONTATO_MENSAGEM_NAO_ENTREGUE', MARCADOR_ACAO_PROXIMO),
         (s_experimento >= 3, 'MUDAR_CONTATO_EXPERIMENTO', MARCADOR_ACAO_PROXIMO),
         (s_opt_out >= 3, 'MUDAR_CONTATO_OPT_OUT', MARCADOR_ACAO_PROXIMO),
         (resposta_norm == 'nao tenho interesse', 'ENCERRAR_CONTATO_NAO_QUIS', 'ENCERRADO'),
-        (somatorio_de_valores >= 4, 'MUDAR_CONTATO_MENSAGEM_NAO_ENTREGUE', MARCADOR_ACAO_PROXIMO),
+        (somatorio_de_valores >= 4, 'MUDAR_CONTATO_DISPAROS_EXCEDENTE', MARCADOR_ACAO_PROXIMO),
         (somatorio_de_valores <= 3, 'DISPARAR_NOVAMENTE', MARCADOR_ACAO_PRIORIDADE),
     ]
 
