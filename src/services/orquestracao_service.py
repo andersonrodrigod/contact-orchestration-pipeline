@@ -77,6 +77,8 @@ def _obter_serie_somatorio(df):
 def aplicar_classificacao_processo_acao(df):
     df = df.copy()
     _inicializar_colunas_classificacao(df)
+    status_chave = normalizar_texto_serie(df.get('STATUS CHAVE', pd.Series('', index=df.index))).str.upper()
+    mask_elegivel_orquestracao = status_chave != 'SEM_MATCH'
 
     col_lida_sim = _coluna_existente(df, 'LIDA_RESPOSTA_SIM', 'LIDA_REPOSTA_SIM')
     col_lida_nao = _coluna_existente(df, 'LIDA_RESPOSTA_NAO', 'LIDA_REPOSTA_NAO')
@@ -116,7 +118,7 @@ def aplicar_classificacao_processo_acao(df):
     ]
 
     for condicao, processo, acao in regras:
-        mask = (df['PROCESSO'] == '') & condicao
+        mask = (df['PROCESSO'] == '') & condicao & mask_elegivel_orquestracao
         if not mask.any():
             continue
         df.loc[mask, 'PROCESSO'] = processo
