@@ -16,8 +16,14 @@ from src.services.validacao_service import (
 )
 from src.utils.arquivos import ler_arquivo_csv
 
+LIMIAR_AVISO_PERCENTUAL_NAT_DATA = 30.0
 
-LIMITE_PERCENTUAL_NAT_DATA = 30.0
+
+def _mensagem_alerta_nat(coluna, percentual, quantidade, total):
+    return (
+        f'Alerta de qualidade: coluna {coluna} com NaT em {percentual:.2f}% '
+        f'({quantidade}/{total}).'
+    )
 
 
 def executar_normalizacao_padronizacao(
@@ -40,6 +46,7 @@ def executar_normalizacao_padronizacao(
 
     etapa_atual = 'INICIO'
     try:
+        alertas_data = []
         etapa_atual = 'LEITURA_STATUS'
         logger.info('LEITURA', 'Lendo arquivo status')
         df_status = ler_arquivo_csv(arquivo_status)
@@ -95,17 +102,12 @@ def executar_normalizacao_padronizacao(
                 'NORMALIZACAO',
                 f'Data agendamento NaT={pct_nat_status:.2f}% ({qtd_nat_status}/{len(df_status)})',
             )
-            if pct_nat_status > LIMITE_PERCENTUAL_NAT_DATA:
-                mensagem_nat = (
-                    f'Abortado: Data agendamento com NaT acima de {LIMITE_PERCENTUAL_NAT_DATA:.0f}% '
-                    f'({pct_nat_status:.2f}%).'
+            if pct_nat_status >= LIMIAR_AVISO_PERCENTUAL_NAT_DATA:
+                mensagem_alerta = _mensagem_alerta_nat(
+                    'Data agendamento', pct_nat_status, qtd_nat_status, len(df_status)
                 )
-                logger.error('VALIDACAO_DATA', mensagem_nat)
-                logger.finalizar('FALHA_QUALIDADE_DATA')
-                return {
-                    'ok': False,
-                    'mensagens': mensagens_iniciais + [mensagem_nat],
-                }
+                logger.warning('VALIDACAO_DATA', mensagem_alerta)
+                alertas_data.append(mensagem_alerta)
         if 'DT_ATENDIMENTO' in df_status_resposta.columns and len(df_status_resposta) > 0:
             qtd_nat_resposta = int(df_status_resposta['DT_ATENDIMENTO'].isna().sum())
             pct_nat_resposta = (qtd_nat_resposta / len(df_status_resposta)) * 100
@@ -113,17 +115,12 @@ def executar_normalizacao_padronizacao(
                 'NORMALIZACAO',
                 f'DT_ATENDIMENTO NaT={pct_nat_resposta:.2f}% ({qtd_nat_resposta}/{len(df_status_resposta)})',
             )
-            if pct_nat_resposta > LIMITE_PERCENTUAL_NAT_DATA:
-                mensagem_nat = (
-                    f'Abortado: DT_ATENDIMENTO com NaT acima de {LIMITE_PERCENTUAL_NAT_DATA:.0f}% '
-                    f'({pct_nat_resposta:.2f}%).'
+            if pct_nat_resposta >= LIMIAR_AVISO_PERCENTUAL_NAT_DATA:
+                mensagem_alerta = _mensagem_alerta_nat(
+                    'DT_ATENDIMENTO', pct_nat_resposta, qtd_nat_resposta, len(df_status_resposta)
                 )
-                logger.error('VALIDACAO_DATA', mensagem_nat)
-                logger.finalizar('FALHA_QUALIDADE_DATA')
-                return {
-                    'ok': False,
-                    'mensagens': mensagens_iniciais + [mensagem_nat],
-                }
+                logger.warning('VALIDACAO_DATA', mensagem_alerta)
+                alertas_data.append(mensagem_alerta)
 
         etapa_atual = 'LIMPEZA_TEXTO'
         logger.info('NORMALIZACAO', 'Limpando texto nas colunas nao-data')
@@ -155,6 +152,7 @@ def executar_normalizacao_padronizacao(
                 mensagens_iniciais
                 + resultado_colunas_origem['mensagens']
                 + resultado_validacao['mensagens']
+                + alertas_data
             ),
         }
 
@@ -223,6 +221,7 @@ def executar_ingestao_somente_status(
     logger.info('INICIO', f'saida_status={saida_status}')
     etapa_atual = 'INICIO'
     try:
+        alertas_data = []
         etapa_atual = 'LEITURA_STATUS'
         df_status = ler_arquivo_csv(arquivo_status)
         logger.info('LEITURA', f'df_status: linhas={len(df_status)} colunas={len(df_status.columns)}')
@@ -238,17 +237,12 @@ def executar_ingestao_somente_status(
                 'NORMALIZACAO',
                 f'Data agendamento NaT={pct_nat_status:.2f}% ({qtd_nat_status}/{len(df_status)})',
             )
-            if pct_nat_status > LIMITE_PERCENTUAL_NAT_DATA:
-                mensagem_nat = (
-                    f'Abortado: Data agendamento com NaT acima de {LIMITE_PERCENTUAL_NAT_DATA:.0f}% '
-                    f'({pct_nat_status:.2f}%).'
+            if pct_nat_status >= LIMIAR_AVISO_PERCENTUAL_NAT_DATA:
+                mensagem_alerta = _mensagem_alerta_nat(
+                    'Data agendamento', pct_nat_status, qtd_nat_status, len(df_status)
                 )
-                logger.error('VALIDACAO_DATA', mensagem_nat)
-                logger.finalizar('FALHA_QUALIDADE_DATA')
-                return {
-                    'ok': False,
-                    'mensagens': [mensagem_nat],
-                }
+                logger.warning('VALIDACAO_DATA', mensagem_alerta)
+                alertas_data.append(mensagem_alerta)
         etapa_atual = 'LIMPEZA_TEXTO'
         df_status = limpar_texto_exceto_colunas(df_status, colunas_ignorar=['Data agendamento'])
         etapa_atual = 'CRIAR_DT_ENVIO'
@@ -261,7 +255,7 @@ def executar_ingestao_somente_status(
         return {
             'ok': True,
             'arquivo_saida': saida_status,
-            'mensagens': ['Ingestao somente status executada com sucesso.'],
+            'mensagens': ['Ingestao somente status executada com sucesso.'] + alertas_data,
         }
     except Exception as erro:
         logger.exception('ERRO_EXECUCAO', erro)

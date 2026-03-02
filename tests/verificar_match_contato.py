@@ -9,7 +9,7 @@ def normalizar_texto(valor):
 
 
 def executar_verificacao_match_contato():
-    arquivo_status = 'src/data/arquivo_limpo/status_limpo.csv'
+    arquivo_status = 'src/data/arquivo_limpo/status_complicacao_limpo.csv'
     arquivo_resposta = 'src/data/arquivo_limpo/status_resposta_complicacao_limpo.csv'
 
     df_status = pd.read_csv(arquivo_status, sep=';', dtype=str, encoding='utf-8-sig', keep_default_na=False)

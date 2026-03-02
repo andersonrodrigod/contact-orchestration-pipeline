@@ -8,14 +8,19 @@ def _validar_e_derivar_chave_data(df, coluna_original, coluna_chave):
         raise ValueError(f'Coluna obrigatoria nao encontrada: {coluna_original}')
 
     serie_data = pd.to_datetime(df[coluna_original].astype(str).str.strip(), errors='coerce', dayfirst=True)
-    qtd_invalidos = int(serie_data.isna().sum())
-    if qtd_invalidos > 0:
-        raise ValueError(
-            f'Coluna {coluna_original} possui {qtd_invalidos} valores de data invalidos para integracao.'
-        )
+    mask_valida = serie_data.notna()
+    qtd_invalidos = int((~mask_valida).sum())
 
-    df[coluna_chave] = serie_data.dt.date
-    return df
+    df_filtrado = df.loc[mask_valida].copy()
+    df_filtrado[coluna_chave] = serie_data.loc[mask_valida].dt.date
+    return df_filtrado, qtd_invalidos
+
+
+def _falhar_se_todas_datas_invalidas(total_linhas, descartados, coluna):
+    if total_linhas > 0 and descartados == total_linhas:
+        raise ValueError(
+            f'Coluna {coluna} possui 100% de datas invalidas ({descartados}/{total_linhas}).'
+        )
 
 
 def integrar_status_com_resposta(
@@ -42,10 +47,17 @@ def integrar_status_com_resposta(
 
     # Validacao de contrato da integracao: as datas devem estar parseaveis.
     # A integracao nao normaliza dados novamente; ela apenas valida e deriva chave temporaria.
-    df_status = _validar_e_derivar_chave_data(df_status, 'DT ENVIO', '__CHAVE_DATA')
-    df_resposta = _validar_e_derivar_chave_data(
+    total_status_entrada = len(df_status)
+    total_resposta_entrada = len(df_resposta)
+
+    df_status, descartados_status_data = _validar_e_derivar_chave_data(
+        df_status, 'DT ENVIO', '__CHAVE_DATA'
+    )
+    df_resposta, descartados_resposta_data = _validar_e_derivar_chave_data(
         df_resposta, 'DT_ATENDIMENTO', '__CHAVE_DATA'
     )
+    _falhar_se_todas_datas_invalidas(total_status_entrada, descartados_status_data, 'DT ENVIO')
+    _falhar_se_todas_datas_invalidas(total_resposta_entrada, descartados_resposta_data, 'DT_ATENDIMENTO')
 
     df_resposta = (
         df_resposta.sort_values('DT_ATENDIMENTO')
@@ -87,4 +99,6 @@ def integrar_status_com_resposta(
         'total_status': len(df_merge),
         'com_match': match,
         'sem_match': sem_match,
+        'descartados_status_data_invalida': descartados_status_data,
+        'descartados_resposta_data_invalida': descartados_resposta_data,
     }
