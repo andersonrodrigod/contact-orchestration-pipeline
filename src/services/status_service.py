@@ -1,6 +1,6 @@
 import pandas as pd
 
-from src.utils.arquivos import ler_arquivo_csv
+from src.utils.arquivos import ler_arquivo_csv, salvar_dataframe
 
 
 def _validar_e_derivar_chave_data(df, coluna_original, coluna_chave):
@@ -91,7 +91,7 @@ def integrar_status_com_resposta(
         errors='ignore',
     )
 
-    df_merge.to_csv(arquivo_saida, sep=';', index=False, encoding='utf-8-sig')
+    salvar_dataframe(df_merge, arquivo_saida)
 
     return {
         'ok': True,

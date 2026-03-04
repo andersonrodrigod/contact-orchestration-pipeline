@@ -64,6 +64,17 @@ def ler_arquivo_csv(caminho_arquivo, separador=';'):
     )
 
 
+def salvar_dataframe(df, caminho_arquivo, separador=';'):
+    caminho = Path(caminho_arquivo)
+    caminho.parent.mkdir(parents=True, exist_ok=True)
+    caminho_texto = str(caminho_arquivo).lower()
+    if caminho_texto.endswith('.xlsx') or caminho_texto.endswith('.xls'):
+        df.to_excel(caminho_arquivo, index=False)
+        return
+
+    df.to_csv(caminho_arquivo, sep=separador, index=False, encoding='utf-8-sig')
+
+
 def arquivo_existe(caminho_arquivo):
     try:
         return Path(caminho_arquivo).exists()

@@ -1,6 +1,7 @@
 from pathlib import Path
 from uuid import uuid4
 
+from src.services.texto_service import simplificar_texto
 from src.services.status_service import integrar_status_com_resposta
 from src.utils.arquivos import ler_arquivo_csv
 
@@ -13,8 +14,9 @@ def filtrar_status_por_hsm(arquivo_status, hsms_permitidos, arquivo_status_filtr
         df_status.to_csv(arquivo_status_filtrado, sep=';', index=False, encoding='utf-8-sig')
         return {'total_antes': total_antes, 'total_depois': len(df_status)}
 
-    hsms_permitidos_set = {str(h).strip() for h in hsms_permitidos}
-    mask = df_status['HSM'].astype(str).str.strip().isin(hsms_permitidos_set)
+    hsms_permitidos_set = {simplificar_texto(h) for h in hsms_permitidos}
+    hsm_normalizado = df_status['HSM'].astype(str).apply(simplificar_texto)
+    mask = hsm_normalizado.isin(hsms_permitidos_set)
     df_filtrado = df_status[mask].copy()
     df_filtrado.to_csv(arquivo_status_filtrado, sep=';', index=False, encoding='utf-8-sig')
     return {'total_antes': total_antes, 'total_depois': len(df_filtrado)}

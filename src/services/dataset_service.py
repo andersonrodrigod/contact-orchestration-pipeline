@@ -23,7 +23,7 @@ from src.services.validacao_service import (
     validar_colunas_minimas_status_resposta,
     validar_colunas_origem_dataset_complicacao,
 )
-from src.utils.arquivos import ler_arquivo_csv
+from src.utils.arquivos import ler_arquivo_csv, salvar_dataframe
 
 VALOR_SEM_TELEFONE_DISPONIVEL = 'SEM_TELEFONE_DISPONIVEL'
 VALOR_SEM_TELEFONE_PRIORIDADE = 'SEM TELEFONE'
@@ -401,7 +401,7 @@ def concatenar_status_resposta_eletivo_internacao(
 
     df_concatenado = pd.concat([df_eletivo, df_internacao], ignore_index=True)
     df_concatenado = padronizar_colunas_status_resposta(df_concatenado)
-    df_concatenado.to_csv(arquivo_saida, sep=';', index=False, encoding='utf-8-sig')
+    salvar_dataframe(df_concatenado, arquivo_saida)
     total_concatenado = len(df_concatenado)
 
     return {
