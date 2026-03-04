@@ -2,7 +2,7 @@ import pandas as pd
 
 print("1️⃣ Lendo arquivo...")
 
-arquivo = "internacao_final.xlsx"
+arquivo = "complicacao_final.xlsx"
 
 df_original = pd.read_excel(arquivo, sheet_name="usuarios", dtype=str)
 
@@ -16,7 +16,7 @@ df = df_original.copy()
 # 2️⃣ FILTRO PAI - STATUS CHAVE
 # -------------------------------------------------
 
-print("\n2️⃣ Aplicando filtro STATUS CHAVE (OK ou ERRO)...")
+print("\n2️⃣ Aplicando filtro STATUS CHAVE (OK_PRINCIPAL ou OK_FALLBACK)...")
 
 df = df[df["STATUS CHAVE"].isin(["OK_PRINCIPAL", "OK_FALLBACK"])]
 
