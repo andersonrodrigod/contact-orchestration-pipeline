@@ -18,7 +18,7 @@ df = df_original.copy()
 
 print("\n2️⃣ Aplicando filtro STATUS CHAVE (OK ou ERRO)...")
 
-df = df[df["STATUS CHAVE"].isin(["OK", "ERRO"])]
+df = df[df["STATUS CHAVE"].isin(["OK_PRINCIPAL", "OK_FALLBACK"])]
 
 print("Registros após filtro STATUS CHAVE:", len(df))
 
@@ -94,6 +94,7 @@ colunas_disparo = [
     "PROCEDIMENTO",
     "DT INTERNACAO",
     "TELEFONE DISPARO",
+    "TP ATENDIMENTO",
     "DT ENVIO",
     "TELEFONE PRIORIDADE",
     "TELEFONE ENVIADO",

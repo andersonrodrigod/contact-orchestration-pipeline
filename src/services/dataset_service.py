@@ -1,4 +1,4 @@
-import pandas as pd
+﻿import pandas as pd
 from src.config.schemas import (
     COLUNAS_FINAIS_DATASET,
     COLUNAS_STATUS_FONTE_DATASET,
@@ -444,7 +444,8 @@ def _montar_df_final_complicacao(df_base):
 
     df_final = df_final[COLUNAS_FINAIS_DATASET].copy()
 
-    colunas_data = [col for col in ['DT INTERNACAO', 'DT ENVIO'] if col in df_final.columns]
+    # DT INTERNACAO e informativa: nao forcar parse para data evita perder texto invalido.
+    colunas_data = [col for col in ['DT ENVIO'] if col in df_final.columns]
     df_final = normalizar_tipos_dataframe(df_final, colunas_data=colunas_data)
     colunas_telefone = [col for col in df_final.columns if 'TELEFONE' in col]
     df_final = normalizar_colunas_telefone_dataframe(df_final, colunas_telefone)
@@ -580,3 +581,4 @@ def criar_dataset_complicacao(
         'colunas_arquivo': list(df.columns),
         'colunas_faltando': [],
     }
+
