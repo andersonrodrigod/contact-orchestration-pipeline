@@ -1,4 +1,5 @@
 from core.logger import PipelineLogger
+from core.error_codes import ERRO_INTEGRACAO
 from src.contexts.integracao_contextos import (
     CONTEXTO_INTEGRACAO_COMPLICACAO,
     CONTEXTO_INTEGRACAO_INTERNACAO_ELETIVO,
@@ -59,6 +60,7 @@ def _run_unificar_status_resposta_pipeline(
         return {
             'ok': False,
             'mensagens': [f'Erro no pipeline {nome_logger}: {type(erro).__name__}: {erro}'],
+            'codigo_erro': ERRO_INTEGRACAO,
         }
 
 
@@ -141,6 +143,7 @@ def _run_status_somente_pipeline(
         return {
             'ok': False,
             'mensagens': [f'Erro no pipeline {nome_logger}: {type(erro).__name__}: {erro}'],
+            'codigo_erro': ERRO_INTEGRACAO,
         }
 
 

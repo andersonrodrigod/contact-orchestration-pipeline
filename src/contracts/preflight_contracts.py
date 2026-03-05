@@ -8,6 +8,7 @@ def build_preflight_result(
     avisos=None,
     metricas=None,
     detalhes=None,
+    codigo_erro=None,
 ):
     bloqueios = bloqueios or []
     avisos = avisos or []
@@ -32,4 +33,5 @@ def build_preflight_result(
             'avisos': avisos,
             'detalhes': detalhes,
         },
+        codigo_erro=codigo_erro,
     ).to_dict()

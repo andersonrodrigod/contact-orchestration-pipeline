@@ -1,4 +1,5 @@
 ﻿import pandas as pd
+from core.error_codes import ERRO_CONCATENACAO, ERRO_CRIACAO_DATASET
 from src.config.schemas import (
     COLUNAS_FINAIS_DATASET,
     COLUNAS_STATUS_FONTE_DATASET,
@@ -39,6 +40,7 @@ def _carregar_status_para_lookup(arquivo_status_integrado):
         return {
             'ok': False,
             'mensagens': [f'Colunas obrigatorias ausentes no status integrado: {faltando}'],
+            'codigo_erro': ERRO_CRIACAO_DATASET,
         }
 
     for coluna in COLUNAS_STATUS_FONTE_DATASET:
@@ -154,6 +156,7 @@ def _enriquecer_dataset_com_status(
         return {
             'ok': False,
             'mensagens': ['Coluna USUARIO nao encontrada no dataset para match com status.'],
+            'codigo_erro': ERRO_CRIACAO_DATASET,
         }
 
     colunas_tel_existentes = [col for col in COLUNAS_TELEFONE_DATASET if col in df_saida.columns]
@@ -161,6 +164,7 @@ def _enriquecer_dataset_com_status(
         return {
             'ok': False,
             'mensagens': ['Nenhuma coluna TELEFONE 1..5 encontrada no dataset para match com status.'],
+            'codigo_erro': ERRO_CRIACAO_DATASET,
         }
 
     df_saida['USUARIO'] = _normalizar_nome_serie(df_saida['USUARIO'])
@@ -284,6 +288,7 @@ def _enriquecer_dataset_com_status(
             'total_dataset': total_dataset,
             'total_match': total_match,
             'total_sem_match': total_sem_match,
+            'codigo_erro': ERRO_CRIACAO_DATASET,
         }
 
     # TELEFONE PRIORIDADE recebe o nome da coluna onde bate com TELEFONE ENVIADO
@@ -393,6 +398,7 @@ def concatenar_status_resposta_eletivo_internacao(
             'total_eletivo': total_eletivo,
             'total_internacao': total_internacao,
             'total_concatenado': 0,
+            'codigo_erro': ERRO_CONCATENACAO,
         }
 
     colunas_unificadas = sorted(set(df_eletivo.columns).union(set(df_internacao.columns)))
@@ -473,6 +479,7 @@ def criar_dataset_complicacao(
             'colunas_mascaradas_duplicadas': validacao_colunas.get(
                 'colunas_mascaradas_duplicadas', []
             ),
+            'codigo_erro': ERRO_CRIACAO_DATASET,
         }
 
     colunas_criticas_segmentacao = ['STATUS', 'P1']
@@ -487,6 +494,7 @@ def criar_dataset_complicacao(
             ],
             'colunas_arquivo': list(df.columns),
             'colunas_faltando': colunas_criticas_faltando,
+            'codigo_erro': ERRO_CRIACAO_DATASET,
         }
 
     mask_duplicados = df.duplicated(subset=['COD USUARIO'], keep=False)
@@ -498,6 +506,7 @@ def criar_dataset_complicacao(
         return {
             'ok': False,
             'mensagens': resultado_status['mensagens'],
+            'codigo_erro': resultado_status.get('codigo_erro', ERRO_CRIACAO_DATASET),
         }
     df_status_por_contato = resultado_status['df_status_por_contato']
     df_status_por_nome_tel = resultado_status['df_status_por_nome_tel']
@@ -517,6 +526,7 @@ def criar_dataset_complicacao(
             'total_dataset': resultado_enriquecimento.get('total_dataset', 0),
             'total_match': resultado_enriquecimento.get('total_match', 0),
             'total_sem_match': resultado_enriquecimento.get('total_sem_match', 0),
+            'codigo_erro': resultado_enriquecimento.get('codigo_erro', ERRO_CRIACAO_DATASET),
         }
     df_usuarios = resultado_enriquecimento['df_enriquecido']
     df_usuarios['__DT_ENVIO_ORDENACAO'] = pd.to_datetime(

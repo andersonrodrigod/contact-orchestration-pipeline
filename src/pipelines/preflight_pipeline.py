@@ -2,6 +2,12 @@ from pathlib import Path
 
 import pandas as pd
 
+from core.error_codes import (
+    ERRO_INGESTAO,
+    ERRO_QUALIDADE_DATA,
+    ERRO_VALIDACAO_ARQUIVOS,
+    ERRO_VALIDACAO_COLUNAS,
+)
 from core.logger import PipelineLogger
 from src.config.governanca_config import resolver_limiar_nat_data
 from src.config.paths import DEFAULTS_COMPLICACAO, DEFAULTS_INTERNACAO_ELETIVO
@@ -86,17 +92,32 @@ def _executar_preflight_com_dataframes(
     detalhes['qualidade_data'] = qualidade
     detalhes['validacao_colunas_origem'] = validacao_origem
     detalhes['validacao_colunas_dataset'] = validacao_dataset
+    detalhes['metricas_por_etapa'] = {
+        'preflight': {
+            'linhas_status': len(df_status),
+            'linhas_status_resposta': len(df_status_resposta),
+            'linhas_dataset_origem': len(df_origem),
+            'limiar_nat_data_em_uso': limiar_nat_data,
+        }
+    }
 
     metricas = {
         'linhas_status': len(df_status),
         'linhas_status_resposta': len(df_status_resposta),
         'linhas_dataset_origem': len(df_origem),
+        'limiar_nat_data_em_uso': limiar_nat_data,
     }
     for coluna, dados in qualidade.items():
         chave = coluna.replace(' ', '_').lower()
         metricas[f'pct_nat_{chave}'] = dados['pct_nat']
 
     ok = len(bloqueios) == 0
+    codigo_erro = None
+    if not ok:
+        if any('qualidade de data' in str(b).lower() for b in bloqueios):
+            codigo_erro = ERRO_QUALIDADE_DATA
+        elif not validacao_origem['ok'] or not validacao_dataset['ok']:
+            codigo_erro = ERRO_VALIDACAO_COLUNAS
     resultado = build_preflight_result(
         ok=ok,
         contexto=contexto,
@@ -104,6 +125,7 @@ def _executar_preflight_com_dataframes(
         avisos=avisos,
         metricas=metricas,
         detalhes=detalhes,
+        codigo_erro=codigo_erro,
     )
     logger.finalizar('SUCESSO' if ok else 'FALHA_VALIDACAO')
     return resultado
@@ -118,7 +140,10 @@ def run_preflight_pipeline(
     nome_logger='preflight_pipeline',
 ):
     logger = PipelineLogger(nome_pipeline=nome_logger)
-    limiar_nat_data, origem_limiar = resolver_limiar_nat_data(limiar_nat_data)
+    limiar_nat_data, origem_limiar = resolver_limiar_nat_data(
+        limiar_nat_data,
+        contexto=contexto,
+    )
     logger.info('INICIO', f'contexto={contexto}')
     logger.info('INICIO', f'arquivo_status={arquivo_status}')
     logger.info('INICIO', f'arquivo_status_resposta={arquivo_status_resposta}')
@@ -140,21 +165,34 @@ def run_preflight_pipeline(
             bloqueios=validacao_arquivos['faltando'],
             avisos=[],
             detalhes={'validacao_arquivos': validacao_arquivos},
+            codigo_erro=ERRO_VALIDACAO_ARQUIVOS,
         )
         logger.finalizar('FALHA_ARQUIVOS')
         return resultado
 
-    df_status = ler_arquivo_csv(arquivo_status)
-    df_status_resposta = ler_arquivo_csv(arquivo_status_resposta)
-    df_origem = ler_arquivo_csv(arquivo_dataset_origem)
-    return _executar_preflight_com_dataframes(
-        contexto=contexto,
-        df_status=df_status,
-        df_status_resposta=df_status_resposta,
-        df_origem=df_origem,
-        limiar_nat_data=limiar_nat_data,
-        logger=logger,
-    )
+    try:
+        df_status = ler_arquivo_csv(arquivo_status)
+        df_status_resposta = ler_arquivo_csv(arquivo_status_resposta)
+        df_origem = ler_arquivo_csv(arquivo_dataset_origem)
+        return _executar_preflight_com_dataframes(
+            contexto=contexto,
+            df_status=df_status,
+            df_status_resposta=df_status_resposta,
+            df_origem=df_origem,
+            limiar_nat_data=limiar_nat_data,
+            logger=logger,
+        )
+    except Exception as erro:
+        logger.exception('ERRO_EXECUCAO', erro)
+        logger.finalizar('ERRO')
+        return build_preflight_result(
+            ok=False,
+            contexto=contexto,
+            bloqueios=[f'Erro inesperado no preflight: {type(erro).__name__}: {erro}'],
+            avisos=[],
+            detalhes={},
+            codigo_erro=ERRO_INGESTAO,
+        )
 
 
 def run_preflight_complicacao(limiar_nat_data=None):
@@ -185,8 +223,14 @@ def run_preflight_internacao_eletivo(limiar_nat_data=None):
             nome_logger='preflight_internacao_eletivo',
         )
 
+    limiar_nat_data, origem_limiar = resolver_limiar_nat_data(
+        limiar_nat_data,
+        contexto='internacao_eletivo',
+    )
     logger = PipelineLogger(nome_pipeline='preflight_internacao_eletivo')
     logger.info('INICIO', 'Arquivo unificado ausente; usando fallback eletivo+internacao em memoria.')
+    logger.info('INICIO', f'limiar_nat_data={limiar_nat_data}')
+    logger.info('INICIO', f'limiar_nat_data_origem={origem_limiar}')
     validacao_arquivos = validar_arquivos_existem(
         {
             'arquivo_status': arquivo_status,
@@ -202,27 +246,40 @@ def run_preflight_internacao_eletivo(limiar_nat_data=None):
             bloqueios=validacao_arquivos['faltando'],
             avisos=[],
             detalhes={'validacao_arquivos': validacao_arquivos},
+            codigo_erro=ERRO_VALIDACAO_ARQUIVOS,
         )
         logger.finalizar('FALHA_ARQUIVOS')
         return resultado
 
-    df_status = ler_arquivo_csv(arquivo_status)
-    df_eletivo = ler_arquivo_csv(arquivo_eletivo)
-    df_internacao = ler_arquivo_csv(arquivo_internacao)
-    colunas_unificadas = sorted(set(df_eletivo.columns).union(set(df_internacao.columns)))
-    df_status_resposta = pd.concat(
-        [
-            df_eletivo.reindex(columns=colunas_unificadas, fill_value=''),
-            df_internacao.reindex(columns=colunas_unificadas, fill_value=''),
-        ],
-        ignore_index=True,
-    )
-    df_origem = ler_arquivo_csv(arquivo_dataset_origem)
-    return _executar_preflight_com_dataframes(
-        contexto='internacao_eletivo',
-        df_status=df_status,
-        df_status_resposta=df_status_resposta,
-        df_origem=df_origem,
-        limiar_nat_data=limiar_nat_data,
-        logger=logger,
-    )
+    try:
+        df_status = ler_arquivo_csv(arquivo_status)
+        df_eletivo = ler_arquivo_csv(arquivo_eletivo)
+        df_internacao = ler_arquivo_csv(arquivo_internacao)
+        colunas_unificadas = sorted(set(df_eletivo.columns).union(set(df_internacao.columns)))
+        df_status_resposta = pd.concat(
+            [
+                df_eletivo.reindex(columns=colunas_unificadas, fill_value=''),
+                df_internacao.reindex(columns=colunas_unificadas, fill_value=''),
+            ],
+            ignore_index=True,
+        )
+        df_origem = ler_arquivo_csv(arquivo_dataset_origem)
+        return _executar_preflight_com_dataframes(
+            contexto='internacao_eletivo',
+            df_status=df_status,
+            df_status_resposta=df_status_resposta,
+            df_origem=df_origem,
+            limiar_nat_data=limiar_nat_data,
+            logger=logger,
+        )
+    except Exception as erro:
+        logger.exception('ERRO_EXECUCAO', erro)
+        logger.finalizar('ERRO')
+        return build_preflight_result(
+            ok=False,
+            contexto='internacao_eletivo',
+            bloqueios=[f'Erro inesperado no preflight: {type(erro).__name__}: {erro}'],
+            avisos=[],
+            detalhes={},
+            codigo_erro=ERRO_INGESTAO,
+        )

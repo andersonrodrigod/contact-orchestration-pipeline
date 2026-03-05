@@ -1,5 +1,10 @@
 from core.logger import PipelineLogger
 from pathlib import Path
+from core.error_codes import (
+    ERRO_CRIACAO_DATASET,
+    ERRO_VALIDACAO_ARQUIVOS,
+    ERRO_VALIDACAO_COLUNAS,
+)
 from core.pipeline_result import error_result
 from core.pipeline_result import ok_result
 from src.contexts.pipeline_contextos import CONTEXTO_PIPELINE_COMPLICACAO
@@ -46,7 +51,10 @@ def _run_criacao_dataset_status(
                 logger.error('VALIDACAO_ARQUIVOS', mensagem)
             if not logger_externo and finalizar_logger:
                 logger.finalizar('FALHA_VALIDACAO_ARQUIVOS')
-            return error_result(mensagens=validacao_arquivos['mensagens'])
+            return error_result(
+                mensagens=validacao_arquivos['mensagens'],
+                codigo_erro=ERRO_VALIDACAO_ARQUIVOS,
+            )
 
         df_origem = ler_arquivo_csv(arquivo_origem_dataset)
         colunas_arquivo = [str(col).strip() for col in df_origem.columns]
@@ -57,7 +65,10 @@ def _run_criacao_dataset_status(
         if not resultado_validacao['ok']:
             if not logger_externo and finalizar_logger:
                 logger.finalizar('FALHA_VALIDACAO_COLUNAS')
-            return error_result(mensagens=resultado_validacao['mensagens'])
+            return error_result(
+                mensagens=resultado_validacao['mensagens'],
+                codigo_erro=ERRO_VALIDACAO_COLUNAS,
+            )
 
         resultado = criar_dataset_complicacao(
             arquivo_complicacao=arquivo_origem_dataset,
@@ -66,6 +77,8 @@ def _run_criacao_dataset_status(
             contexto=contexto,
         )
         if not resultado.get('ok'):
+            if not resultado.get('codigo_erro'):
+                resultado['codigo_erro'] = ERRO_CRIACAO_DATASET
             for mensagem in resultado.get('mensagens', []):
                 logger.warning('CRIACAO_DATASET', mensagem)
             if not logger_externo and finalizar_logger:
@@ -81,7 +94,10 @@ def _run_criacao_dataset_status(
         logger.exception('ERRO_EXECUCAO', erro)
         if not logger_externo and finalizar_logger:
             logger.finalizar('ERRO')
-        return error_result(mensagens=[f'Erro na criacao do dataset status: {erro}'])
+        return error_result(
+            mensagens=[f'Erro na criacao do dataset status: {erro}'],
+            codigo_erro=ERRO_CRIACAO_DATASET,
+        )
 
 
 def run_complicacao_pipeline_enviar_status_com_resposta(
@@ -147,6 +163,20 @@ def run_complicacao_pipeline_enviar_status_com_resposta(
     else:
         logger.info('MODO_XLSX', 'Arquivos limpos XLSX nao encontrados para integracao adicional.')
 
+    metricas_por_etapa = {
+        **resultado_ingestao.get('metricas_por_etapa', {}),
+        'integracao_status_resposta': {
+            'total_status': resultado_integracao.get('total_status', 0),
+            'com_match': resultado_integracao.get('com_match', 0),
+            'sem_match': resultado_integracao.get('sem_match', 0),
+            'descartados_status_data_invalida': resultado_integracao.get(
+                'descartados_status_data_invalida', 0
+            ),
+            'descartados_resposta_data_invalida': resultado_integracao.get(
+                'descartados_resposta_data_invalida', 0
+            ),
+        },
+    }
     resultado = ok_result(
         mensagens=resultado_integracao.get('mensagens', []),
         metricas={
@@ -159,8 +189,17 @@ def run_complicacao_pipeline_enviar_status_com_resposta(
             'descartados_resposta_data_invalida': resultado_integracao.get(
                 'descartados_resposta_data_invalida', 0
             ),
+            'nat_data_agendamento': resultado_ingestao.get('nat_data_agendamento', 0),
+            'pct_nat_data_agendamento': resultado_ingestao.get('pct_nat_data_agendamento', 0.0),
+            'nat_dt_atendimento': resultado_ingestao.get('nat_dt_atendimento', 0),
+            'pct_nat_dt_atendimento': resultado_ingestao.get('pct_nat_dt_atendimento', 0.0),
+            'limiar_nat_data_em_uso': resultado_ingestao.get('limiar_nat_data_em_uso'),
         },
         arquivos={'arquivo_status_integrado': resultado_integracao.get('arquivo_saida')},
+        dados={
+            'qualidade_data': resultado_ingestao.get('qualidade_data', {}),
+            'metricas_por_etapa': metricas_por_etapa,
+        },
     )
     if not logger_externo:
         logger.finalizar('SUCESSO')
@@ -182,6 +221,7 @@ def run_complicacao_pipeline_enviar_status_somente_status(
         arquivo_status=arquivo_status,
         saida_status=saida_status,
         nome_logger='ingestao_complicacao_somente_status',
+        contexto=CONTEXTO_PIPELINE_COMPLICACAO.nome,
         logger=logger,
     )
     if not resultado_ingestao.get('ok'):
@@ -199,6 +239,20 @@ def run_complicacao_pipeline_enviar_status_somente_status(
             logger.finalizar('FALHA_INTEGRACAO')
         return resultado_status
 
+    metricas_por_etapa = {
+        **resultado_ingestao.get('metricas_por_etapa', {}),
+        'integracao_status_resposta': {
+            'total_status': resultado_status.get('total_status', 0),
+            'com_match': resultado_status.get('com_match', 0),
+            'sem_match': resultado_status.get('sem_match', 0),
+            'descartados_status_data_invalida': resultado_status.get(
+                'descartados_status_data_invalida', 0
+            ),
+            'descartados_resposta_data_invalida': resultado_status.get(
+                'descartados_resposta_data_invalida', 0
+            ),
+        },
+    }
     resultado = ok_result(
         mensagens=resultado_status.get('mensagens', []),
         metricas={
@@ -211,8 +265,17 @@ def run_complicacao_pipeline_enviar_status_somente_status(
             'descartados_resposta_data_invalida': resultado_status.get(
                 'descartados_resposta_data_invalida', 0
             ),
+            'nat_data_agendamento': resultado_ingestao.get('nat_data_agendamento', 0),
+            'pct_nat_data_agendamento': resultado_ingestao.get('pct_nat_data_agendamento', 0.0),
+            'nat_dt_atendimento': resultado_ingestao.get('nat_dt_atendimento', 0),
+            'pct_nat_dt_atendimento': resultado_ingestao.get('pct_nat_dt_atendimento', 0.0),
+            'limiar_nat_data_em_uso': resultado_ingestao.get('limiar_nat_data_em_uso'),
         },
         arquivos={'arquivo_status_integrado': resultado_status.get('arquivo_saida')},
+        dados={
+            'qualidade_data': resultado_ingestao.get('qualidade_data', {}),
+            'metricas_por_etapa': metricas_por_etapa,
+        },
     )
     if not logger_externo:
         logger.finalizar('SUCESSO')
@@ -258,6 +321,12 @@ def run_complicacao_pipeline_gerar_status_dataset(
         logger.finalizar('FALHA')
         return resultado_dataset
 
+    metricas_por_etapa = {
+        **resultado_status.get('metricas_por_etapa', {}),
+        'criacao_dataset_status': {
+            'total_linhas': resultado_dataset.get('total_linhas', 0),
+        },
+    }
     resultado = ok_result(
         mensagens=(
             resultado_status.get('mensagens', [])
@@ -273,9 +342,18 @@ def run_complicacao_pipeline_gerar_status_dataset(
             'descartados_resposta_data_invalida': resultado_status.get(
                 'descartados_resposta_data_invalida', 0
             ),
+            'nat_data_agendamento': resultado_status.get('nat_data_agendamento', 0),
+            'pct_nat_data_agendamento': resultado_status.get('pct_nat_data_agendamento', 0.0),
+            'nat_dt_atendimento': resultado_status.get('nat_dt_atendimento', 0),
+            'pct_nat_dt_atendimento': resultado_status.get('pct_nat_dt_atendimento', 0.0),
+            'limiar_nat_data_em_uso': resultado_status.get('limiar_nat_data_em_uso'),
             'total_linhas': resultado_dataset.get('total_linhas', 0),
         },
         arquivos={'arquivo_status_dataset': resultado_dataset.get('arquivo_saida')},
+        dados={
+            'qualidade_data': resultado_status.get('qualidade_data', {}),
+            'metricas_por_etapa': metricas_por_etapa,
+        },
     )
     logger.finalizar('SUCESSO')
     return resultado
@@ -314,6 +392,12 @@ def run_complicacao_pipeline_gerar_status_dataset_somente_status(
         logger.finalizar('FALHA')
         return resultado_dataset
 
+    metricas_por_etapa = {
+        **resultado_status.get('metricas_por_etapa', {}),
+        'criacao_dataset_status': {
+            'total_linhas': resultado_dataset.get('total_linhas', 0),
+        },
+    }
     resultado = ok_result(
         mensagens=(
             resultado_status.get('mensagens', [])
@@ -329,9 +413,18 @@ def run_complicacao_pipeline_gerar_status_dataset_somente_status(
             'descartados_resposta_data_invalida': resultado_status.get(
                 'descartados_resposta_data_invalida', 0
             ),
+            'nat_data_agendamento': resultado_status.get('nat_data_agendamento', 0),
+            'pct_nat_data_agendamento': resultado_status.get('pct_nat_data_agendamento', 0.0),
+            'nat_dt_atendimento': resultado_status.get('nat_dt_atendimento', 0),
+            'pct_nat_dt_atendimento': resultado_status.get('pct_nat_dt_atendimento', 0.0),
+            'limiar_nat_data_em_uso': resultado_status.get('limiar_nat_data_em_uso'),
             'total_linhas': resultado_dataset.get('total_linhas', 0),
         },
         arquivos={'arquivo_status_dataset': resultado_dataset.get('arquivo_saida')},
+        dados={
+            'qualidade_data': resultado_status.get('qualidade_data', {}),
+            'metricas_por_etapa': metricas_por_etapa,
+        },
     )
     logger.finalizar('SUCESSO')
     return resultado

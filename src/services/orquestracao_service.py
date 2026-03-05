@@ -1,4 +1,5 @@
 import pandas as pd
+from core.error_codes import ERRO_ORQUESTRACAO
 
 from src.services.texto_service import normalizar_texto_serie
 
@@ -148,6 +149,7 @@ def gerar_dataset_final(arquivo_dataset_entrada, arquivo_dataset_saida):
         return {
             'ok': False,
             'mensagens': ['Arquivo de entrada nao possui abas para finalizacao.'],
+            'codigo_erro': ERRO_ORQUESTRACAO,
         }
     abas_faltando = [aba for aba in ABAS_OBRIGATORIAS_FINALIZACAO if aba not in planilhas]
     if len(abas_faltando) > 0:
@@ -157,6 +159,7 @@ def gerar_dataset_final(arquivo_dataset_entrada, arquivo_dataset_saida):
                 'Abas obrigatorias nao encontradas para finalizacao.',
                 f'Abas faltando: {abas_faltando}',
             ],
+            'codigo_erro': ERRO_ORQUESTRACAO,
         }
 
     mensagens = []
