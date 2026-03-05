@@ -1,5 +1,8 @@
 ﻿from core.logger import PipelineLogger
-from src.config.paths import DEFAULTS_COMPLICACAO, DEFAULTS_INTERNACAO_ELETIVO
+from src.contexts.pipeline_contextos import (
+    CONTEXTO_PIPELINE_COMPLICACAO,
+    CONTEXTO_PIPELINE_INTERNACAO_ELETIVO,
+)
 from src.pipelines.complicacao_orquestracao_pipeline import run_complicacao_pipeline_orquestrar
 from src.pipelines.complicacao_status_pipeline import run_complicacao_pipeline_criar_dataset_status
 from src.pipelines.internacao_eletivo_orquestracao_pipeline import (
@@ -25,6 +28,9 @@ from src.pipelines.join_status_resposta_pipeline import (
     run_unificar_status_resposta_complicacao_pipeline,
     run_unificar_status_resposta_internacao_eletivo_pipeline,
 )
+
+DEFAULTS_COMPLICACAO = CONTEXTO_PIPELINE_COMPLICACAO.defaults
+DEFAULTS_INTERNACAO_ELETIVO = CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults
 
 
 def _combinar_etapas(resultado_etapa_1, resultado_etapa_2):

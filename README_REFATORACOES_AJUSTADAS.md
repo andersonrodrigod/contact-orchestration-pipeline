@@ -32,7 +32,7 @@ Arquivo:
 1. `src/pipelines/preflight_pipeline.py`
 
 Implementado:
-1. `run_preflight_pipeline(...)` genérico.
+1. `run_preflight_pipeline(...)` generico.
 2. `run_preflight_complicacao(...)`.
 3. `run_preflight_internacao_eletivo(...)`.
 4. Validacoes aplicadas:
@@ -89,7 +89,7 @@ Resultado:
 3. `Total dataset: 11873`
 4. `Com match: 22523`
 5. `Sem match: 10720`
-6. Mensagens de descartes por data inválida permanecem consistentes.
+6. Mensagens de descartes por data invalida permanecem consistentes.
 
 ### Teste D - Verificacao de warnings de parse de data
 Contexto:
@@ -97,20 +97,13 @@ Contexto:
 
 Ajuste aplicado:
 1. Parser de datas separado por tipo:
-   - ISO (`yyyy-mm-dd` e variações com hora) parseado com `dayfirst=False`.
+   - ISO (`yyyy-mm-dd` e variacoes com hora) parseado com `dayfirst=False`.
    - Demais formatos parseados com `dayfirst=True`.
    - Fallback final para formatos alternativos.
 
 Resultado:
 1. Warning eliminado nos testes.
-2. Métricas de saída preservadas (`33243 / 22523 / 10720 / 11873` no modo `complicacao_gerar_status_dataset`).
-
-## Ajustes pendentes (proxima rodada)
-
-1. Expandir contrato comum para outros pipelines (alem de preflight).
-2. Criar `preflight` para uso via app com parametros de arquivo customizados.
-3. Adicionar testes automatizados (unitarios) para cenarios de bloqueio/aviso.
-4. Tratar warning de parse de data (`dayfirst=True` com formato ISO) de forma deterministica.
+2. Metricas de saida preservadas (`33243 / 22523 / 10720 / 11873` no modo `complicacao_gerar_status_dataset`).
 
 ## Andamento geral por fase
 
@@ -121,81 +114,29 @@ Status: `CONCLUIDA`
 3. Modos CLI de preflight adicionados.
 
 ### Fase 2 - Unificar pipelines por contexto
-Status: `EM ANDAMENTO AVANCADO`
-Ja concluido:
+Status: `CONCLUIDA`
+Concluido:
 1. Contextos de integracao extraidos (`HSMs` e colunas de limpeza).
 2. Core comum de pipeline por contexto implementado.
 3. Pipelines principais (`complicacao` e `internacao_eletivo`) migrados para core comum.
 4. Status pipelines migrados para usar contexto central de defaults/loggers.
+5. Modos individuais migrados para consumir defaults via `src/contexts/pipeline_contextos.py`.
+6. Nomenclatura de logger consolidada por contexto no modulo central.
 
-Pendente para encerrar fase:
-1. Extrair configuracoes restantes de contexto para modos individuais.
-2. Consolidar nomenclatura de logger por etapa em um contrato unico.
+Validacao final da fase 2:
+1. `python main.py --modo preflight_internacao_eletivo` -> `OK=True`
+2. `python main.py --modo complicacao` -> `OK=True` (`33243 / 22523 / 10720 / 11873`)
+3. `python main.py --modo internacao_eletivo_gerar_status_dataset` -> `OK=True` (`126261 / 12235 / 114026 / 29206`)
 
 ### Fase 3 - Endurecimento e observabilidade
-Status: `NAO INICIADA`
+Status: `PENDENTE`
 Planejado:
 1. Persistencia historica de metricas de qualidade.
 2. Codigos de erro padronizados por categoria.
 3. Regras de limiar configuraveis por ambiente/app (com governanca).
 
-## Rodada seguinte - Inicio da Fase 2 (separacao por contexto)
+## Pendencias registradas (nao resolver agora)
 
-### O que foi implementado
-1. Criado modulo de contexto de integracao:
-   - `src/contexts/integracao_contextos.py`
-2. Movidos hardcodes de contexto para esse modulo:
-   - HSMs permitidos por contexto
-   - colunas para limpeza por contexto
-3. `join_status_resposta_pipeline.py` passou a consumir as configuracoes centralizadas.
-
-### Ganho imediato
-1. Reducao de duplicacao de regras de contexto no pipeline.
-2. Mudanca futura de HSM/colunas por contexto fica em um unico lugar.
-3. Caminho aberto para pipeline generico parametrizado por `context_config`.
-
-### Testes de regressao desta rodada
-1. `python main.py --modo complicacao_gerar_status_dataset`:
-   - `OK=True`
-   - metricas preservadas (`33243 / 22523 / 10720 / 11873`)
-2. `python main.py --modo preflight_complicacao`: `OK=True`
-3. `python main.py --modo preflight_internacao_eletivo`: `OK=True`
-
-### Bugs detectados nesta rodada
-1. Nenhum bug novo identificado nesta etapa de refatoracao.
-
-## Rodada seguinte - Continuacao da Fase 2 (pipeline core por contexto)
-
-### O que foi implementado
-1. Criado core comum para execucao de pipelines por contexto:
-   - `src/pipelines/contexto_pipeline_core.py`
-2. `complicacao_pipeline.py` passou a usar o core comum.
-3. `internacao_eletivo_pipeline.py` passou a usar o core comum.
-
-### Ganho imediato
-1. Reducao de duplicacao entre os dois pipelines principais.
-2. Fluxo comum de agregacao de mensagens/metricas.
-3. Menor risco de divergencia entre contextos ao evoluir regras de execucao.
-
-### Testes de regressao desta rodada
-1. `python main.py --modo complicacao`:
-   - `OK=True`
-   - `Total status=33243`
-   - `Com match=22523`
-   - `Sem match=10720`
-   - `Total dataset=11873`
-2. `python main.py --modo internacao_eletivo_gerar_status_dataset`:
-   - `OK=True`
-   - `Total status=126261`
-   - `Com match=12235`
-   - `Sem match=114026`
-   - `Total dataset=29206`
-3. `python main.py --modo preflight_complicacao`: `OK=True`
-4. `python main.py --modo preflight_internacao_eletivo`: `OK=True`
-
-### Observacao operacional
-1. O modo `complicacao_gerar_status_dataset` pode apresentar metricas diferentes de `complicacao`
-   por usar fluxo/saidas de etapa diferentes.
-2. Para regressao do pipeline completo de complicacao, a comparacao correta deve usar `--modo complicacao`.
-3. Durante teste paralelo de modos que gravam no mesmo `xlsx`, ocorreu `BadZipFile` por concorrencia de escrita.
-4. Reexecucao em serie confirmou estabilidade (`OK=True`); risco documentado no `README_ERROS_GERAL.md`.
+1. Concorrencia de escrita em `xlsx` ao executar pipelines simultaneos pode gerar `BadZipFile`.
+2. Decisao atual: manter como pendencia ate fechamento do ciclo de refatoracao.
+3. Item ja documentado no `README_ERROS_GERAL.md` para tratativa posterior.
