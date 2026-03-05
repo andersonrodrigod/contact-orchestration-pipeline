@@ -1,4 +1,8 @@
 from core.logger import PipelineLogger
+from src.contexts.integracao_contextos import (
+    CONTEXTO_INTEGRACAO_COMPLICACAO,
+    CONTEXTO_INTEGRACAO_INTERNACAO_ELETIVO,
+)
 from src.services.integracao_service import (
     integrar_com_filtro_hsm,
     integrar_somente_status_com_filtro_hsm,
@@ -68,16 +72,8 @@ def run_unificar_status_resposta_complicacao_pipeline(
         arquivo_status=arquivo_status,
         arquivo_status_resposta=arquivo_status_resposta,
         arquivo_saida=arquivo_saida,
-        hsms_permitidos=['Pesquisa Complicacoes Cirurgicas', 'Pesquisa Complicações Cirurgicas'],
-        colunas_limpar=[
-            'Conta',
-            'Mensagem',
-            'Categoria',
-            'Template',
-            'Agendamento',
-            'Status agendamento',
-            'Agente',
-        ],
+        hsms_permitidos=list(CONTEXTO_INTEGRACAO_COMPLICACAO.hsms_permitidos),
+        colunas_limpar=list(CONTEXTO_INTEGRACAO_COMPLICACAO.colunas_limpar),
         nome_logger='unificar_status_resposta_complicacao',
         logger=logger,
     )
@@ -93,8 +89,8 @@ def run_unificar_status_resposta_internacao_eletivo_pipeline(
         arquivo_status=arquivo_status,
         arquivo_status_resposta=arquivo_status_resposta,
         arquivo_saida=arquivo_saida,
-        hsms_permitidos=['Pesquisa_Pos_cir_urg_intern', 'Pesquisa_Pos_cir_eletivo'],
-        colunas_limpar=[],
+        hsms_permitidos=list(CONTEXTO_INTEGRACAO_INTERNACAO_ELETIVO.hsms_permitidos),
+        colunas_limpar=list(CONTEXTO_INTEGRACAO_INTERNACAO_ELETIVO.colunas_limpar),
         nome_logger='unificar_status_resposta_internacao_eletivo',
         logger=logger,
     )
@@ -156,16 +152,8 @@ def run_status_somente_complicacao_pipeline(
     return _run_status_somente_pipeline(
         arquivo_status=arquivo_status,
         arquivo_saida=arquivo_saida,
-        hsms_permitidos=['Pesquisa Complicacoes Cirurgicas', 'Pesquisa Complicações Cirurgicas'],
-        colunas_limpar=[
-            'Conta',
-            'Mensagem',
-            'Categoria',
-            'Template',
-            'Agendamento',
-            'Status agendamento',
-            'Agente',
-        ],
+        hsms_permitidos=list(CONTEXTO_INTEGRACAO_COMPLICACAO.hsms_permitidos),
+        colunas_limpar=list(CONTEXTO_INTEGRACAO_COMPLICACAO.colunas_limpar),
         nome_logger='unificar_status_somente_complicacao',
         logger=logger,
     )
@@ -179,8 +167,8 @@ def run_status_somente_internacao_eletivo_pipeline(
     return _run_status_somente_pipeline(
         arquivo_status=arquivo_status,
         arquivo_saida=arquivo_saida,
-        hsms_permitidos=['Pesquisa_Pos_cir_urg_intern', 'Pesquisa_Pos_cir_eletivo'],
-        colunas_limpar=[],
+        hsms_permitidos=list(CONTEXTO_INTEGRACAO_INTERNACAO_ELETIVO.hsms_permitidos),
+        colunas_limpar=list(CONTEXTO_INTEGRACAO_INTERNACAO_ELETIVO.colunas_limpar),
         nome_logger='unificar_status_somente_internacao_eletivo',
         logger=logger,
     )

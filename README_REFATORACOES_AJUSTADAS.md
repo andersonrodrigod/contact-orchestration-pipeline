@@ -111,3 +111,28 @@ Resultado:
 2. Criar `preflight` para uso via app com parametros de arquivo customizados.
 3. Adicionar testes automatizados (unitarios) para cenarios de bloqueio/aviso.
 4. Tratar warning de parse de data (`dayfirst=True` com formato ISO) de forma deterministica.
+
+## Rodada seguinte - Inicio da Fase 2 (separacao por contexto)
+
+### O que foi implementado
+1. Criado modulo de contexto de integracao:
+   - `src/contexts/integracao_contextos.py`
+2. Movidos hardcodes de contexto para esse modulo:
+   - HSMs permitidos por contexto
+   - colunas para limpeza por contexto
+3. `join_status_resposta_pipeline.py` passou a consumir as configuracoes centralizadas.
+
+### Ganho imediato
+1. Reducao de duplicacao de regras de contexto no pipeline.
+2. Mudanca futura de HSM/colunas por contexto fica em um unico lugar.
+3. Caminho aberto para pipeline generico parametrizado por `context_config`.
+
+### Testes de regressao desta rodada
+1. `python main.py --modo complicacao_gerar_status_dataset`:
+   - `OK=True`
+   - metricas preservadas (`33243 / 22523 / 10720 / 11873`)
+2. `python main.py --modo preflight_complicacao`: `OK=True`
+3. `python main.py --modo preflight_internacao_eletivo`: `OK=True`
+
+### Bugs detectados nesta rodada
+1. Nenhum bug novo identificado nesta etapa de refatoracao.
