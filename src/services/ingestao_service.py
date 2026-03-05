@@ -1,5 +1,6 @@
 from core.logger import PipelineLogger
 from pathlib import Path
+from src.config.governanca_config import resolver_limiar_nat_data
 from src.pipelines.concatenar_status_respostas_pipeline import run_unificar_status_respostas_pipeline
 from src.services.normalizacao_services import (
     criar_coluna_dt_envio_por_data_agendamento,
@@ -16,9 +17,6 @@ from src.services.validacao_service import (
     validar_padronizacao_colunas_data,
 )
 from src.utils.arquivos import ler_arquivo_csv, salvar_dataframe
-
-LIMIAR_AVISO_PERCENTUAL_NAT_DATA = 30.0
-
 
 def _caminho_xlsx_pareado(caminho_arquivo):
     caminho = Path(caminho_arquivo)
@@ -54,7 +52,7 @@ def executar_normalizacao_padronizacao(
     arquivo_status_resposta='src/data/status_resposta_complicacao.csv',
     saida_status='src/data/arquivo_limpo/status_limpo.csv',
     saida_status_resposta='src/data/arquivo_limpo/status_resposta_complicacao_limpo.csv',
-    limiar_nat_data=LIMIAR_AVISO_PERCENTUAL_NAT_DATA,
+    limiar_nat_data=None,
     mensagens_iniciais=None,
     logger=None,
     finalizar_logger=True,
@@ -63,11 +61,13 @@ def executar_normalizacao_padronizacao(
         mensagens_iniciais = []
     if logger is None:
         logger = PipelineLogger()
+    limiar_nat_data, origem_limiar = resolver_limiar_nat_data(limiar_nat_data)
     logger.info('INICIO', f'arquivo_status={arquivo_status}')
     logger.info('INICIO', f'arquivo_status_resposta={arquivo_status_resposta}')
     logger.info('INICIO', f'saida_status={saida_status}')
     logger.info('INICIO', f'saida_status_resposta={saida_status_resposta}')
     logger.info('INICIO', f'limiar_nat_data_em_uso={limiar_nat_data}')
+    logger.info('INICIO', f'limiar_nat_data_origem={origem_limiar}')
 
     etapa_atual = 'INICIO'
     try:
@@ -221,7 +221,7 @@ def executar_ingestao_complicacao(
     arquivo_status_resposta_complicacao='src/data/status_resposta_complicacao.csv',
     saida_status='src/data/arquivo_limpo/status_limpo.csv',
     saida_status_resposta='src/data/arquivo_limpo/status_resposta_complicacao_limpo.csv',
-    limiar_nat_data=LIMIAR_AVISO_PERCENTUAL_NAT_DATA,
+    limiar_nat_data=None,
     logger=None,
 ):
     logger_externo = logger is not None
@@ -285,15 +285,17 @@ def executar_ingestao_somente_status(
     arquivo_status='src/data/status.csv',
     saida_status='src/data/arquivo_limpo/status_limpo.csv',
     nome_logger='ingestao_somente_status',
-    limiar_nat_data=LIMIAR_AVISO_PERCENTUAL_NAT_DATA,
+    limiar_nat_data=None,
     logger=None,
 ):
     logger_externo = logger is not None
     if logger is None:
         logger = PipelineLogger(nome_pipeline=nome_logger)
+    limiar_nat_data, origem_limiar = resolver_limiar_nat_data(limiar_nat_data)
     logger.info('INICIO', f'arquivo_status={arquivo_status}')
     logger.info('INICIO', f'saida_status={saida_status}')
     logger.info('INICIO', f'limiar_nat_data_em_uso={limiar_nat_data}')
+    logger.info('INICIO', f'limiar_nat_data_origem={origem_limiar}')
     etapa_atual = 'INICIO'
     try:
         alertas_data = []
@@ -349,17 +351,19 @@ def executar_ingestao_unificar(
     arquivo_status_resposta_unificado='src/data/status_resposta_eletivo_internacao.csv',
     saida_status='src/data/arquivo_limpo/status_limpo.csv',
     saida_status_resposta='src/data/arquivo_limpo/status_resposta_eletivo_internacao_limpo.csv',
-    limiar_nat_data=LIMIAR_AVISO_PERCENTUAL_NAT_DATA,
+    limiar_nat_data=None,
     logger=None,
 ):
     logger_externo = logger is not None
     if logger is None:
         logger = PipelineLogger(nome_pipeline='ingestao_unificar')
+    limiar_nat_data, origem_limiar = resolver_limiar_nat_data(limiar_nat_data)
     logger.info('MODO', 'Modo unificar iniciado')
     logger.info('MODO', f'arquivo_eletivo={arquivo_status_resposta_eletivo}')
     logger.info('MODO', f'arquivo_internacao={arquivo_status_resposta_internacao}')
     logger.info('MODO', f'arquivo_unificado={arquivo_status_resposta_unificado}')
     logger.info('MODO', f'limiar_nat_data_em_uso={limiar_nat_data}')
+    logger.info('MODO', f'limiar_nat_data_origem={origem_limiar}')
 
     resultado_concat = run_unificar_status_respostas_pipeline(
         arquivo_eletivo=arquivo_status_resposta_eletivo,

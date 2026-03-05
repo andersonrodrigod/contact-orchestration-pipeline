@@ -3,6 +3,7 @@ from pathlib import Path
 import pandas as pd
 
 from core.logger import PipelineLogger
+from src.config.governanca_config import resolver_limiar_nat_data
 from src.config.paths import DEFAULTS_COMPLICACAO, DEFAULTS_INTERNACAO_ELETIVO
 from src.contracts.preflight_contracts import build_preflight_result
 from src.services.validacao_service import (
@@ -113,15 +114,17 @@ def run_preflight_pipeline(
     arquivo_status,
     arquivo_status_resposta,
     arquivo_dataset_origem,
-    limiar_nat_data=30.0,
+    limiar_nat_data=None,
     nome_logger='preflight_pipeline',
 ):
     logger = PipelineLogger(nome_pipeline=nome_logger)
+    limiar_nat_data, origem_limiar = resolver_limiar_nat_data(limiar_nat_data)
     logger.info('INICIO', f'contexto={contexto}')
     logger.info('INICIO', f'arquivo_status={arquivo_status}')
     logger.info('INICIO', f'arquivo_status_resposta={arquivo_status_resposta}')
     logger.info('INICIO', f'arquivo_dataset_origem={arquivo_dataset_origem}')
     logger.info('INICIO', f'limiar_nat_data={limiar_nat_data}')
+    logger.info('INICIO', f'limiar_nat_data_origem={origem_limiar}')
 
     validacao_arquivos = validar_arquivos_existem(
         {
@@ -154,7 +157,7 @@ def run_preflight_pipeline(
     )
 
 
-def run_preflight_complicacao(limiar_nat_data=30.0):
+def run_preflight_complicacao(limiar_nat_data=None):
     return run_preflight_pipeline(
         contexto='complicacao',
         arquivo_status=DEFAULTS_COMPLICACAO['arquivo_status'],
@@ -165,7 +168,7 @@ def run_preflight_complicacao(limiar_nat_data=30.0):
     )
 
 
-def run_preflight_internacao_eletivo(limiar_nat_data=30.0):
+def run_preflight_internacao_eletivo(limiar_nat_data=None):
     arquivo_status = DEFAULTS_INTERNACAO_ELETIVO['arquivo_status']
     arquivo_unificado = DEFAULTS_INTERNACAO_ELETIVO['arquivo_status_resposta_unificado']
     arquivo_eletivo = DEFAULTS_INTERNACAO_ELETIVO['arquivo_status_resposta_eletivo']

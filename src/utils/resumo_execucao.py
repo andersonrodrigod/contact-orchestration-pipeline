@@ -4,6 +4,8 @@ def imprimir_resumo_execucao(resultado):
         return
 
     print(f"OK: {resultado.get('ok', False)}")
+    if 'codigo_erro' in resultado:
+        print(f"Codigo erro: {resultado.get('codigo_erro')}")
     if 'arquivo_saida' in resultado:
         print(f"Arquivo final: {resultado['arquivo_saida']}")
     if 'total_status' in resultado:

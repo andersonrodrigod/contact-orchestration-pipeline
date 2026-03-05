@@ -129,14 +129,30 @@ Validacao final da fase 2:
 3. `python main.py --modo internacao_eletivo_gerar_status_dataset` -> `OK=True` (`126261 / 12235 / 114026 / 29206`)
 
 ### Fase 3 - Endurecimento e observabilidade
-Status: `PENDENTE`
-Planejado:
-1. Persistencia historica de metricas de qualidade.
-2. Codigos de erro padronizados por categoria.
-3. Regras de limiar configuraveis por ambiente/app (com governanca).
+Status: `EM ANDAMENTO`
+Concluido nesta rodada:
+1. Persistencia historica de execucao em `logs/historico_execucoes.jsonl`.
+2. Padronizacao inicial de codigos de erro (`core/error_codes.py`) com classificacao automatica no resultado final.
+3. Governanca de limiar de data via ambiente:
+   - Variavel: `LIMIAR_NAT_DATA_PERCENT`
+   - Default preservado: `30.0`
+   - Aplicado em ingestao e preflight.
+
+Pendente para fechar a fase 3:
+1. Persistir tambem historico de metricas de qualidade por etapa (nao apenas resumo final por modo).
+2. Expandir codigos de erro para retornos internos especificos (sem depender apenas de inferencia por mensagem).
+3. Definir perfil de limiar por contexto no app (complicacao vs internacao/eletivo), com override controlado.
 
 ## Pendencias registradas (nao resolver agora)
 
 1. Concorrencia de escrita em `xlsx` ao executar pipelines simultaneos pode gerar `BadZipFile`.
 2. Decisao atual: manter como pendencia ate fechamento do ciclo de refatoracao.
 3. Item ja documentado no `README_ERROS_GERAL.md` para tratativa posterior.
+
+## Testes da rodada de fase 3
+
+1. `python main.py --modo preflight_complicacao` -> `OK=True`
+2. `python main.py --modo preflight_internacao_eletivo` -> `OK=True`
+3. `python main.py --modo complicacao` -> `OK=True` (`33243 / 22523 / 10720 / 11873`)
+4. `python main.py --modo individual_ingestao_complicacao` -> `OK=False`, `codigo_erro=E001` (modo desabilitado, comportamento esperado)
+5. Historico atualizado em `logs/historico_execucoes.jsonl` com `modo`, `ok`, `codigo_erro` e metricas-chave.
