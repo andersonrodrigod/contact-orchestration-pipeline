@@ -136,3 +136,37 @@ Resultado:
 
 ### Bugs detectados nesta rodada
 1. Nenhum bug novo identificado nesta etapa de refatoracao.
+
+## Rodada seguinte - Continuacao da Fase 2 (pipeline core por contexto)
+
+### O que foi implementado
+1. Criado core comum para execucao de pipelines por contexto:
+   - `src/pipelines/contexto_pipeline_core.py`
+2. `complicacao_pipeline.py` passou a usar o core comum.
+3. `internacao_eletivo_pipeline.py` passou a usar o core comum.
+
+### Ganho imediato
+1. Reducao de duplicacao entre os dois pipelines principais.
+2. Fluxo comum de agregacao de mensagens/metricas.
+3. Menor risco de divergencia entre contextos ao evoluir regras de execucao.
+
+### Testes de regressao desta rodada
+1. `python main.py --modo complicacao`:
+   - `OK=True`
+   - `Total status=33243`
+   - `Com match=22523`
+   - `Sem match=10720`
+   - `Total dataset=11873`
+2. `python main.py --modo internacao_eletivo_gerar_status_dataset`:
+   - `OK=True`
+   - `Total status=126261`
+   - `Com match=12235`
+   - `Sem match=114026`
+   - `Total dataset=29206`
+3. `python main.py --modo preflight_complicacao`: `OK=True`
+4. `python main.py --modo preflight_internacao_eletivo`: `OK=True`
+
+### Observacao operacional
+1. O modo `complicacao_gerar_status_dataset` pode apresentar metricas diferentes de `complicacao`
+   por usar fluxo/saidas de etapa diferentes.
+2. Para regressao do pipeline completo de complicacao, a comparacao correta deve usar `--modo complicacao`.
