@@ -20,6 +20,14 @@ COLUNAS_MINIMAS_STATUS_RESPOSTA_CONCATENACAO = {
 }
 
 
+COLUNAS_MINIMAS_STATUS_CONCATENACAO = {
+    'Status',
+    'Contato',
+    'Telefone',
+    'Data agendamento',
+}
+
+
 COLUNAS_OBRIGATORIAS_DATASET_ORIGEM = [
     'BASE',
     'COD USUARIO',

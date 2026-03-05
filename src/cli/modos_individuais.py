@@ -21,6 +21,7 @@ from src.pipelines.internacao_eletivo_status_pipeline import (
     run_internacao_eletivo_pipeline_gerar_status_dataset,
     run_internacao_eletivo_pipeline_gerar_status_dataset_somente_status,
 )
+from src.pipelines.concatenar_status_pipeline import run_unificar_status_pipeline
 from src.pipelines.status_normalizar_complicacao_pipeline import (
     run_status_normalizar_complicacao_pipeline,
 )
@@ -123,6 +124,18 @@ def obter_modos_individuais(permitir_execucao=False):
                 arquivo_status_resposta_unificado=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status_resposta_unificado'],
                 saida_status=DEFAULTS_INTERNACAO_ELETIVO['saida_status'],
                 saida_status_resposta=DEFAULTS_INTERNACAO_ELETIVO['saida_status_resposta'],
+            ),
+        )
+
+    def _run_individual_unificar_status_com_normalizacao():
+        return _executar_modo_individual(
+            'individual_unificar_status_com_normalizacao',
+            permitir_execucao,
+            lambda: run_unificar_status_pipeline(
+                arquivo_status_complicacao=DEFAULTS_COMPLICACAO['saida_status_sem_internacao_eletivo'],
+                arquivo_status_internacao_eletivo=DEFAULTS_INTERNACAO_ELETIVO['saida_status_sem_complicacao'],
+                arquivo_saida=DEFAULTS_COMPLICACAO['saida_status_concatenado'],
+                arquivo_saida_normalizado=DEFAULTS_COMPLICACAO['saida_status_concatenado_normalizado'],
             ),
         )
 
@@ -434,6 +447,9 @@ def obter_modos_individuais(permitir_execucao=False):
         'individual_unificar_status_respostas': _run_individual_unificar_status_respostas,
         'individual_unificar_status_respostas_com_normalizacao': (
             _run_individual_unificar_status_respostas_com_normalizacao
+        ),
+        'individual_unificar_status_com_normalizacao': (
+            _run_individual_unificar_status_com_normalizacao
         ),
         'individual_ingestao_complicacao': _run_individual_ingestao_complicacao,
         'individual_ingestao_internacao_eletivo': _run_individual_ingestao_internacao_eletivo,

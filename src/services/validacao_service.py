@@ -1,6 +1,7 @@
 import re
 import pandas as pd
 from src.config.schemas import (
+    COLUNAS_MINIMAS_STATUS_CONCATENACAO,
     COLUNAS_MINIMAS_STATUS_RESPOSTA_CONCATENACAO,
     COLUNAS_OBRIGATORIAS_DATASET_ORIGEM,
     COLUNAS_STATUS_OBRIGATORIAS_PADRONIZACAO,
@@ -115,6 +116,29 @@ def validar_colunas_minimas_status_resposta(df_eletivo, df_internacao):
         mensagens.append(f'Faltando no arquivo eletivo: {faltando_eletivo}')
     if faltando_internacao:
         mensagens.append(f'Faltando no arquivo internacao: {faltando_internacao}')
+
+    return {'ok': False, 'mensagens': mensagens}
+
+
+def validar_colunas_minimas_status_concatenacao(df_complicacao, df_internacao_eletivo):
+    colunas_minimas = COLUNAS_MINIMAS_STATUS_CONCATENACAO
+
+    faltando_complicacao = sorted(colunas_minimas - set(df_complicacao.columns))
+    faltando_internacao_eletivo = sorted(colunas_minimas - set(df_internacao_eletivo.columns))
+
+    if not faltando_complicacao and not faltando_internacao_eletivo:
+        return {
+            'ok': True,
+            'mensagens': ['Colunas minimas obrigatorias encontradas para concatenacao de status.'],
+        }
+
+    mensagens = ['Concatenacao de status interrompida: colunas minimas obrigatorias nao encontradas.']
+    if faltando_complicacao:
+        mensagens.append(f'Faltando no arquivo status_complicacao: {faltando_complicacao}')
+    if faltando_internacao_eletivo:
+        mensagens.append(
+            f'Faltando no arquivo status_internacao_eletivo: {faltando_internacao_eletivo}'
+        )
 
     return {'ok': False, 'mensagens': mensagens}
 

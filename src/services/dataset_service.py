@@ -19,8 +19,12 @@ from src.services.texto_service import (
     normalizar_texto_serie as _normalizar_texto_serie,
     simplificar_texto as _simplificar_texto,
 )
-from src.services.padronizacao_service import padronizar_colunas_status_resposta
+from src.services.padronizacao_service import (
+    padronizar_colunas_status,
+    padronizar_colunas_status_resposta,
+)
 from src.services.validacao_service import (
+    validar_colunas_minimas_status_concatenacao,
     validar_colunas_minimas_status_resposta,
     validar_colunas_origem_dataset_complicacao,
 )
@@ -415,6 +419,51 @@ def concatenar_status_resposta_eletivo_internacao(
         'mensagens': ['Concatenacao status_resposta_eletivo_internacao executada com sucesso.'],
         'total_eletivo': total_eletivo,
         'total_internacao': total_internacao,
+        'total_concatenado': total_concatenado,
+    }
+
+
+def concatenar_status_complicacao_internacao_eletivo(
+    arquivo_status_complicacao='src/data/arquivo_limpo/status_sem_internacao_eletivo.csv',
+    arquivo_status_internacao_eletivo='src/data/arquivo_limpo/status_sem_complicacao.csv',
+    arquivo_saida='src/data/arquivo_limpo/status_complicacao_internacao_eletivo.csv',
+):
+    df_status_complicacao = ler_arquivo_csv(arquivo_status_complicacao)
+    df_status_internacao_eletivo = ler_arquivo_csv(arquivo_status_internacao_eletivo)
+    total_complicacao = len(df_status_complicacao)
+    total_internacao_eletivo = len(df_status_internacao_eletivo)
+
+    validacao_colunas = validar_colunas_minimas_status_concatenacao(
+        df_status_complicacao, df_status_internacao_eletivo
+    )
+    if not validacao_colunas['ok']:
+        return {
+            'ok': False,
+            'mensagens': validacao_colunas['mensagens'],
+            'total_status_complicacao': total_complicacao,
+            'total_status_internacao_eletivo': total_internacao_eletivo,
+            'total_concatenado': 0,
+            'codigo_erro': ERRO_CONCATENACAO,
+        }
+
+    colunas_unificadas = sorted(
+        set(df_status_complicacao.columns).union(set(df_status_internacao_eletivo.columns))
+    )
+    df_status_complicacao = df_status_complicacao.reindex(columns=colunas_unificadas, fill_value='')
+    df_status_internacao_eletivo = df_status_internacao_eletivo.reindex(
+        columns=colunas_unificadas, fill_value=''
+    )
+
+    df_concatenado = pd.concat([df_status_complicacao, df_status_internacao_eletivo], ignore_index=True)
+    df_concatenado = padronizar_colunas_status(df_concatenado)
+    salvar_dataframe(df_concatenado, arquivo_saida)
+    total_concatenado = len(df_concatenado)
+
+    return {
+        'ok': True,
+        'mensagens': ['Concatenacao de status executada com sucesso.'],
+        'total_status_complicacao': total_complicacao,
+        'total_status_internacao_eletivo': total_internacao_eletivo,
         'total_concatenado': total_concatenado,
     }
 
