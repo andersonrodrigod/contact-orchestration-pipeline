@@ -19,6 +19,31 @@ Fontes migradas:
 
 ### Alta prioridade
 
+0. Persistencia de arquivos mesmo com falha de validacao de dados
+- Status: `ABERTO`
+- Situação detectada:
+  - Em `executar_normalizacao_padronizacao`, o retorno pode ficar `ok=False` por validacao/qualidade de data, mas o fluxo segue para formatacao e grava `saida_status` e `saida_status_resposta`.
+- Possível causa:
+  - Ausencia de curto-circuito antes da etapa de persistencia quando ha bloqueio de validacao.
+- Impacto potencial:
+  - Saida invalidada pode sobrescrever artefatos anteriores e ser consumida por etapas seguintes como se estivesse pronta.
+- Mitigação atual (se existir):
+  - O dicionario final retorna `ok=False` e `codigo_erro` (`ERRO_QUALIDADE_DATA` ou `ERRO_VALIDACAO_COLUNAS`).
+- Próxima solução recomendada:
+  - Interromper antes de salvar quando `resultado_final["ok"]` for falso, ou salvar em caminho quarantinado com sufixo de erro.
+
+1. Criacao de dataset sem tratamento global de excecao e sem codigo_erro padrao
+- Status: `ABERTO`
+- Situação detectada:
+  - `criar_dataset_complicacao` executa leitura, enriquecimento e escrita XLSX sem `try/except` na funcao principal.
+- Possível causa:
+  - Dependencia de que servicos internos sempre retornem dicionario de erro em vez de levantar excecao.
+- Impacto potencial:
+  - Falhas de I/O, lock de arquivo ou erro de dataframe podem derrubar a execucao sem contrato padrao de `codigo_erro`.
+- Mitigação atual (se existir):
+  - Existem validacoes de colunas e retornos estruturados em partes do fluxo.
+- Próxima solução recomendada:
+  - Encapsular a funcao com tratamento centralizado e mapear excecoes inesperadas para `ERRO_CRIACAO_DATASET`.
 1. Regra redundante/ambígua de segundo envio (`SEGUNDO_ENVIO_LIDO`)
 - Status: `RESOLVIDO`
 - Situação anterior:
@@ -41,6 +66,57 @@ Fontes migradas:
 
 ### Média prioridade
 
+0. Falha silenciosa no enriquecimento de abas secundarias do dataset
+- Status: `ABERTO`
+- Situação detectada:
+  - Quando `_enriquecer_dataset_com_status` falha para `usuarios_respondidos` ou `usuarios_duplicados`, o erro e ignorado e a planilha segue sendo gerada.
+- Possível causa:
+  - Fluxo trata erro apenas para aba principal e adota fallback implicito para abas secundarias.
+- Impacto potencial:
+  - Resultado final pode aparentar sucesso com abas incompletas/desalinhadas, reduzindo confiabilidade operacional.
+- Mitigação atual (se existir):
+  - A aba principal (`usuarios`) bloqueia em caso de falha de enriquecimento.
+- Próxima solução recomendada:
+  - Propagar falha (com `codigo_erro`) ou registrar aviso estruturado por aba no retorno final.
+
+1. Regra de qualidade de data inconsistente entre modos de ingestao
+- Status: `ABERTO`
+- Situação detectada:
+  - `executar_normalizacao_padronizacao` bloqueia por limiar de NaT, mas `executar_ingestao_somente_status` apenas alerta e retorna `ok=True`.
+- Possível causa:
+  - Contratos de erro divergentes entre funcoes que deveriam representar o mesmo criterio de qualidade.
+- Impacto potencial:
+  - Operacao pode processar arquivos com baixa qualidade de data dependendo do modo acionado, dificultando governanca.
+- Mitigação atual (se existir):
+  - Logs de `VALIDACAO_DATA` e metrica de percentual NaT.
+- Próxima solução recomendada:
+  - Unificar politica de bloqueio/alerta por contexto e explicitar no retorno um status de qualidade padronizado.
+
+2. Preflight pode aprovar sem validar data de status_resposta
+- Status: `ABERTO`
+- Situação detectada:
+  - No preflight, ausencia de coluna de atendimento gera apenas aviso (`avisos`) e nao bloqueia o fluxo.
+- Possível causa:
+  - Implementacao considera obrigatoria apenas quando identifica nomes exatos (`DT_ATENDIMENTO`/`dat_atendimento`).
+- Impacto potencial:
+  - Falso positivo de prontidao: pipeline segue sem avaliacao real da qualidade temporal de status_resposta.
+- Mitigação atual (se existir):
+  - Aviso textual no retorno de preflight.
+- Próxima solução recomendada:
+  - Tratar ausencia da coluna de data como bloqueio em contextos que dependem da metrica, com `codigo_erro` de validacao.
+
+3. Falta de tratamento de excecao em `executar_ingestao_unificar`
+- Status: `ABERTO`
+- Situação detectada:
+  - A funcao orquestra concatenacao e normalizacao sem bloco `try/except` proprio.
+- Possível causa:
+  - Confianca de que dependencias internas sempre retornem dicionario de erro.
+- Impacto potencial:
+  - Excecoes inesperadas interrompem a orquestracao sem envelope padrao de erro para camada chamadora.
+- Mitigação atual (se existir):
+  - Alguns servicos internos ja retornam `ok=False` com mensagens.
+- Próxima solução recomendada:
+  - Adicionar tratamento central com `codigo_erro` consistente (`ERRO_INGESTAO`/`ERRO_CONCATENACAO`).
 3. Baixa observabilidade de descartes por data inválida na integração
 - Status: `RESOLVIDO`
 - Situação anterior:
@@ -82,6 +158,31 @@ Fontes migradas:
 
 ### Baixa prioridade / técnica
 
+0. Dependencia implicita de atualidade do arquivo unificado no preflight
+- Status: `ABERTO`
+- Situação detectada:
+  - Se `status_resposta_eletivo_internacao` existir, o preflight usa esse arquivo diretamente sem validar se esta sincronizado com os arquivos base de eletivo/internacao.
+- Possível causa:
+  - Decisao de priorizar artefato unificado existente por performance e simplicidade.
+- Impacto potencial:
+  - Diagnostico de preflight pode refletir estado antigo e divergir da execucao real.
+- Mitigação atual (se existir):
+  - Fallback em memoria quando o unificado esta ausente.
+- Próxima solução recomendada:
+  - Incluir checagem de frescor (timestamp/hash) ou opcao de forcar recomposicao antes da validacao.
+
+1. Execucao adicional XLSX usa criterio parcial de disponibilidade
+- Status: `ABERTO`
+- Situação detectada:
+  - Modo XLSX adicional e acionado quando apenas um dos arquivos pareados existe em XLSX, misturando possivelmente CSV/XLSX na mesma rodada.
+- Possível causa:
+  - Condicao de entrada considera `status OR status_resposta` em vez de exigir par completo.
+- Impacto potencial:
+  - Variacao de parsing e comportamento nao deterministico entre execucoes com mesmas regras de negocio.
+- Mitigação atual (se existir):
+  - Falha do modo adicional nao derruba o fluxo CSV principal.
+- Próxima solução recomendada:
+  - Exigir ambos os arquivos em XLSX para o modo adicional ou registrar modo misto explicitamente nas metricas.
 6. Parse de data com risco de compatibilidade de versão (`format='mixed'`)
 - Status: `RESOLVIDO`
 - Correção aplicada:
