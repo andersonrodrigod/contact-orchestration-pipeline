@@ -70,6 +70,7 @@ def executar_normalizacao_padronizacao(
     etapa_atual = 'INICIO'
     try:
         alertas_data = []
+        erros_qualidade_data = []
         etapa_atual = 'LEITURA_STATUS'
         logger.info('LEITURA', 'Lendo arquivo status')
         df_status = ler_arquivo_csv(arquivo_status)
@@ -130,8 +131,8 @@ def executar_normalizacao_padronizacao(
                 mensagem_alerta = _mensagem_alerta_nat(
                     'Data agendamento', pct_nat_status, qtd_nat_status, len(df_status)
                 )
-                logger.warning('VALIDACAO_DATA', mensagem_alerta)
-                alertas_data.append(mensagem_alerta)
+                logger.error('VALIDACAO_DATA', mensagem_alerta)
+                erros_qualidade_data.append(mensagem_alerta)
         if 'DT_ATENDIMENTO' in df_status_resposta.columns and len(df_status_resposta) > 0:
             qtd_nat_resposta = int(df_status_resposta['DT_ATENDIMENTO'].isna().sum())
             pct_nat_resposta = (qtd_nat_resposta / len(df_status_resposta)) * 100
@@ -143,8 +144,8 @@ def executar_normalizacao_padronizacao(
                 mensagem_alerta = _mensagem_alerta_nat(
                     'DT_ATENDIMENTO', pct_nat_resposta, qtd_nat_resposta, len(df_status_resposta)
                 )
-                logger.warning('VALIDACAO_DATA', mensagem_alerta)
-                alertas_data.append(mensagem_alerta)
+                logger.error('VALIDACAO_DATA', mensagem_alerta)
+                erros_qualidade_data.append(mensagem_alerta)
 
         etapa_atual = 'LIMPEZA_TEXTO'
         logger.info('NORMALIZACAO', 'Limpando texto nas colunas nao-data')
@@ -171,12 +172,14 @@ def executar_normalizacao_padronizacao(
             'ok': (
                 resultado_colunas_origem['ok']
                 and resultado_validacao['ok']
+                and len(erros_qualidade_data) == 0
             ),
             'mensagens': (
                 mensagens_iniciais
                 + resultado_colunas_origem['mensagens']
                 + resultado_validacao['mensagens']
                 + alertas_data
+                + erros_qualidade_data
             ),
         }
 
@@ -195,6 +198,8 @@ def executar_normalizacao_padronizacao(
         salvar_dataframe(df_status_resposta, saida_status_resposta)
 
         status_final = 'SUCESSO' if resultado_final['ok'] else 'FALHA_VALIDACAO_DATA'
+        if len(erros_qualidade_data) > 0:
+            status_final = 'FALHA_QUALIDADE_DATA'
         if finalizar_logger:
             logger.finalizar(status_final)
         return resultado_final

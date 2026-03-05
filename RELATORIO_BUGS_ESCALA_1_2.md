@@ -63,6 +63,10 @@ Metodo: analise estatica de codigo (sem alterar regra de negocio nem gerar saida
 - Sugestao:
   - remover `format='mixed'` e usar parse padrao com `dayfirst=True`,
   - ou fixar versao minima de pandas no projeto.
+- Atualizacao (2026-03-05):
+  - Correcao aplicada no codigo: `format='mixed'` removido.
+  - Parse permanece com `errors='coerce'` e `dayfirst=True`, com fallback para formatos ISO/alternativos.
+  - Validacao local (amostras reais do projeto): sem diferenca de resultado frente ao comportamento anterior.
 
 ### 7) Regra de qualidade permite ate 30% de datas invalidas sem bloquear
 - Local: `src/services/ingestao_service.py:20`, `src/services/ingestao_service.py:91-126`, `src/services/ingestao_service.py:234-251`
@@ -72,6 +76,8 @@ Metodo: analise estatica de codigo (sem alterar regra de negocio nem gerar saida
 - Sugestao:
   - tornar limite configuravel por ambiente,
   - registrar contagem de descartes e falhar com thresholds menores em producao.
+- Atualizacao (2026-03-05):
+  - Correcao aplicada no codigo: quando `% NaT >= 30%` em `Data agendamento` ou `DT_ATENDIMENTO`, a etapa retorna `ok=False` (falha).
 
 ## Escala 3 (baixo impacto / qualidade)
 

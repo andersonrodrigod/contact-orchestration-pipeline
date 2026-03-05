@@ -75,12 +75,20 @@ def normalizar_tipos_dataframe(df, colunas_data=None):
 
     for coluna_data in colunas_data:
         if coluna_data in df.columns:
-            df[coluna_data] = pd.to_datetime(
-                df[coluna_data],
-                errors='coerce',
-                format='mixed',
-                dayfirst=True,
+            serie_data = pd.to_datetime(df[coluna_data], errors='coerce', dayfirst=True)
+            mask_nat_com_valor = (
+                serie_data.isna()
+                & df[coluna_data].notna()
+                & (df[coluna_data].astype(str).str.strip() != '')
             )
+            if mask_nat_com_valor.any():
+                # Fallback para formatos ISO/alternativos sem depender de format='mixed'.
+                serie_data.loc[mask_nat_com_valor] = pd.to_datetime(
+                    df.loc[mask_nat_com_valor, coluna_data],
+                    errors='coerce',
+                    dayfirst=False,
+                )
+            df[coluna_data] = serie_data
 
     return df
 

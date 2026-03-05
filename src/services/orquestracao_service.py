@@ -7,12 +7,6 @@ MARCADOR_ACAO_PROXIMO = '__PROXIMO__'
 MARCADOR_ACAO_PRIORIDADE = '__PRIORIDADE__'
 PROCESSO_RESOLVIDO = 'RESOLVIDO'
 
-ABAS_PADRAO = [
-    'usuarios',
-    'usuarios_respondidos',
-    'usuarios_duplicados',
-    'usuarios_resolvidos',
-]
 ABAS_OBRIGATORIAS_FINALIZACAO = [
     'usuarios',
     'usuarios_respondidos',
