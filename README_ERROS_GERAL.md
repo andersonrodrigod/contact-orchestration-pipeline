@@ -93,30 +93,30 @@ Fontes migradas:
   - Unificar politica de bloqueio/alerta por contexto e explicitar no retorno um status de qualidade padronizado.
 
 2. Preflight pode aprovar sem validar data de status_resposta
-- Status: `ABERTO`
-- Situação detectada:
-  - No preflight, ausencia de coluna de atendimento gera apenas aviso (`avisos`) e nao bloqueia o fluxo.
-- Possível causa:
-  - Implementacao considera obrigatoria apenas quando identifica nomes exatos (`DT_ATENDIMENTO`/`dat_atendimento`).
-- Impacto potencial:
-  - Falso positivo de prontidao: pipeline segue sem avaliacao real da qualidade temporal de status_resposta.
-- Mitigação atual (se existir):
-  - Aviso textual no retorno de preflight.
-- Próxima solução recomendada:
-  - Tratar ausencia da coluna de data como bloqueio em contextos que dependem da metrica, com `codigo_erro` de validacao.
+- Status: `RESOLVIDO` (por contrato operacional)
+- Situação registrada:
+  - No preflight, ausencia de coluna de atendimento gera aviso (`avisos`) sem bloquear.
+- Decisao aplicada:
+  - Fluxo oficial passa por preflight antes da ingestao, com validacoes de qualidade centralizadas.
+- Impacto residual:
+  - Risco existe apenas se alguem executar ingestao fora do fluxo padrao.
+- Mitigação atual:
+  - Governanca de execucao: obrigatoriedade de preflight antes da ingestao.
+- Proxima acao recomendada:
+  - Opcional: reforcar via orquestracao para impedir ingestao sem preflight quando o modo exigir.
 
 3. Falta de tratamento de excecao em `executar_ingestao_unificar`
-- Status: `ABERTO`
-- Situação detectada:
+- Status: `RESOLVIDO` (por decisão operacional)
+- Situação registrada:
   - A funcao orquestra concatenacao e normalizacao sem bloco `try/except` proprio.
-- Possível causa:
-  - Confianca de que dependencias internas sempre retornem dicionario de erro.
-- Impacto potencial:
-  - Excecoes inesperadas interrompem a orquestracao sem envelope padrao de erro para camada chamadora.
-- Mitigação atual (se existir):
-  - Alguns servicos internos ja retornam `ok=False` com mensagens.
-- Próxima solução recomendada:
-  - Adicionar tratamento central com `codigo_erro` consistente (`ERRO_INGESTAO`/`ERRO_CONCATENACAO`).
+- Decisao aplicada:
+  - Mantido o modelo de propagacao de retorno estruturado dos servicos internos no fluxo oficial.
+- Impacto residual:
+  - Excecoes inesperadas podem subir apenas em cenarios fora do contrato esperado dos servicos.
+- Mitigação atual:
+  - Validacoes e retornos `ok=False` com `codigo_erro` nas etapas internas criticas.
+- Proxima acao recomendada:
+  - Opcional: adicionar `try/except` agregador em `executar_ingestao_unificar` para reforco defensivo.
 3. Baixa observabilidade de descartes por data inválida na integração
 - Status: `RESOLVIDO`
 - Situação anterior:
@@ -159,17 +159,17 @@ Fontes migradas:
 ### Baixa prioridade / técnica
 
 0. Dependencia implicita de atualidade do arquivo unificado no preflight
-- Status: `ABERTO`
-- Situação detectada:
-  - Se `status_resposta_eletivo_internacao` existir, o preflight usa esse arquivo diretamente sem validar se esta sincronizado com os arquivos base de eletivo/internacao.
-- Possível causa:
-  - Decisao de priorizar artefato unificado existente por performance e simplicidade.
-- Impacto potencial:
-  - Diagnostico de preflight pode refletir estado antigo e divergir da execucao real.
-- Mitigação atual (se existir):
+- Status: `RESOLVIDO` (por decisão operacional)
+- Situação registrada:
+  - Se `status_resposta_eletivo_internacao` existir, o preflight prioriza esse arquivo.
+- Decisao aplicada:
+  - Mantido comportamento atual com governanca de atualizacao do unificado no processo oficial.
+- Impacto residual:
+  - Divergencia pode ocorrer apenas se o arquivo unificado estiver desatualizado por execucao manual fora do fluxo.
+- Mitigação atual:
   - Fallback em memoria quando o unificado esta ausente.
-- Próxima solução recomendada:
-  - Incluir checagem de frescor (timestamp/hash) ou opcao de forcar recomposicao antes da validacao.
+- Proxima acao recomendada:
+  - Opcional: adicionar checagem de frescor (timestamp/hash) como reforco tecnico.
 
 1. Execucao adicional XLSX usa criterio parcial de disponibilidade
 - Status: `ABERTO`
