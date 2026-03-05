@@ -1,4 +1,5 @@
 from core.logger import PipelineLogger
+from core.error_codes import ERRO_CONCATENACAO
 from src.services.dataset_service import concatenar_status_resposta_eletivo_internacao
 
 
@@ -41,4 +42,5 @@ def run_unificar_status_respostas_pipeline(
         return {
             'ok': False,
             'mensagens': [f'Erro no pipeline unificar_status_respostas: {type(erro).__name__}: {erro}'],
+            'codigo_erro': ERRO_CONCATENACAO,
         }

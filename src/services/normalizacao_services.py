@@ -75,14 +75,33 @@ def normalizar_tipos_dataframe(df, colunas_data=None):
 
     for coluna_data in colunas_data:
         if coluna_data in df.columns:
-            serie_data = pd.to_datetime(df[coluna_data], errors='coerce', dayfirst=True)
-            mask_nat_com_valor = (
-                serie_data.isna()
-                & df[coluna_data].notna()
-                & (df[coluna_data].astype(str).str.strip() != '')
+            serie_original = df[coluna_data].astype(str).str.strip()
+            mask_valor = df[coluna_data].notna() & (serie_original != '')
+            mask_iso = mask_valor & serie_original.str.match(
+                r'^\d{4}-\d{2}-\d{2}([ T]\d{2}:\d{2}(:\d{2})?)?$'
             )
+
+            serie_data = pd.Series(pd.NaT, index=df.index, dtype='datetime64[ns]')
+
+            # Parse dedicado de formatos ISO para evitar warning com dayfirst=True.
+            if mask_iso.any():
+                serie_data.loc[mask_iso] = pd.to_datetime(
+                    df.loc[mask_iso, coluna_data],
+                    errors='coerce',
+                    dayfirst=False,
+                )
+
+            mask_restante = mask_valor & ~mask_iso
+            if mask_restante.any():
+                serie_data.loc[mask_restante] = pd.to_datetime(
+                    df.loc[mask_restante, coluna_data],
+                    errors='coerce',
+                    dayfirst=True,
+                )
+
+            mask_nat_com_valor = serie_data.isna() & mask_valor
             if mask_nat_com_valor.any():
-                # Fallback para formatos ISO/alternativos sem depender de format='mixed'.
+                # Fallback final para formatos alternativos sem depender de format='mixed'.
                 serie_data.loc[mask_nat_com_valor] = pd.to_datetime(
                     df.loc[mask_nat_com_valor, coluna_data],
                     errors='coerce',

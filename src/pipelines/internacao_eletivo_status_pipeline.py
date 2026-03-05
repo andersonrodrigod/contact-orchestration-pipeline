@@ -1,7 +1,13 @@
 from core.logger import PipelineLogger
 from pathlib import Path
+from core.error_codes import (
+    ERRO_CRIACAO_DATASET,
+    ERRO_VALIDACAO_ARQUIVOS,
+    ERRO_VALIDACAO_COLUNAS,
+)
 from core.pipeline_result import error_result
 from core.pipeline_result import ok_result
+from src.contexts.pipeline_contextos import CONTEXTO_PIPELINE_INTERNACAO_ELETIVO
 from src.pipelines.join_status_resposta_pipeline import (
     run_status_somente_internacao_eletivo_pipeline,
     run_unificar_status_resposta_internacao_eletivo_pipeline,
@@ -45,7 +51,10 @@ def _run_criacao_dataset_status(
                 logger.error('VALIDACAO_ARQUIVOS', mensagem)
             if not logger_externo and finalizar_logger:
                 logger.finalizar('FALHA_VALIDACAO_ARQUIVOS')
-            return error_result(mensagens=validacao_arquivos['mensagens'])
+            return error_result(
+                mensagens=validacao_arquivos['mensagens'],
+                codigo_erro=ERRO_VALIDACAO_ARQUIVOS,
+            )
 
         df_origem = ler_arquivo_csv(arquivo_origem_dataset)
         colunas_arquivo = [str(col).strip() for col in df_origem.columns]
@@ -56,7 +65,10 @@ def _run_criacao_dataset_status(
         if not resultado_validacao['ok']:
             if not logger_externo and finalizar_logger:
                 logger.finalizar('FALHA_VALIDACAO_COLUNAS')
-            return error_result(mensagens=resultado_validacao['mensagens'])
+            return error_result(
+                mensagens=resultado_validacao['mensagens'],
+                codigo_erro=ERRO_VALIDACAO_COLUNAS,
+            )
 
         resultado = criar_dataset_complicacao(
             arquivo_complicacao=arquivo_origem_dataset,
@@ -65,6 +77,8 @@ def _run_criacao_dataset_status(
             contexto=contexto,
         )
         if not resultado.get('ok'):
+            if not resultado.get('codigo_erro'):
+                resultado['codigo_erro'] = ERRO_CRIACAO_DATASET
             for mensagem in resultado.get('mensagens', []):
                 logger.warning('CRIACAO_DATASET', mensagem)
             if not logger_externo and finalizar_logger:
@@ -80,22 +94,33 @@ def _run_criacao_dataset_status(
         logger.exception('ERRO_EXECUCAO', erro)
         if not logger_externo and finalizar_logger:
             logger.finalizar('ERRO')
-        return error_result(mensagens=[f'Erro na criacao do dataset status: {erro}'])
+        return error_result(
+            mensagens=[f'Erro na criacao do dataset status: {erro}'],
+            codigo_erro=ERRO_CRIACAO_DATASET,
+        )
 
 
 def run_internacao_eletivo_pipeline_enviar_status_com_resposta(
-    arquivo_status='src/data/status.csv',
-    arquivo_status_resposta_eletivo='src/data/status_resposta_eletivo.csv',
-    arquivo_status_resposta_internacao='src/data/status_resposta_internacao.csv',
-    arquivo_status_resposta_unificado='src/data/status_resposta_eletivo_internacao.csv',
-    saida_status='src/data/arquivo_limpo/status_limpo.csv',
-    saida_status_resposta='src/data/arquivo_limpo/status_resposta_eletivo_internacao_limpo.csv',
-    saida_status_integrado='src/data/arquivo_limpo/status_internacao_eletivo.csv',
+    arquivo_status=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults['arquivo_status'],
+    arquivo_status_resposta_eletivo=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults[
+        'arquivo_status_resposta_eletivo'
+    ],
+    arquivo_status_resposta_internacao=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults[
+        'arquivo_status_resposta_internacao'
+    ],
+    arquivo_status_resposta_unificado=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults[
+        'arquivo_status_resposta_unificado'
+    ],
+    saida_status=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults['saida_status'],
+    saida_status_resposta=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults['saida_status_resposta'],
+    saida_status_integrado=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults['saida_status_integrado'],
     logger=None,
 ):
     logger_externo = logger is not None
     if logger is None:
-        logger = PipelineLogger(nome_pipeline='status_internacao_eletivo_pipeline')
+        logger = PipelineLogger(
+            nome_pipeline=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.logger_status_com_resposta
+        )
     resultado_ingestao = executar_ingestao_unificar(
         arquivo_status=arquivo_status,
         arquivo_status_resposta_eletivo=arquivo_status_resposta_eletivo,
@@ -148,14 +173,43 @@ def run_internacao_eletivo_pipeline_enviar_status_com_resposta(
     else:
         logger.info('MODO_XLSX', 'Arquivos limpos XLSX nao encontrados para integracao adicional.')
 
+    metricas_por_etapa = {
+        **resultado_ingestao.get('metricas_por_etapa', {}),
+        'integracao_status_resposta': {
+            'total_status': resultado_integracao.get('total_status', 0),
+            'com_match': resultado_integracao.get('com_match', 0),
+            'sem_match': resultado_integracao.get('sem_match', 0),
+            'descartados_status_data_invalida': resultado_integracao.get(
+                'descartados_status_data_invalida', 0
+            ),
+            'descartados_resposta_data_invalida': resultado_integracao.get(
+                'descartados_resposta_data_invalida', 0
+            ),
+        },
+    }
     resultado = ok_result(
         mensagens=resultado_integracao.get('mensagens', []),
         metricas={
             'total_status': resultado_integracao.get('total_status', 0),
             'com_match': resultado_integracao.get('com_match', 0),
             'sem_match': resultado_integracao.get('sem_match', 0),
+            'descartados_status_data_invalida': resultado_integracao.get(
+                'descartados_status_data_invalida', 0
+            ),
+            'descartados_resposta_data_invalida': resultado_integracao.get(
+                'descartados_resposta_data_invalida', 0
+            ),
+            'nat_data_agendamento': resultado_ingestao.get('nat_data_agendamento', 0),
+            'pct_nat_data_agendamento': resultado_ingestao.get('pct_nat_data_agendamento', 0.0),
+            'nat_dt_atendimento': resultado_ingestao.get('nat_dt_atendimento', 0),
+            'pct_nat_dt_atendimento': resultado_ingestao.get('pct_nat_dt_atendimento', 0.0),
+            'limiar_nat_data_em_uso': resultado_ingestao.get('limiar_nat_data_em_uso'),
         },
         arquivos={'arquivo_status_integrado': resultado_integracao.get('arquivo_saida')},
+        dados={
+            'qualidade_data': resultado_ingestao.get('qualidade_data', {}),
+            'metricas_por_etapa': metricas_por_etapa,
+        },
     )
     if not logger_externo:
         logger.finalizar('SUCESSO')
@@ -163,18 +217,21 @@ def run_internacao_eletivo_pipeline_enviar_status_com_resposta(
 
 
 def run_internacao_eletivo_pipeline_enviar_status_somente_status(
-    arquivo_status='src/data/status.csv',
-    saida_status='src/data/arquivo_limpo/status_limpo.csv',
-    saida_status_integrado='src/data/arquivo_limpo/status_internacao_eletivo.csv',
+    arquivo_status=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults['arquivo_status'],
+    saida_status=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults['saida_status'],
+    saida_status_integrado=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults['saida_status_integrado'],
     logger=None,
 ):
     logger_externo = logger is not None
     if logger is None:
-        logger = PipelineLogger(nome_pipeline='status_internacao_eletivo_somente_status_pipeline')
+        logger = PipelineLogger(
+            nome_pipeline=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.logger_status_somente_status
+        )
     resultado_ingestao = executar_ingestao_somente_status(
         arquivo_status=arquivo_status,
         saida_status=saida_status,
         nome_logger='ingestao_internacao_eletivo_somente_status',
+        contexto=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.nome,
         logger=logger,
     )
     if not resultado_ingestao.get('ok'):
@@ -192,14 +249,43 @@ def run_internacao_eletivo_pipeline_enviar_status_somente_status(
             logger.finalizar('FALHA_INTEGRACAO')
         return resultado_status
 
+    metricas_por_etapa = {
+        **resultado_ingestao.get('metricas_por_etapa', {}),
+        'integracao_status_resposta': {
+            'total_status': resultado_status.get('total_status', 0),
+            'com_match': resultado_status.get('com_match', 0),
+            'sem_match': resultado_status.get('sem_match', 0),
+            'descartados_status_data_invalida': resultado_status.get(
+                'descartados_status_data_invalida', 0
+            ),
+            'descartados_resposta_data_invalida': resultado_status.get(
+                'descartados_resposta_data_invalida', 0
+            ),
+        },
+    }
     resultado = ok_result(
         mensagens=resultado_status.get('mensagens', []),
         metricas={
             'total_status': resultado_status.get('total_status', 0),
             'com_match': resultado_status.get('com_match', 0),
             'sem_match': resultado_status.get('sem_match', 0),
+            'descartados_status_data_invalida': resultado_status.get(
+                'descartados_status_data_invalida', 0
+            ),
+            'descartados_resposta_data_invalida': resultado_status.get(
+                'descartados_resposta_data_invalida', 0
+            ),
+            'nat_data_agendamento': resultado_ingestao.get('nat_data_agendamento', 0),
+            'pct_nat_data_agendamento': resultado_ingestao.get('pct_nat_data_agendamento', 0.0),
+            'nat_dt_atendimento': resultado_ingestao.get('nat_dt_atendimento', 0),
+            'pct_nat_dt_atendimento': resultado_ingestao.get('pct_nat_dt_atendimento', 0.0),
+            'limiar_nat_data_em_uso': resultado_ingestao.get('limiar_nat_data_em_uso'),
         },
         arquivos={'arquivo_status_integrado': resultado_status.get('arquivo_saida')},
+        dados={
+            'qualidade_data': resultado_ingestao.get('qualidade_data', {}),
+            'metricas_por_etapa': metricas_por_etapa,
+        },
     )
     if not logger_externo:
         logger.finalizar('SUCESSO')
@@ -207,17 +293,27 @@ def run_internacao_eletivo_pipeline_enviar_status_somente_status(
 
 
 def run_internacao_eletivo_pipeline_gerar_status_dataset(
-    arquivo_status='src/data/status.csv',
-    arquivo_status_resposta_eletivo='src/data/status_resposta_eletivo.csv',
-    arquivo_status_resposta_internacao='src/data/status_resposta_internacao.csv',
-    arquivo_status_resposta_unificado='src/data/status_resposta_eletivo_internacao.csv',
-    arquivo_dataset_origem_internacao='src/data/internacao.xlsx',
-    saida_status='src/data/arquivo_limpo/status_limpo.csv',
-    saida_status_resposta='src/data/arquivo_limpo/status_resposta_eletivo_internacao_limpo.csv',
-    saida_status_integrado='src/data/arquivo_limpo/status_internacao_eletivo.csv',
-    saida_dataset_status='src/data/arquivo_limpo/internacao_status.xlsx',
+    arquivo_status=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults['arquivo_status'],
+    arquivo_status_resposta_eletivo=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults[
+        'arquivo_status_resposta_eletivo'
+    ],
+    arquivo_status_resposta_internacao=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults[
+        'arquivo_status_resposta_internacao'
+    ],
+    arquivo_status_resposta_unificado=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults[
+        'arquivo_status_resposta_unificado'
+    ],
+    arquivo_dataset_origem_internacao=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults[
+        'arquivo_dataset_origem_internacao'
+    ],
+    saida_status=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults['saida_status'],
+    saida_status_resposta=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults['saida_status_resposta'],
+    saida_status_integrado=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults['saida_status_integrado'],
+    saida_dataset_status=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults['saida_dataset_status'],
 ):
-    logger = PipelineLogger(nome_pipeline='status_internacao_eletivo_pipeline')
+    logger = PipelineLogger(
+        nome_pipeline=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.logger_status_com_resposta
+    )
     resultado_status = run_internacao_eletivo_pipeline_enviar_status_com_resposta(
         arquivo_status=arquivo_status,
         arquivo_status_resposta_eletivo=arquivo_status_resposta_eletivo,
@@ -236,8 +332,8 @@ def run_internacao_eletivo_pipeline_gerar_status_dataset(
         arquivo_origem_dataset=arquivo_dataset_origem_internacao,
         arquivo_status_integrado=saida_status_integrado,
         arquivo_saida_dataset=saida_dataset_status,
-        nome_logger='criacao_dataset_internacao_eletivo',
-        contexto='internacao_eletivo',
+        nome_logger=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.logger_criacao_dataset,
+        contexto=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.nome,
         logger=logger,
         finalizar_logger=False,
     )
@@ -245,6 +341,12 @@ def run_internacao_eletivo_pipeline_gerar_status_dataset(
         logger.finalizar('FALHA')
         return resultado_dataset
 
+    metricas_por_etapa = {
+        **resultado_status.get('metricas_por_etapa', {}),
+        'criacao_dataset_status': {
+            'total_linhas': resultado_dataset.get('total_linhas', 0),
+        },
+    }
     resultado = ok_result(
         mensagens=(
             resultado_status.get('mensagens', [])
@@ -254,22 +356,41 @@ def run_internacao_eletivo_pipeline_gerar_status_dataset(
             'total_status': resultado_status.get('total_status', 0),
             'com_match': resultado_status.get('com_match', 0),
             'sem_match': resultado_status.get('sem_match', 0),
+            'descartados_status_data_invalida': resultado_status.get(
+                'descartados_status_data_invalida', 0
+            ),
+            'descartados_resposta_data_invalida': resultado_status.get(
+                'descartados_resposta_data_invalida', 0
+            ),
+            'nat_data_agendamento': resultado_status.get('nat_data_agendamento', 0),
+            'pct_nat_data_agendamento': resultado_status.get('pct_nat_data_agendamento', 0.0),
+            'nat_dt_atendimento': resultado_status.get('nat_dt_atendimento', 0),
+            'pct_nat_dt_atendimento': resultado_status.get('pct_nat_dt_atendimento', 0.0),
+            'limiar_nat_data_em_uso': resultado_status.get('limiar_nat_data_em_uso'),
             'total_linhas': resultado_dataset.get('total_linhas', 0),
         },
         arquivos={'arquivo_status_dataset': resultado_dataset.get('arquivo_saida')},
+        dados={
+            'qualidade_data': resultado_status.get('qualidade_data', {}),
+            'metricas_por_etapa': metricas_por_etapa,
+        },
     )
     logger.finalizar('SUCESSO')
     return resultado
 
 
 def run_internacao_eletivo_pipeline_gerar_status_dataset_somente_status(
-    arquivo_status='src/data/status.csv',
-    arquivo_dataset_origem_internacao='src/data/internacao.xlsx',
-    saida_status='src/data/arquivo_limpo/status_limpo.csv',
-    saida_status_integrado='src/data/arquivo_limpo/status_internacao_eletivo.csv',
-    saida_dataset_status='src/data/arquivo_limpo/internacao_status.xlsx',
+    arquivo_status=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults['arquivo_status'],
+    arquivo_dataset_origem_internacao=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults[
+        'arquivo_dataset_origem_internacao'
+    ],
+    saida_status=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults['saida_status'],
+    saida_status_integrado=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults['saida_status_integrado'],
+    saida_dataset_status=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults['saida_dataset_status'],
 ):
-    logger = PipelineLogger(nome_pipeline='status_internacao_eletivo_somente_status_pipeline')
+    logger = PipelineLogger(
+        nome_pipeline=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.logger_status_somente_status
+    )
     resultado_status = run_internacao_eletivo_pipeline_enviar_status_somente_status(
         arquivo_status=arquivo_status,
         saida_status=saida_status,
@@ -284,8 +405,8 @@ def run_internacao_eletivo_pipeline_gerar_status_dataset_somente_status(
         arquivo_origem_dataset=arquivo_dataset_origem_internacao,
         arquivo_status_integrado=saida_status_integrado,
         arquivo_saida_dataset=saida_dataset_status,
-        nome_logger='criacao_dataset_internacao_eletivo_somente_status',
-        contexto='internacao_eletivo',
+        nome_logger=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.logger_criacao_dataset_somente_status,
+        contexto=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.nome,
         logger=logger,
         finalizar_logger=False,
     )
@@ -293,6 +414,12 @@ def run_internacao_eletivo_pipeline_gerar_status_dataset_somente_status(
         logger.finalizar('FALHA')
         return resultado_dataset
 
+    metricas_por_etapa = {
+        **resultado_status.get('metricas_por_etapa', {}),
+        'criacao_dataset_status': {
+            'total_linhas': resultado_dataset.get('total_linhas', 0),
+        },
+    }
     resultado = ok_result(
         mensagens=(
             resultado_status.get('mensagens', [])
@@ -302,20 +429,37 @@ def run_internacao_eletivo_pipeline_gerar_status_dataset_somente_status(
             'total_status': resultado_status.get('total_status', 0),
             'com_match': resultado_status.get('com_match', 0),
             'sem_match': resultado_status.get('sem_match', 0),
+            'descartados_status_data_invalida': resultado_status.get(
+                'descartados_status_data_invalida', 0
+            ),
+            'descartados_resposta_data_invalida': resultado_status.get(
+                'descartados_resposta_data_invalida', 0
+            ),
+            'nat_data_agendamento': resultado_status.get('nat_data_agendamento', 0),
+            'pct_nat_data_agendamento': resultado_status.get('pct_nat_data_agendamento', 0.0),
+            'nat_dt_atendimento': resultado_status.get('nat_dt_atendimento', 0),
+            'pct_nat_dt_atendimento': resultado_status.get('pct_nat_dt_atendimento', 0.0),
+            'limiar_nat_data_em_uso': resultado_status.get('limiar_nat_data_em_uso'),
             'total_linhas': resultado_dataset.get('total_linhas', 0),
         },
         arquivos={'arquivo_status_dataset': resultado_dataset.get('arquivo_saida')},
+        dados={
+            'qualidade_data': resultado_status.get('qualidade_data', {}),
+            'metricas_por_etapa': metricas_por_etapa,
+        },
     )
     logger.finalizar('SUCESSO')
     return resultado
 
 
 def run_internacao_eletivo_pipeline_criar_dataset_status(
-    arquivo_origem_dataset='src/data/internacao.xlsx',
-    arquivo_status_integrado='src/data/arquivo_limpo/status_internacao_eletivo.csv',
-    arquivo_saida_dataset='src/data/arquivo_limpo/internacao_status.xlsx',
-    nome_logger='criacao_dataset_internacao_eletivo',
-    contexto='internacao_eletivo',
+    arquivo_origem_dataset=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults[
+        'arquivo_dataset_origem_internacao'
+    ],
+    arquivo_status_integrado=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults['saida_status_integrado'],
+    arquivo_saida_dataset=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults['saida_dataset_status'],
+    nome_logger=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.logger_criacao_dataset,
+    contexto=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.nome,
     logger=None,
     finalizar_logger=True,
 ):

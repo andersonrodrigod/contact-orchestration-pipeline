@@ -1,5 +1,12 @@
 from core.logger import PipelineLogger
 from pathlib import Path
+from core.error_codes import (
+    ERRO_CONCATENACAO,
+    ERRO_INGESTAO,
+    ERRO_QUALIDADE_DATA,
+    ERRO_VALIDACAO_COLUNAS,
+)
+from src.config.governanca_config import resolver_limiar_nat_data
 from src.pipelines.concatenar_status_respostas_pipeline import run_unificar_status_respostas_pipeline
 from src.services.normalizacao_services import (
     criar_coluna_dt_envio_por_data_agendamento,
@@ -16,9 +23,6 @@ from src.services.validacao_service import (
     validar_padronizacao_colunas_data,
 )
 from src.utils.arquivos import ler_arquivo_csv, salvar_dataframe
-
-LIMIAR_AVISO_PERCENTUAL_NAT_DATA = 30.0
-
 
 def _caminho_xlsx_pareado(caminho_arquivo):
     caminho = Path(caminho_arquivo)
@@ -54,6 +58,9 @@ def executar_normalizacao_padronizacao(
     arquivo_status_resposta='src/data/status_resposta_complicacao.csv',
     saida_status='src/data/arquivo_limpo/status_limpo.csv',
     saida_status_resposta='src/data/arquivo_limpo/status_resposta_complicacao_limpo.csv',
+    limiar_nat_data=None,
+    contexto=None,
+    permitir_override_limiar=True,
     mensagens_iniciais=None,
     logger=None,
     finalizar_logger=True,
@@ -62,15 +69,26 @@ def executar_normalizacao_padronizacao(
         mensagens_iniciais = []
     if logger is None:
         logger = PipelineLogger()
+    limiar_nat_data, origem_limiar = resolver_limiar_nat_data(
+        limiar_nat_data,
+        contexto=contexto,
+        permitir_override_limiar=permitir_override_limiar,
+    )
     logger.info('INICIO', f'arquivo_status={arquivo_status}')
     logger.info('INICIO', f'arquivo_status_resposta={arquivo_status_resposta}')
     logger.info('INICIO', f'saida_status={saida_status}')
     logger.info('INICIO', f'saida_status_resposta={saida_status_resposta}')
+    logger.info('INICIO', f'limiar_nat_data_em_uso={limiar_nat_data}')
+    logger.info('INICIO', f'limiar_nat_data_origem={origem_limiar}')
 
     etapa_atual = 'INICIO'
     try:
         alertas_data = []
         erros_qualidade_data = []
+        nat_status = 0
+        pct_nat_status = 0.0
+        nat_resposta = 0
+        pct_nat_resposta = 0.0
         etapa_atual = 'LEITURA_STATUS'
         logger.info('LEITURA', 'Lendo arquivo status')
         df_status = ler_arquivo_csv(arquivo_status)
@@ -95,6 +113,7 @@ def executar_normalizacao_padronizacao(
             resultado_final = {
                 'ok': False,
                 'mensagens': mensagens_iniciais + resultado_colunas_origem['mensagens'],
+                'codigo_erro': ERRO_VALIDACAO_COLUNAS,
             }
             logger.warning('VALIDACAO_ORIGEM', 'Falhou validacao de colunas de origem')
             if finalizar_logger:
@@ -121,28 +140,28 @@ def executar_normalizacao_padronizacao(
             f"DT_ATENDIMENTO dtype={df_status_resposta['DT_ATENDIMENTO'].dtype if 'DT_ATENDIMENTO' in df_status_resposta.columns else 'NA'}",
         )
         if 'Data agendamento' in df_status.columns and len(df_status) > 0:
-            qtd_nat_status = int(df_status['Data agendamento'].isna().sum())
-            pct_nat_status = (qtd_nat_status / len(df_status)) * 100
+            nat_status = int(df_status['Data agendamento'].isna().sum())
+            pct_nat_status = (nat_status / len(df_status)) * 100
             logger.info(
                 'NORMALIZACAO',
-                f'Data agendamento NaT={pct_nat_status:.2f}% ({qtd_nat_status}/{len(df_status)})',
+                f'Data agendamento NaT={pct_nat_status:.2f}% ({nat_status}/{len(df_status)})',
             )
-            if pct_nat_status >= LIMIAR_AVISO_PERCENTUAL_NAT_DATA:
+            if pct_nat_status >= limiar_nat_data:
                 mensagem_alerta = _mensagem_alerta_nat(
-                    'Data agendamento', pct_nat_status, qtd_nat_status, len(df_status)
+                    'Data agendamento', pct_nat_status, nat_status, len(df_status)
                 )
                 logger.error('VALIDACAO_DATA', mensagem_alerta)
                 erros_qualidade_data.append(mensagem_alerta)
         if 'DT_ATENDIMENTO' in df_status_resposta.columns and len(df_status_resposta) > 0:
-            qtd_nat_resposta = int(df_status_resposta['DT_ATENDIMENTO'].isna().sum())
-            pct_nat_resposta = (qtd_nat_resposta / len(df_status_resposta)) * 100
+            nat_resposta = int(df_status_resposta['DT_ATENDIMENTO'].isna().sum())
+            pct_nat_resposta = (nat_resposta / len(df_status_resposta)) * 100
             logger.info(
                 'NORMALIZACAO',
-                f'DT_ATENDIMENTO NaT={pct_nat_resposta:.2f}% ({qtd_nat_resposta}/{len(df_status_resposta)})',
+                f'DT_ATENDIMENTO NaT={pct_nat_resposta:.2f}% ({nat_resposta}/{len(df_status_resposta)})',
             )
-            if pct_nat_resposta >= LIMIAR_AVISO_PERCENTUAL_NAT_DATA:
+            if pct_nat_resposta >= limiar_nat_data:
                 mensagem_alerta = _mensagem_alerta_nat(
-                    'DT_ATENDIMENTO', pct_nat_resposta, qtd_nat_resposta, len(df_status_resposta)
+                    'DT_ATENDIMENTO', pct_nat_resposta, nat_resposta, len(df_status_resposta)
                 )
                 logger.error('VALIDACAO_DATA', mensagem_alerta)
                 erros_qualidade_data.append(mensagem_alerta)
@@ -181,7 +200,38 @@ def executar_normalizacao_padronizacao(
                 + alertas_data
                 + erros_qualidade_data
             ),
+            'nat_data_agendamento': nat_status,
+            'pct_nat_data_agendamento': round(pct_nat_status, 2),
+            'nat_dt_atendimento': nat_resposta,
+            'pct_nat_dt_atendimento': round(pct_nat_resposta, 2),
+            'limiar_nat_data_em_uso': limiar_nat_data,
+            'qualidade_data': {
+                'data_agendamento': {
+                    'nat': nat_status,
+                    'pct_nat': round(pct_nat_status, 2),
+                    'limiar': limiar_nat_data,
+                },
+                'dt_atendimento': {
+                    'nat': nat_resposta,
+                    'pct_nat': round(pct_nat_resposta, 2),
+                    'limiar': limiar_nat_data,
+                },
+            },
+            'metricas_por_etapa': {
+                'normalizacao_padronizacao': {
+                    'nat_data_agendamento': nat_status,
+                    'pct_nat_data_agendamento': round(pct_nat_status, 2),
+                    'nat_dt_atendimento': nat_resposta,
+                    'pct_nat_dt_atendimento': round(pct_nat_resposta, 2),
+                    'limiar_nat_data_em_uso': limiar_nat_data,
+                }
+            },
         }
+        if not resultado_final['ok']:
+            if len(erros_qualidade_data) > 0:
+                resultado_final['codigo_erro'] = ERRO_QUALIDADE_DATA
+            else:
+                resultado_final['codigo_erro'] = ERRO_VALIDACAO_COLUNAS
 
         etapa_atual = 'FORMATAR_DT_ATENDIMENTO'
         logger.info('FORMATACAO', 'Formatando DT_ATENDIMENTO para BR')
@@ -208,6 +258,7 @@ def executar_normalizacao_padronizacao(
         resultado_erro = {
             'ok': False,
             'mensagens': [f'Erro inesperado na execucao (etapa={etapa_atual}): {type(erro).__name__}: {erro}'],
+            'codigo_erro': ERRO_INGESTAO,
         }
         if finalizar_logger:
             logger.finalizar('ERRO')
@@ -219,6 +270,8 @@ def executar_ingestao_complicacao(
     arquivo_status_resposta_complicacao='src/data/status_resposta_complicacao.csv',
     saida_status='src/data/arquivo_limpo/status_limpo.csv',
     saida_status_resposta='src/data/arquivo_limpo/status_resposta_complicacao_limpo.csv',
+    limiar_nat_data=None,
+    permitir_override_limiar=True,
     logger=None,
 ):
     logger_externo = logger is not None
@@ -230,6 +283,9 @@ def executar_ingestao_complicacao(
         arquivo_status_resposta=arquivo_status_resposta_complicacao,
         saida_status=saida_status,
         saida_status_resposta=saida_status_resposta,
+        limiar_nat_data=limiar_nat_data,
+        contexto='complicacao',
+        permitir_override_limiar=permitir_override_limiar,
         mensagens_iniciais=['Modo complicacao selecionado.'],
         logger=logger,
         finalizar_logger=not logger_externo,
@@ -258,6 +314,9 @@ def executar_ingestao_complicacao(
         arquivo_status_resposta=arquivo_resposta_xlsx,
         saida_status=saida_status_xlsx,
         saida_status_resposta=saida_resposta_xlsx,
+        limiar_nat_data=limiar_nat_data,
+        contexto='complicacao',
+        permitir_override_limiar=permitir_override_limiar,
         mensagens_iniciais=['Execucao adicional XLSX (status + status_resposta).'],
         logger=logger,
         finalizar_logger=False,
@@ -280,16 +339,28 @@ def executar_ingestao_somente_status(
     arquivo_status='src/data/status.csv',
     saida_status='src/data/arquivo_limpo/status_limpo.csv',
     nome_logger='ingestao_somente_status',
+    limiar_nat_data=None,
+    contexto='complicacao',
+    permitir_override_limiar=True,
     logger=None,
 ):
     logger_externo = logger is not None
     if logger is None:
         logger = PipelineLogger(nome_pipeline=nome_logger)
+    limiar_nat_data, origem_limiar = resolver_limiar_nat_data(
+        limiar_nat_data,
+        contexto=contexto,
+        permitir_override_limiar=permitir_override_limiar,
+    )
     logger.info('INICIO', f'arquivo_status={arquivo_status}')
     logger.info('INICIO', f'saida_status={saida_status}')
+    logger.info('INICIO', f'limiar_nat_data_em_uso={limiar_nat_data}')
+    logger.info('INICIO', f'limiar_nat_data_origem={origem_limiar}')
     etapa_atual = 'INICIO'
     try:
         alertas_data = []
+        nat_status = 0
+        pct_nat_status = 0.0
         etapa_atual = 'LEITURA_STATUS'
         df_status = ler_arquivo_csv(arquivo_status)
         logger.info('LEITURA', f'df_status: linhas={len(df_status)} colunas={len(df_status.columns)}')
@@ -299,15 +370,15 @@ def executar_ingestao_somente_status(
         etapa_atual = 'NORMALIZACAO_TIPOS'
         df_status = normalizar_tipos_dataframe(df_status, colunas_data=['Data agendamento'])
         if 'Data agendamento' in df_status.columns and len(df_status) > 0:
-            qtd_nat_status = int(df_status['Data agendamento'].isna().sum())
-            pct_nat_status = (qtd_nat_status / len(df_status)) * 100
+            nat_status = int(df_status['Data agendamento'].isna().sum())
+            pct_nat_status = (nat_status / len(df_status)) * 100
             logger.info(
                 'NORMALIZACAO',
-                f'Data agendamento NaT={pct_nat_status:.2f}% ({qtd_nat_status}/{len(df_status)})',
+                f'Data agendamento NaT={pct_nat_status:.2f}% ({nat_status}/{len(df_status)})',
             )
-            if pct_nat_status >= LIMIAR_AVISO_PERCENTUAL_NAT_DATA:
+            if pct_nat_status >= limiar_nat_data:
                 mensagem_alerta = _mensagem_alerta_nat(
-                    'Data agendamento', pct_nat_status, qtd_nat_status, len(df_status)
+                    'Data agendamento', pct_nat_status, nat_status, len(df_status)
                 )
                 logger.warning('VALIDACAO_DATA', mensagem_alerta)
                 alertas_data.append(mensagem_alerta)
@@ -324,6 +395,27 @@ def executar_ingestao_somente_status(
             'ok': True,
             'arquivo_saida': saida_status,
             'mensagens': ['Ingestao somente status executada com sucesso.'] + alertas_data,
+            'nat_data_agendamento': nat_status,
+            'pct_nat_data_agendamento': round(pct_nat_status, 2),
+            'nat_dt_atendimento': 0,
+            'pct_nat_dt_atendimento': 0.0,
+            'limiar_nat_data_em_uso': limiar_nat_data,
+            'qualidade_data': {
+                'data_agendamento': {
+                    'nat': nat_status,
+                    'pct_nat': round(pct_nat_status, 2),
+                    'limiar': limiar_nat_data,
+                }
+            },
+            'metricas_por_etapa': {
+                'normalizacao_padronizacao': {
+                    'nat_data_agendamento': nat_status,
+                    'pct_nat_data_agendamento': round(pct_nat_status, 2),
+                    'nat_dt_atendimento': 0,
+                    'pct_nat_dt_atendimento': 0.0,
+                    'limiar_nat_data_em_uso': limiar_nat_data,
+                }
+            },
         }
     except Exception as erro:
         logger.exception('ERRO_EXECUCAO', erro)
@@ -332,6 +424,7 @@ def executar_ingestao_somente_status(
         return {
             'ok': False,
             'mensagens': [f'Erro na ingestao somente status (etapa={etapa_atual}): {type(erro).__name__}: {erro}'],
+            'codigo_erro': ERRO_INGESTAO,
         }
 
 
@@ -342,15 +435,24 @@ def executar_ingestao_unificar(
     arquivo_status_resposta_unificado='src/data/status_resposta_eletivo_internacao.csv',
     saida_status='src/data/arquivo_limpo/status_limpo.csv',
     saida_status_resposta='src/data/arquivo_limpo/status_resposta_eletivo_internacao_limpo.csv',
+    limiar_nat_data=None,
+    permitir_override_limiar=True,
     logger=None,
 ):
     logger_externo = logger is not None
     if logger is None:
         logger = PipelineLogger(nome_pipeline='ingestao_unificar')
+    limiar_nat_data, origem_limiar = resolver_limiar_nat_data(
+        limiar_nat_data,
+        contexto='internacao_eletivo',
+        permitir_override_limiar=permitir_override_limiar,
+    )
     logger.info('MODO', 'Modo unificar iniciado')
     logger.info('MODO', f'arquivo_eletivo={arquivo_status_resposta_eletivo}')
     logger.info('MODO', f'arquivo_internacao={arquivo_status_resposta_internacao}')
     logger.info('MODO', f'arquivo_unificado={arquivo_status_resposta_unificado}')
+    logger.info('MODO', f'limiar_nat_data_em_uso={limiar_nat_data}')
+    logger.info('MODO', f'limiar_nat_data_origem={origem_limiar}')
 
     resultado_concat = run_unificar_status_respostas_pipeline(
         arquivo_eletivo=arquivo_status_resposta_eletivo,
@@ -371,6 +473,8 @@ def executar_ingestao_unificar(
 
     if not resultado_concat['ok']:
         logger.warning('CONCATENACAO', 'Concatenacao nao executada por validacao')
+        if not resultado_concat.get('codigo_erro'):
+            resultado_concat['codigo_erro'] = ERRO_CONCATENACAO
         if not logger_externo:
             logger.finalizar('FALHA_CONCATENACAO')
         return resultado_concat
@@ -380,6 +484,9 @@ def executar_ingestao_unificar(
         arquivo_status_resposta=arquivo_status_resposta_unificado,
         saida_status=saida_status,
         saida_status_resposta=saida_status_resposta,
+        limiar_nat_data=limiar_nat_data,
+        contexto='internacao_eletivo',
+        permitir_override_limiar=permitir_override_limiar,
         mensagens_iniciais=resultado_concat['mensagens'],
         logger=logger,
         finalizar_logger=not logger_externo,
@@ -423,6 +530,9 @@ def executar_ingestao_unificar(
         arquivo_status_resposta=arquivo_unificado_xlsx,
         saida_status=saida_status_xlsx,
         saida_status_resposta=saida_resposta_xlsx,
+        limiar_nat_data=limiar_nat_data,
+        contexto='internacao_eletivo',
+        permitir_override_limiar=permitir_override_limiar,
         mensagens_iniciais=['Execucao adicional XLSX (unificacao + limpeza de status).'],
         logger=logger,
         finalizar_logger=False,
