@@ -4,8 +4,8 @@ from pathlib import Path
 import pandas as pd
 
 
-ARQUIVO_DATASET = 'src/data/arquivo_limpo/dataset_complicacao.xlsx'
-ARQUIVO_STATUS_INTEGRADO = 'src/data/arquivo_limpo/status_complicacao_integrado.csv'
+ARQUIVO_DATASET = 'src/data/arquivo_limpo/complicacao_status.xlsx'
+ARQUIVO_STATUS_INTEGRADO = 'src/data/arquivo_limpo/status_complicacao.csv'
 ARQUIVO_RELATORIO = 'tests/outputs/relatorio_fallback_chave_contato.xlsx'
 
 

@@ -1,4 +1,4 @@
-import pandas as pd
+﻿import pandas as pd
 from src.config.schemas import (
     COLUNAS_FINAIS_DATASET,
     COLUNAS_STATUS_FONTE_DATASET,
@@ -23,10 +23,13 @@ from src.services.validacao_service import (
     validar_colunas_minimas_status_resposta,
     validar_colunas_origem_dataset_complicacao,
 )
-from src.utils.arquivos import ler_arquivo_csv
+from src.utils.arquivos import ler_arquivo_csv, salvar_dataframe
 
 VALOR_SEM_TELEFONE_DISPONIVEL = 'SEM_TELEFONE_DISPONIVEL'
 VALOR_SEM_TELEFONE_PRIORIDADE = 'SEM TELEFONE'
+STATUS_CHAVE_OK_PRINCIPAL = 'OK_PRINCIPAL'
+STATUS_CHAVE_OK_FALLBACK = 'OK_FALLBACK'
+STATUS_CHAVE_SEM_MATCH = 'SEM_MATCH'
 
 
 def _carregar_status_para_lookup(arquivo_status_integrado):
@@ -180,7 +183,7 @@ def _enriquecer_dataset_com_status(
     df_saida['IDENTIFICACAO'] = ''
     df_saida['TELEFONE ENVIADO'] = ''
     df_saida['CHAVE STATUS'] = ''
-    df_saida['STATUS CHAVE'] = ''
+    df_saida['STATUS CHAVE'] = STATUS_CHAVE_SEM_MATCH
     df_saida['TELEFONE PRIORIDADE'] = ''
     df_saida['PROXIMO TELEFONE DISPONIVEL'] = ''
     df_saida['STATUS TELEFONE'] = ''
@@ -201,7 +204,7 @@ def _enriquecer_dataset_com_status(
         df_saida.loc[idx_principal, 'IDENTIFICACAO'] = chave.map(mapa_principal['Respondido']).fillna('')
         df_saida.loc[idx_principal, 'TELEFONE ENVIADO'] = chave.map(mapa_principal['Telefone']).fillna('')
         df_saida.loc[idx_principal, 'CHAVE STATUS'] = df_saida.loc[idx_principal, 'CHAVE RELATORIO']
-        df_saida.loc[idx_principal, 'STATUS CHAVE'] = 'OK'
+        df_saida.loc[idx_principal, 'STATUS CHAVE'] = STATUS_CHAVE_OK_PRINCIPAL
 
     # Fallback: NOME_MANIPULADO+Telefone -> USUARIO+qualquer telefone 1..5
     idx_sem_principal = df_saida.index[~mask_principal]
@@ -269,10 +272,11 @@ def _enriquecer_dataset_com_status(
                 df_saida.loc[idx_fallback, 'CHAVE STATUS'] = (
                     df_melhor_match.loc[idx_fallback, 'Contato'].fillna('')
                 )
-                df_saida.loc[idx_fallback, 'STATUS CHAVE'] = 'ERROR'
+                df_saida.loc[idx_fallback, 'STATUS CHAVE'] = STATUS_CHAVE_OK_FALLBACK
 
-    total_match = int(_normalizar_texto_serie(df_saida['STATUS CHAVE']).ne('').sum())
-    total_sem_match = total_dataset - total_match
+    serie_status_chave = _normalizar_texto_serie(df_saida['STATUS CHAVE'])
+    total_match = int(serie_status_chave.isin([STATUS_CHAVE_OK_PRINCIPAL, STATUS_CHAVE_OK_FALLBACK]).sum())
+    total_sem_match = int((serie_status_chave == STATUS_CHAVE_SEM_MATCH).sum())
     if total_match == 0:
         return {
             'ok': False,
@@ -397,7 +401,7 @@ def concatenar_status_resposta_eletivo_internacao(
 
     df_concatenado = pd.concat([df_eletivo, df_internacao], ignore_index=True)
     df_concatenado = padronizar_colunas_status_resposta(df_concatenado)
-    df_concatenado.to_csv(arquivo_saida, sep=';', index=False, encoding='utf-8-sig')
+    salvar_dataframe(df_concatenado, arquivo_saida)
     total_concatenado = len(df_concatenado)
 
     return {
@@ -440,7 +444,8 @@ def _montar_df_final_complicacao(df_base):
 
     df_final = df_final[COLUNAS_FINAIS_DATASET].copy()
 
-    colunas_data = [col for col in ['DT INTERNACAO', 'DT ENVIO'] if col in df_final.columns]
+    # DT INTERNACAO e informativa: nao forcar parse para data evita perder texto invalido.
+    colunas_data = [col for col in ['DT ENVIO'] if col in df_final.columns]
     df_final = normalizar_tipos_dataframe(df_final, colunas_data=colunas_data)
     colunas_telefone = [col for col in df_final.columns if 'TELEFONE' in col]
     df_final = normalizar_colunas_telefone_dataframe(df_final, colunas_telefone)
@@ -464,6 +469,7 @@ def criar_dataset_complicacao(
             'mensagens': validacao_colunas['mensagens'],
             'colunas_arquivo': list(df.columns),
             'colunas_faltando': validacao_colunas['colunas_faltando'],
+            'colunas_duplicadas': validacao_colunas.get('colunas_duplicadas', []),
         }
 
     colunas_criticas_segmentacao = ['STATUS', 'P1']
@@ -576,3 +582,4 @@ def criar_dataset_complicacao(
         'colunas_arquivo': list(df.columns),
         'colunas_faltando': [],
     }
+

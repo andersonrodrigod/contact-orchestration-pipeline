@@ -2,6 +2,7 @@ from pathlib import Path
 
 from core.logger import PipelineLogger
 from src.services.ingestao_service import executar_ingestao_somente_status
+from src.services.texto_service import simplificar_texto
 from src.utils.arquivos import ler_arquivo_csv
 
 
@@ -31,12 +32,11 @@ def run_status_normalizar_complicacao_pipeline(
         }
 
     hsms_excluir = {
-        'Pesquisa Complicações Cirurgicas',
-        'Pesquisa Complicacoes Cirurgicas',
-        'Pesquisa ComplicaÃ§Ãµes Cirurgicas',
+        simplificar_texto('Pesquisa Complicacoes Cirurgicas'),
     }
     total_antes = len(df_status)
-    mask_manter = ~df_status['HSM'].astype(str).str.strip().isin(hsms_excluir)
+    hsm_normalizado = df_status['HSM'].astype(str).apply(simplificar_texto)
+    mask_manter = ~hsm_normalizado.isin(hsms_excluir)
     df_filtrado = df_status[mask_manter].copy()
     total_depois = len(df_filtrado)
     total_excluido = total_antes - total_depois

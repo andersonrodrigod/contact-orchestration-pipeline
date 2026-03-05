@@ -7,12 +7,6 @@ MARCADOR_ACAO_PROXIMO = '__PROXIMO__'
 MARCADOR_ACAO_PRIORIDADE = '__PRIORIDADE__'
 PROCESSO_RESOLVIDO = 'RESOLVIDO'
 
-ABAS_PADRAO = [
-    'usuarios',
-    'usuarios_respondidos',
-    'usuarios_duplicados',
-    'usuarios_resolvidos',
-]
 ABAS_OBRIGATORIAS_FINALIZACAO = [
     'usuarios',
     'usuarios_respondidos',
@@ -77,6 +71,8 @@ def _obter_serie_somatorio(df):
 def aplicar_classificacao_processo_acao(df):
     df = df.copy()
     _inicializar_colunas_classificacao(df)
+    status_chave = normalizar_texto_serie(df.get('STATUS CHAVE', pd.Series('', index=df.index))).str.upper()
+    mask_elegivel_orquestracao = status_chave != 'SEM_MATCH'
 
     col_lida_sim = _coluna_existente(df, 'LIDA_RESPOSTA_SIM', 'LIDA_REPOSTA_SIM')
     col_lida_nao = _coluna_existente(df, 'LIDA_RESPOSTA_NAO', 'LIDA_REPOSTA_NAO')
@@ -101,6 +97,7 @@ def aplicar_classificacao_processo_acao(df):
     regras = [
         (s_lida_sim >= 1, 'ENCERRAR_CONTATO_LIDO_SIM', 'ENCERRADO'),
         (s_lida_nao >= 1, 'MUDAR_CONTATO_LIDO_NAO', MARCADOR_ACAO_PROXIMO),
+        (s_lida_sem == 1, 'SEGUNDO_ENVIO', MARCADOR_ACAO_PRIORIDADE),
         (s_lida_sem >= 2, 'MUDAR_CONTATO_LIDO_SEM_RESPOSTA', MARCADOR_ACAO_PROXIMO),
         (s_lida_envio == 1, 'SEGUNDO_ENVIO_LIDO', MARCADOR_ACAO_PRIORIDADE),
         (s_entregue >= 3, 'MUDAR_CONTATO_ENTREGUE', MARCADOR_ACAO_PROXIMO),
@@ -115,7 +112,7 @@ def aplicar_classificacao_processo_acao(df):
     ]
 
     for condicao, processo, acao in regras:
-        mask = (df['PROCESSO'] == '') & condicao
+        mask = (df['PROCESSO'] == '') & condicao & mask_elegivel_orquestracao
         if not mask.any():
             continue
         df.loc[mask, 'PROCESSO'] = processo

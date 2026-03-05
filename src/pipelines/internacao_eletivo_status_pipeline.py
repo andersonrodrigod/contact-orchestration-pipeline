@@ -1,4 +1,5 @@
 from core.logger import PipelineLogger
+from pathlib import Path
 from core.pipeline_result import error_result
 from core.pipeline_result import ok_result
 from src.pipelines.join_status_resposta_pipeline import (
@@ -9,6 +10,11 @@ from src.services.dataset_service import criar_dataset_complicacao
 from src.services.ingestao_service import executar_ingestao_somente_status, executar_ingestao_unificar
 from src.services.validacao_service import validar_colunas_origem_dataset_complicacao
 from src.utils.arquivos import ler_arquivo_csv, validar_arquivos_existem
+
+
+def _caminho_xlsx_pareado(caminho_arquivo):
+    caminho = Path(caminho_arquivo)
+    return str(caminho.with_suffix('.xlsx'))
 
 
 def _run_criacao_dataset_status(
@@ -114,6 +120,33 @@ def run_internacao_eletivo_pipeline_enviar_status_com_resposta(
         if not logger_externo:
             logger.finalizar('FALHA_INTEGRACAO')
         return resultado_integracao
+
+    arquivo_status_xlsx = _caminho_xlsx_pareado(saida_status)
+    arquivo_resposta_xlsx = _caminho_xlsx_pareado(saida_status_resposta)
+    if Path(arquivo_status_xlsx).exists() and Path(arquivo_resposta_xlsx).exists():
+        arquivo_saida_xlsx = _caminho_xlsx_pareado(saida_status_integrado)
+        logger.info('MODO_XLSX', 'Execucao adicional XLSX iniciada (integracao status + resposta).')
+        logger.info('MODO_XLSX', f'arquivo_status={arquivo_status_xlsx}')
+        logger.info('MODO_XLSX', f'arquivo_status_resposta={arquivo_resposta_xlsx}')
+        logger.info('MODO_XLSX', f'arquivo_saida={arquivo_saida_xlsx}')
+        resultado_integracao_xlsx = run_unificar_status_resposta_internacao_eletivo_pipeline(
+            arquivo_status=arquivo_status_xlsx,
+            arquivo_status_resposta=arquivo_resposta_xlsx,
+            arquivo_saida=arquivo_saida_xlsx,
+            logger=logger,
+        )
+        if resultado_integracao_xlsx.get('ok'):
+            logger.info('MODO_XLSX', 'Integracao adicional XLSX finalizada com sucesso.')
+            resultado_integracao['mensagens'] = resultado_integracao.get('mensagens', []) + [
+                f'Saida XLSX gerada: {arquivo_saida_xlsx}',
+            ]
+        else:
+            logger.warning('MODO_XLSX', 'Falha na integracao adicional XLSX; fluxo CSV foi mantido.')
+            resultado_integracao['mensagens'] = resultado_integracao.get('mensagens', []) + [
+                'Aviso: falha na execucao adicional XLSX durante integracao de status.',
+            ]
+    else:
+        logger.info('MODO_XLSX', 'Arquivos limpos XLSX nao encontrados para integracao adicional.')
 
     resultado = ok_result(
         mensagens=resultado_integracao.get('mensagens', []),

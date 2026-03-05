@@ -1,4 +1,5 @@
 from core.logger import PipelineLogger
+from pathlib import Path
 from src.pipelines.concatenar_status_respostas_pipeline import run_unificar_status_respostas_pipeline
 from src.services.normalizacao_services import (
     criar_coluna_dt_envio_por_data_agendamento,
@@ -14,10 +15,38 @@ from src.services.validacao_service import (
     validar_colunas_origem_para_padronizacao,
     validar_padronizacao_colunas_data,
 )
-from src.utils.arquivos import ler_arquivo_csv
+from src.utils.arquivos import ler_arquivo_csv, salvar_dataframe
+
+LIMIAR_AVISO_PERCENTUAL_NAT_DATA = 30.0
 
 
-LIMITE_PERCENTUAL_NAT_DATA = 30.0
+def _caminho_xlsx_pareado(caminho_arquivo):
+    caminho = Path(caminho_arquivo)
+    if caminho.suffix.lower() in ['.xlsx', '.xls']:
+        return str(caminho)
+    return str(caminho.with_suffix('.xlsx'))
+
+
+def _preferir_xlsx_se_existir(caminho_arquivo):
+    caminho_xlsx = _caminho_xlsx_pareado(caminho_arquivo)
+    if Path(caminho_xlsx).exists():
+        return caminho_xlsx, True
+    return caminho_arquivo, False
+
+
+def _obter_saida_status_xlsx(saida_status):
+    return str(Path(saida_status).with_suffix('.xlsx'))
+
+
+def _obter_saida_status_resposta_xlsx(saida_status_resposta):
+    return str(Path(saida_status_resposta).with_suffix('.xlsx'))
+
+
+def _mensagem_alerta_nat(coluna, percentual, quantidade, total):
+    return (
+        f'Alerta de qualidade: coluna {coluna} com NaT em {percentual:.2f}% '
+        f'({quantidade}/{total}).'
+    )
 
 
 def executar_normalizacao_padronizacao(
@@ -40,6 +69,8 @@ def executar_normalizacao_padronizacao(
 
     etapa_atual = 'INICIO'
     try:
+        alertas_data = []
+        erros_qualidade_data = []
         etapa_atual = 'LEITURA_STATUS'
         logger.info('LEITURA', 'Lendo arquivo status')
         df_status = ler_arquivo_csv(arquivo_status)
@@ -66,7 +97,8 @@ def executar_normalizacao_padronizacao(
                 'mensagens': mensagens_iniciais + resultado_colunas_origem['mensagens'],
             }
             logger.warning('VALIDACAO_ORIGEM', 'Falhou validacao de colunas de origem')
-            logger.finalizar('FALHA_VALIDACAO_ORIGEM')
+            if finalizar_logger:
+                logger.finalizar('FALHA_VALIDACAO_ORIGEM')
             return resultado_final
 
         etapa_atual = 'PADRONIZACAO'
@@ -95,17 +127,12 @@ def executar_normalizacao_padronizacao(
                 'NORMALIZACAO',
                 f'Data agendamento NaT={pct_nat_status:.2f}% ({qtd_nat_status}/{len(df_status)})',
             )
-            if pct_nat_status > LIMITE_PERCENTUAL_NAT_DATA:
-                mensagem_nat = (
-                    f'Abortado: Data agendamento com NaT acima de {LIMITE_PERCENTUAL_NAT_DATA:.0f}% '
-                    f'({pct_nat_status:.2f}%).'
+            if pct_nat_status >= LIMIAR_AVISO_PERCENTUAL_NAT_DATA:
+                mensagem_alerta = _mensagem_alerta_nat(
+                    'Data agendamento', pct_nat_status, qtd_nat_status, len(df_status)
                 )
-                logger.error('VALIDACAO_DATA', mensagem_nat)
-                logger.finalizar('FALHA_QUALIDADE_DATA')
-                return {
-                    'ok': False,
-                    'mensagens': mensagens_iniciais + [mensagem_nat],
-                }
+                logger.error('VALIDACAO_DATA', mensagem_alerta)
+                erros_qualidade_data.append(mensagem_alerta)
         if 'DT_ATENDIMENTO' in df_status_resposta.columns and len(df_status_resposta) > 0:
             qtd_nat_resposta = int(df_status_resposta['DT_ATENDIMENTO'].isna().sum())
             pct_nat_resposta = (qtd_nat_resposta / len(df_status_resposta)) * 100
@@ -113,17 +140,12 @@ def executar_normalizacao_padronizacao(
                 'NORMALIZACAO',
                 f'DT_ATENDIMENTO NaT={pct_nat_resposta:.2f}% ({qtd_nat_resposta}/{len(df_status_resposta)})',
             )
-            if pct_nat_resposta > LIMITE_PERCENTUAL_NAT_DATA:
-                mensagem_nat = (
-                    f'Abortado: DT_ATENDIMENTO com NaT acima de {LIMITE_PERCENTUAL_NAT_DATA:.0f}% '
-                    f'({pct_nat_resposta:.2f}%).'
+            if pct_nat_resposta >= LIMIAR_AVISO_PERCENTUAL_NAT_DATA:
+                mensagem_alerta = _mensagem_alerta_nat(
+                    'DT_ATENDIMENTO', pct_nat_resposta, qtd_nat_resposta, len(df_status_resposta)
                 )
-                logger.error('VALIDACAO_DATA', mensagem_nat)
-                logger.finalizar('FALHA_QUALIDADE_DATA')
-                return {
-                    'ok': False,
-                    'mensagens': mensagens_iniciais + [mensagem_nat],
-                }
+                logger.error('VALIDACAO_DATA', mensagem_alerta)
+                erros_qualidade_data.append(mensagem_alerta)
 
         etapa_atual = 'LIMPEZA_TEXTO'
         logger.info('NORMALIZACAO', 'Limpando texto nas colunas nao-data')
@@ -150,11 +172,14 @@ def executar_normalizacao_padronizacao(
             'ok': (
                 resultado_colunas_origem['ok']
                 and resultado_validacao['ok']
+                and len(erros_qualidade_data) == 0
             ),
             'mensagens': (
                 mensagens_iniciais
                 + resultado_colunas_origem['mensagens']
                 + resultado_validacao['mensagens']
+                + alertas_data
+                + erros_qualidade_data
             ),
         }
 
@@ -168,11 +193,13 @@ def executar_normalizacao_padronizacao(
 
         etapa_atual = 'SALVAR_ARQUIVOS'
         logger.info('SAIDA', f'Salvando status em {saida_status}')
-        df_status.to_csv(saida_status, sep=';', index=False, encoding='utf-8-sig')
+        salvar_dataframe(df_status, saida_status)
         logger.info('SAIDA', f'Salvando status_resposta em {saida_status_resposta}')
-        df_status_resposta.to_csv(saida_status_resposta, sep=';', index=False, encoding='utf-8-sig')
+        salvar_dataframe(df_status_resposta, saida_status_resposta)
 
         status_final = 'SUCESSO' if resultado_final['ok'] else 'FALHA_VALIDACAO_DATA'
+        if len(erros_qualidade_data) > 0:
+            status_final = 'FALHA_QUALIDADE_DATA'
         if finalizar_logger:
             logger.finalizar(status_final)
         return resultado_final
@@ -207,6 +234,45 @@ def executar_ingestao_complicacao(
         logger=logger,
         finalizar_logger=not logger_externo,
     )
+    if not resultado.get('ok'):
+        return resultado
+
+    arquivo_status_xlsx, tem_status_xlsx = _preferir_xlsx_se_existir(arquivo_status)
+    arquivo_resposta_xlsx, tem_resposta_xlsx = _preferir_xlsx_se_existir(
+        arquivo_status_resposta_complicacao
+    )
+    if not (tem_status_xlsx or tem_resposta_xlsx):
+        logger.info('MODO_XLSX', 'Nenhum XLSX de entrada encontrado para execucao adicional.')
+        return resultado
+
+    saida_status_xlsx = _obter_saida_status_xlsx(saida_status)
+    saida_resposta_xlsx = _obter_saida_status_resposta_xlsx(saida_status_resposta)
+    logger.info('MODO_XLSX', 'Execucao adicional XLSX iniciada para limpeza de status.')
+    logger.info('MODO_XLSX', f'arquivo_status={arquivo_status_xlsx}')
+    logger.info('MODO_XLSX', f'arquivo_status_resposta={arquivo_resposta_xlsx}')
+    logger.info('MODO_XLSX', f'saida_status={saida_status_xlsx}')
+    logger.info('MODO_XLSX', f'saida_status_resposta={saida_resposta_xlsx}')
+
+    resultado_xlsx = executar_normalizacao_padronizacao(
+        arquivo_status=arquivo_status_xlsx,
+        arquivo_status_resposta=arquivo_resposta_xlsx,
+        saida_status=saida_status_xlsx,
+        saida_status_resposta=saida_resposta_xlsx,
+        mensagens_iniciais=['Execucao adicional XLSX (status + status_resposta).'],
+        logger=logger,
+        finalizar_logger=False,
+    )
+    if resultado_xlsx.get('ok'):
+        logger.info('MODO_XLSX', 'Execucao adicional XLSX finalizada com sucesso.')
+        resultado['mensagens'] = resultado.get('mensagens', []) + [
+            f'Saida XLSX gerada: {saida_status_xlsx}',
+            f'Saida XLSX gerada: {saida_resposta_xlsx}',
+        ]
+    else:
+        logger.warning('MODO_XLSX', 'Execucao adicional XLSX falhou; fluxo CSV foi mantido.')
+        resultado['mensagens'] = resultado.get('mensagens', []) + [
+            'Aviso: falha na execucao adicional XLSX de limpeza de status.',
+        ]
     return resultado
 
 
@@ -223,6 +289,7 @@ def executar_ingestao_somente_status(
     logger.info('INICIO', f'saida_status={saida_status}')
     etapa_atual = 'INICIO'
     try:
+        alertas_data = []
         etapa_atual = 'LEITURA_STATUS'
         df_status = ler_arquivo_csv(arquivo_status)
         logger.info('LEITURA', f'df_status: linhas={len(df_status)} colunas={len(df_status.columns)}')
@@ -238,30 +305,25 @@ def executar_ingestao_somente_status(
                 'NORMALIZACAO',
                 f'Data agendamento NaT={pct_nat_status:.2f}% ({qtd_nat_status}/{len(df_status)})',
             )
-            if pct_nat_status > LIMITE_PERCENTUAL_NAT_DATA:
-                mensagem_nat = (
-                    f'Abortado: Data agendamento com NaT acima de {LIMITE_PERCENTUAL_NAT_DATA:.0f}% '
-                    f'({pct_nat_status:.2f}%).'
+            if pct_nat_status >= LIMIAR_AVISO_PERCENTUAL_NAT_DATA:
+                mensagem_alerta = _mensagem_alerta_nat(
+                    'Data agendamento', pct_nat_status, qtd_nat_status, len(df_status)
                 )
-                logger.error('VALIDACAO_DATA', mensagem_nat)
-                logger.finalizar('FALHA_QUALIDADE_DATA')
-                return {
-                    'ok': False,
-                    'mensagens': [mensagem_nat],
-                }
+                logger.warning('VALIDACAO_DATA', mensagem_alerta)
+                alertas_data.append(mensagem_alerta)
         etapa_atual = 'LIMPEZA_TEXTO'
         df_status = limpar_texto_exceto_colunas(df_status, colunas_ignorar=['Data agendamento'])
         etapa_atual = 'CRIAR_DT_ENVIO'
         criar_coluna_dt_envio_por_data_agendamento(df_status)
 
         etapa_atual = 'SALVAR_ARQUIVO'
-        df_status.to_csv(saida_status, sep=';', index=False, encoding='utf-8-sig')
+        salvar_dataframe(df_status, saida_status)
         if not logger_externo:
             logger.finalizar('SUCESSO')
         return {
             'ok': True,
             'arquivo_saida': saida_status,
-            'mensagens': ['Ingestao somente status executada com sucesso.'],
+            'mensagens': ['Ingestao somente status executada com sucesso.'] + alertas_data,
         }
     except Exception as erro:
         logger.exception('ERRO_EXECUCAO', erro)
@@ -313,7 +375,7 @@ def executar_ingestao_unificar(
             logger.finalizar('FALHA_CONCATENACAO')
         return resultado_concat
 
-    return executar_normalizacao_padronizacao(
+    resultado_csv = executar_normalizacao_padronizacao(
         arquivo_status=arquivo_status,
         arquivo_status_resposta=arquivo_status_resposta_unificado,
         saida_status=saida_status,
@@ -322,3 +384,58 @@ def executar_ingestao_unificar(
         logger=logger,
         finalizar_logger=not logger_externo,
     )
+    if not resultado_csv.get('ok'):
+        return resultado_csv
+
+    arquivo_status_xlsx, tem_status_xlsx = _preferir_xlsx_se_existir(arquivo_status)
+    arquivo_eletivo_xlsx, tem_eletivo_xlsx = _preferir_xlsx_se_existir(arquivo_status_resposta_eletivo)
+    arquivo_internacao_xlsx, tem_internacao_xlsx = _preferir_xlsx_se_existir(
+        arquivo_status_resposta_internacao
+    )
+    if not (tem_status_xlsx or tem_eletivo_xlsx or tem_internacao_xlsx):
+        logger.info('MODO_XLSX', 'Nenhum XLSX de entrada encontrado para execucao adicional.')
+        return resultado_csv
+
+    arquivo_unificado_xlsx = _caminho_xlsx_pareado(arquivo_status_resposta_unificado)
+    saida_status_xlsx = _obter_saida_status_xlsx(saida_status)
+    saida_resposta_xlsx = _obter_saida_status_resposta_xlsx(saida_status_resposta)
+    logger.info('MODO_XLSX', 'Execucao adicional XLSX iniciada (unificacao + limpeza).')
+    logger.info('MODO_XLSX', f'arquivo_status={arquivo_status_xlsx}')
+    logger.info('MODO_XLSX', f'arquivo_eletivo={arquivo_eletivo_xlsx}')
+    logger.info('MODO_XLSX', f'arquivo_internacao={arquivo_internacao_xlsx}')
+    logger.info('MODO_XLSX', f'arquivo_unificado={arquivo_unificado_xlsx}')
+
+    resultado_concat_xlsx = run_unificar_status_respostas_pipeline(
+        arquivo_eletivo=arquivo_eletivo_xlsx,
+        arquivo_internacao=arquivo_internacao_xlsx,
+        arquivo_saida=arquivo_unificado_xlsx,
+        logger=logger,
+    )
+    if not resultado_concat_xlsx.get('ok'):
+        logger.warning('MODO_XLSX', 'Falha na unificacao XLSX; fluxo CSV foi mantido.')
+        resultado_csv['mensagens'] = resultado_csv.get('mensagens', []) + [
+            'Aviso: falha na execucao adicional XLSX durante unificacao.',
+        ]
+        return resultado_csv
+
+    resultado_xlsx = executar_normalizacao_padronizacao(
+        arquivo_status=arquivo_status_xlsx,
+        arquivo_status_resposta=arquivo_unificado_xlsx,
+        saida_status=saida_status_xlsx,
+        saida_status_resposta=saida_resposta_xlsx,
+        mensagens_iniciais=['Execucao adicional XLSX (unificacao + limpeza de status).'],
+        logger=logger,
+        finalizar_logger=False,
+    )
+    if resultado_xlsx.get('ok'):
+        logger.info('MODO_XLSX', 'Execucao adicional XLSX finalizada com sucesso.')
+        resultado_csv['mensagens'] = resultado_csv.get('mensagens', []) + [
+            f'Saida XLSX gerada: {saida_status_xlsx}',
+            f'Saida XLSX gerada: {saida_resposta_xlsx}',
+        ]
+    else:
+        logger.warning('MODO_XLSX', 'Falha na limpeza XLSX; fluxo CSV foi mantido.')
+        resultado_csv['mensagens'] = resultado_csv.get('mensagens', []) + [
+            'Aviso: falha na execucao adicional XLSX durante limpeza de status.',
+        ]
+    return resultado_csv

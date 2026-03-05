@@ -120,8 +120,31 @@ def validar_colunas_minimas_status_resposta(df_eletivo, df_internacao):
 
 def validar_colunas_origem_dataset_complicacao(colunas_arquivo, contexto='dataset'):
     colunas_obrigatorias = COLUNAS_OBRIGATORIAS_DATASET_ORIGEM
-    set_colunas = {str(c).strip() for c in colunas_arquivo}
+    colunas_normalizadas = [str(c).strip() for c in colunas_arquivo]
+    set_colunas = set(colunas_normalizadas)
     faltando = [col for col in colunas_obrigatorias if col not in set_colunas]
+    colunas_duplicadas = sorted(
+        {
+            col
+            for col in colunas_obrigatorias
+            if colunas_normalizadas.count(col) > 1
+        }
+    )
+
+    if colunas_duplicadas:
+        return {
+            'ok': False,
+            'mensagens': [
+                (
+                    f'Colunas obrigatorias do dataset de {contexto} estao duplicadas. '
+                    f'Duplicadas: {colunas_duplicadas}'
+                ),
+                'Renomeie ou apague a coluna duplicada para manter apenas uma ocorrencia de cada.',
+            ],
+            'colunas_obrigatorias': colunas_obrigatorias,
+            'colunas_faltando': faltando,
+            'colunas_duplicadas': colunas_duplicadas,
+        }
 
     if faltando:
         return {
@@ -132,6 +155,7 @@ def validar_colunas_origem_dataset_complicacao(colunas_arquivo, contexto='datase
             ],
             'colunas_obrigatorias': colunas_obrigatorias,
             'colunas_faltando': faltando,
+            'colunas_duplicadas': [],
         }
 
     return {
@@ -139,4 +163,5 @@ def validar_colunas_origem_dataset_complicacao(colunas_arquivo, contexto='datase
         'mensagens': [f'Todas as colunas obrigatorias do dataset de {contexto} foram encontradas.'],
         'colunas_obrigatorias': colunas_obrigatorias,
         'colunas_faltando': [],
+        'colunas_duplicadas': [],
     }
