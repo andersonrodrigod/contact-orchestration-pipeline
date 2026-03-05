@@ -14,7 +14,7 @@ class PipelineLogger:
         pasta = Path(pasta_logs)
         pasta.mkdir(parents=True, exist_ok=True)
 
-        timestamp = self.inicio.strftime('%Y%m%d_%H%M%S')
+        timestamp = self.inicio.strftime('%Y%m%d_%H%M%S_%f')
         self.caminho_arquivo = pasta / f'{nome_pipeline}_{timestamp}.txt'
 
         with self.caminho_arquivo.open('a', encoding='utf-8') as arquivo:

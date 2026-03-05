@@ -5,11 +5,21 @@ from src.contexts.pipeline_contextos import (
 )
 from src.pipelines.complicacao_orquestracao_pipeline import run_complicacao_pipeline_orquestrar
 from src.pipelines.complicacao_status_pipeline import run_complicacao_pipeline_criar_dataset_status
+from src.pipelines.complicacao_status_pipeline import (
+    run_complicacao_pipeline_enviar_status_com_resposta,
+    run_complicacao_pipeline_enviar_status_somente_status,
+    run_complicacao_pipeline_gerar_status_dataset,
+    run_complicacao_pipeline_gerar_status_dataset_somente_status,
+)
 from src.pipelines.internacao_eletivo_orquestracao_pipeline import (
     run_internacao_eletivo_pipeline_orquestrar,
 )
 from src.pipelines.internacao_eletivo_status_pipeline import (
     run_internacao_eletivo_pipeline_criar_dataset_status,
+    run_internacao_eletivo_pipeline_enviar_status_com_resposta,
+    run_internacao_eletivo_pipeline_enviar_status_somente_status,
+    run_internacao_eletivo_pipeline_gerar_status_dataset,
+    run_internacao_eletivo_pipeline_gerar_status_dataset_somente_status,
 )
 from src.pipelines.status_normalizar_complicacao_pipeline import (
     run_status_normalizar_complicacao_pipeline,
@@ -25,8 +35,6 @@ from src.services.ingestao_service import (
 from src.pipelines.join_status_resposta_pipeline import (
     run_status_somente_complicacao_pipeline,
     run_status_somente_internacao_eletivo_pipeline,
-    run_unificar_status_resposta_complicacao_pipeline,
-    run_unificar_status_resposta_internacao_eletivo_pipeline,
 )
 
 DEFAULTS_COMPLICACAO = CONTEXTO_PIPELINE_COMPLICACAO.defaults
@@ -52,6 +60,7 @@ def _modo_individual_bloqueado(nome_modo):
             f'Modo individual "{nome_modo}" desabilitado. '
             'Defina ALLOW_MODOS_INDIVIDUAIS = True no main.py para executar.'
         ],
+        'arquivo_log_individual': str(logger.caminho_arquivo),
     }
 
 
@@ -63,10 +72,18 @@ def _executar_modo_individual(nome_modo, permitir_execucao, funcao_execucao):
     logger.info('MODO_INDIVIDUAL', 'Modo individual habilitado')
     try:
         resultado = funcao_execucao()
+        if not isinstance(resultado, dict):
+            resultado = {
+                'ok': False,
+                'mensagens': [
+                    f'Retorno invalido no modo "{nome_modo}": esperado dict, recebido {type(resultado).__name__}.'
+                ],
+            }
         logger.info('RESULTADO', f"ok={resultado.get('ok', False)}")
         for mensagem in resultado.get('mensagens', []):
             logger.info('RESULTADO', mensagem)
         logger.finalizar('SUCESSO' if resultado.get('ok') else 'FALHA')
+        resultado['arquivo_log_individual'] = str(logger.caminho_arquivo)
         return resultado
     except Exception as erro:
         logger.exception('ERRO_EXECUCAO', erro)
@@ -74,6 +91,7 @@ def _executar_modo_individual(nome_modo, permitir_execucao, funcao_execucao):
         return {
             'ok': False,
             'mensagens': [f'Erro no modo individual "{nome_modo}": {type(erro).__name__}: {erro}'],
+            'arquivo_log_individual': str(logger.caminho_arquivo),
         }
 
 
@@ -82,6 +100,21 @@ def obter_modos_individuais(permitir_execucao=False):
         # Executa concatenacao + normalizacao via ingestao_unificar.
         return _executar_modo_individual(
             'individual_unificar_status_respostas',
+            permitir_execucao,
+            lambda: executar_ingestao_unificar(
+                arquivo_status=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status'],
+                arquivo_status_resposta_eletivo=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status_resposta_eletivo'],
+                arquivo_status_resposta_internacao=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status_resposta_internacao'],
+                arquivo_status_resposta_unificado=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status_resposta_unificado'],
+                saida_status=DEFAULTS_INTERNACAO_ELETIVO['saida_status'],
+                saida_status_resposta=DEFAULTS_INTERNACAO_ELETIVO['saida_status_resposta'],
+            ),
+        )
+
+    def _run_individual_unificar_status_respostas_com_normalizacao():
+        # Modo dedicado para o app: unifica eletivo+internacao garantindo normalizacao.
+        return _executar_modo_individual(
+            'individual_unificar_status_respostas_com_normalizacao',
             permitir_execucao,
             lambda: executar_ingestao_unificar(
                 arquivo_status=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status'],
@@ -142,57 +175,31 @@ def obter_modos_individuais(permitir_execucao=False):
         )
 
     def _run_individual_enviar_status_complicacao():
-        def _executar():
-            resultado_ingestao = executar_ingestao_complicacao(
+        return _executar_modo_individual(
+            'individual_enviar_status_complicacao',
+            permitir_execucao,
+            lambda: run_complicacao_pipeline_enviar_status_com_resposta(
                 arquivo_status=DEFAULTS_COMPLICACAO['arquivo_status'],
                 arquivo_status_resposta_complicacao=DEFAULTS_COMPLICACAO['arquivo_status_resposta_complicacao'],
                 saida_status=DEFAULTS_COMPLICACAO['saida_status'],
                 saida_status_resposta=DEFAULTS_COMPLICACAO['saida_status_resposta'],
-            )
-            if not resultado_ingestao.get('ok'):
-                return resultado_ingestao
-
-            resultado_unificacao = run_unificar_status_resposta_complicacao_pipeline(
-                arquivo_status=DEFAULTS_COMPLICACAO['saida_status'],
-                arquivo_status_resposta=DEFAULTS_COMPLICACAO['saida_status_resposta'],
-                arquivo_saida=DEFAULTS_COMPLICACAO['saida_status_integrado'],
-            )
-            if not resultado_unificacao.get('ok'):
-                return resultado_unificacao
-            return _combinar_etapas(resultado_ingestao, resultado_unificacao)
-
-        return _executar_modo_individual(
-            'individual_enviar_status_complicacao',
-            permitir_execucao,
-            _executar,
+                saida_status_integrado=DEFAULTS_COMPLICACAO['saida_status_integrado'],
+            ),
         )
 
     def _run_individual_enviar_status_internacao_eletivo():
-        def _executar():
-            resultado_ingestao = executar_ingestao_unificar(
+        return _executar_modo_individual(
+            'individual_enviar_status_internacao_eletivo',
+            permitir_execucao,
+            lambda: run_internacao_eletivo_pipeline_enviar_status_com_resposta(
                 arquivo_status=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status'],
                 arquivo_status_resposta_eletivo=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status_resposta_eletivo'],
                 arquivo_status_resposta_internacao=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status_resposta_internacao'],
                 arquivo_status_resposta_unificado=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status_resposta_unificado'],
                 saida_status=DEFAULTS_INTERNACAO_ELETIVO['saida_status'],
                 saida_status_resposta=DEFAULTS_INTERNACAO_ELETIVO['saida_status_resposta'],
-            )
-            if not resultado_ingestao.get('ok'):
-                return resultado_ingestao
-
-            resultado_unificacao = run_unificar_status_resposta_internacao_eletivo_pipeline(
-                arquivo_status=DEFAULTS_INTERNACAO_ELETIVO['saida_status'],
-                arquivo_status_resposta=DEFAULTS_INTERNACAO_ELETIVO['saida_status_resposta'],
-                arquivo_saida=DEFAULTS_INTERNACAO_ELETIVO['saida_status_integrado'],
-            )
-            if not resultado_unificacao.get('ok'):
-                return resultado_unificacao
-            return _combinar_etapas(resultado_ingestao, resultado_unificacao)
-
-        return _executar_modo_individual(
-            'individual_enviar_status_internacao_eletivo',
-            permitir_execucao,
-            _executar,
+                saida_status_integrado=DEFAULTS_INTERNACAO_ELETIVO['saida_status_integrado'],
+            ),
         )
 
     def _run_individual_status_filtrado_complicacao():
@@ -269,6 +276,114 @@ def obter_modos_individuais(permitir_execucao=False):
             ),
         )
 
+    def _run_individual_gerar_dataset_complicacao_com_resposta():
+        return _executar_modo_individual(
+            'individual_gerar_dataset_complicacao_com_resposta',
+            permitir_execucao,
+            lambda: run_complicacao_pipeline_gerar_status_dataset(
+                arquivo_status=DEFAULTS_COMPLICACAO['arquivo_status'],
+                arquivo_status_resposta_complicacao=DEFAULTS_COMPLICACAO['arquivo_status_resposta_complicacao'],
+                arquivo_dataset_origem_complicacao=DEFAULTS_COMPLICACAO['arquivo_dataset_origem_complicacao'],
+                saida_status=DEFAULTS_COMPLICACAO['saida_status'],
+                saida_status_resposta=DEFAULTS_COMPLICACAO['saida_status_resposta'],
+                saida_status_integrado=DEFAULTS_COMPLICACAO['saida_status_integrado'],
+                saida_dataset_status=DEFAULTS_COMPLICACAO['saida_dataset_status'],
+            ),
+        )
+
+    def _run_individual_gerar_dataset_internacao_eletivo_com_resposta():
+        return _executar_modo_individual(
+            'individual_gerar_dataset_internacao_eletivo_com_resposta',
+            permitir_execucao,
+            lambda: run_internacao_eletivo_pipeline_gerar_status_dataset(
+                arquivo_status=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status'],
+                arquivo_status_resposta_eletivo=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status_resposta_eletivo'],
+                arquivo_status_resposta_internacao=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status_resposta_internacao'],
+                arquivo_status_resposta_unificado=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status_resposta_unificado'],
+                arquivo_dataset_origem_internacao=DEFAULTS_INTERNACAO_ELETIVO['arquivo_dataset_origem_internacao'],
+                saida_status=DEFAULTS_INTERNACAO_ELETIVO['saida_status'],
+                saida_status_resposta=DEFAULTS_INTERNACAO_ELETIVO['saida_status_resposta'],
+                saida_status_integrado=DEFAULTS_INTERNACAO_ELETIVO['saida_status_integrado'],
+                saida_dataset_status=DEFAULTS_INTERNACAO_ELETIVO['saida_dataset_status'],
+            ),
+        )
+
+    def _run_individual_gerar_dataset_complicacao_somente_status():
+        return _executar_modo_individual(
+            'individual_gerar_dataset_complicacao_somente_status',
+            permitir_execucao,
+            lambda: run_complicacao_pipeline_gerar_status_dataset_somente_status(
+                arquivo_status=DEFAULTS_COMPLICACAO['arquivo_status'],
+                arquivo_dataset_origem_complicacao=DEFAULTS_COMPLICACAO['arquivo_dataset_origem_complicacao'],
+                saida_status=DEFAULTS_COMPLICACAO['saida_status'],
+                saida_status_integrado=DEFAULTS_COMPLICACAO['saida_status_integrado'],
+                saida_dataset_status=DEFAULTS_COMPLICACAO['saida_dataset_status'],
+            ),
+        )
+
+    def _run_individual_gerar_dataset_internacao_eletivo_somente_status():
+        return _executar_modo_individual(
+            'individual_gerar_dataset_internacao_eletivo_somente_status',
+            permitir_execucao,
+            lambda: run_internacao_eletivo_pipeline_gerar_status_dataset_somente_status(
+                arquivo_status=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status'],
+                arquivo_dataset_origem_internacao=DEFAULTS_INTERNACAO_ELETIVO['arquivo_dataset_origem_internacao'],
+                saida_status=DEFAULTS_INTERNACAO_ELETIVO['saida_status'],
+                saida_status_integrado=DEFAULTS_INTERNACAO_ELETIVO['saida_status_integrado'],
+                saida_dataset_status=DEFAULTS_INTERNACAO_ELETIVO['saida_dataset_status'],
+            ),
+        )
+
+    def _run_individual_integrar_status_resposta_complicacao():
+        return _executar_modo_individual(
+            'individual_integrar_status_resposta_complicacao',
+            permitir_execucao,
+            lambda: run_complicacao_pipeline_enviar_status_com_resposta(
+                arquivo_status=DEFAULTS_COMPLICACAO['arquivo_status'],
+                arquivo_status_resposta_complicacao=DEFAULTS_COMPLICACAO['arquivo_status_resposta_complicacao'],
+                saida_status=DEFAULTS_COMPLICACAO['saida_status'],
+                saida_status_resposta=DEFAULTS_COMPLICACAO['saida_status_resposta'],
+                saida_status_integrado=DEFAULTS_COMPLICACAO['saida_status_integrado'],
+            ),
+        )
+
+    def _run_individual_integrar_status_resposta_internacao_eletivo():
+        return _executar_modo_individual(
+            'individual_integrar_status_resposta_internacao_eletivo',
+            permitir_execucao,
+            lambda: run_internacao_eletivo_pipeline_enviar_status_com_resposta(
+                arquivo_status=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status'],
+                arquivo_status_resposta_eletivo=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status_resposta_eletivo'],
+                arquivo_status_resposta_internacao=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status_resposta_internacao'],
+                arquivo_status_resposta_unificado=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status_resposta_unificado'],
+                saida_status=DEFAULTS_INTERNACAO_ELETIVO['saida_status'],
+                saida_status_resposta=DEFAULTS_INTERNACAO_ELETIVO['saida_status_resposta'],
+                saida_status_integrado=DEFAULTS_INTERNACAO_ELETIVO['saida_status_integrado'],
+            ),
+        )
+
+    def _run_individual_integrar_status_somente_complicacao():
+        return _executar_modo_individual(
+            'individual_integrar_status_somente_complicacao',
+            permitir_execucao,
+            lambda: run_complicacao_pipeline_enviar_status_somente_status(
+                arquivo_status=DEFAULTS_COMPLICACAO['arquivo_status'],
+                saida_status=DEFAULTS_COMPLICACAO['saida_status'],
+                saida_status_integrado=DEFAULTS_COMPLICACAO['saida_status_integrado'],
+            ),
+        )
+
+    def _run_individual_integrar_status_somente_internacao_eletivo():
+        return _executar_modo_individual(
+            'individual_integrar_status_somente_internacao_eletivo',
+            permitir_execucao,
+            lambda: run_internacao_eletivo_pipeline_enviar_status_somente_status(
+                arquivo_status=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status'],
+                saida_status=DEFAULTS_INTERNACAO_ELETIVO['saida_status'],
+                saida_status_integrado=DEFAULTS_INTERNACAO_ELETIVO['saida_status_integrado'],
+            ),
+        )
+
     def _run_individual_orquestrar_complicacao():
         return _executar_modo_individual(
             'individual_orquestrar_complicacao',
@@ -317,16 +432,43 @@ def obter_modos_individuais(permitir_execucao=False):
 
     return {
         'individual_unificar_status_respostas': _run_individual_unificar_status_respostas,
+        'individual_unificar_status_respostas_com_normalizacao': (
+            _run_individual_unificar_status_respostas_com_normalizacao
+        ),
         'individual_ingestao_complicacao': _run_individual_ingestao_complicacao,
         'individual_ingestao_internacao_eletivo': _run_individual_ingestao_internacao_eletivo,
         'individual_status_somente_complicacao': _run_individual_status_somente_complicacao,
         'individual_status_somente_internacao_eletivo': _run_individual_status_somente_internacao_eletivo,
         'individual_status_filtrado_complicacao': _run_individual_status_filtrado_complicacao,
         'individual_status_filtrado_internacao_eletivo': _run_individual_status_filtrado_internacao_eletivo,
+        'individual_integrar_status_resposta_complicacao': (
+            _run_individual_integrar_status_resposta_complicacao
+        ),
+        'individual_integrar_status_resposta_internacao_eletivo': (
+            _run_individual_integrar_status_resposta_internacao_eletivo
+        ),
+        'individual_integrar_status_somente_complicacao': (
+            _run_individual_integrar_status_somente_complicacao
+        ),
+        'individual_integrar_status_somente_internacao_eletivo': (
+            _run_individual_integrar_status_somente_internacao_eletivo
+        ),
         'individual_enviar_status_complicacao': _run_individual_enviar_status_complicacao,
         'individual_enviar_status_internacao_eletivo': _run_individual_enviar_status_internacao_eletivo,
         'individual_criar_dataset_complicacao': _run_individual_criar_dataset_complicacao,
         'individual_criar_dataset_internacao_eletivo': _run_individual_criar_dataset_internacao_eletivo,
+        'individual_gerar_dataset_complicacao_com_resposta': (
+            _run_individual_gerar_dataset_complicacao_com_resposta
+        ),
+        'individual_gerar_dataset_internacao_eletivo_com_resposta': (
+            _run_individual_gerar_dataset_internacao_eletivo_com_resposta
+        ),
+        'individual_gerar_dataset_complicacao_somente_status': (
+            _run_individual_gerar_dataset_complicacao_somente_status
+        ),
+        'individual_gerar_dataset_internacao_eletivo_somente_status': (
+            _run_individual_gerar_dataset_internacao_eletivo_somente_status
+        ),
         'individual_orquestrar_complicacao': _run_individual_orquestrar_complicacao,
         'individual_orquestrar_internacao_eletivo': _run_individual_orquestrar_internacao_eletivo,
         'individual_normalizar_status_excluir_internacao_eletivo': (

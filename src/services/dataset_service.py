@@ -598,8 +598,16 @@ def criar_dataset_complicacao(
             df_status_por_contato,
             df_status_por_nome_tel,
         )
-        if resultado_duplicados['ok']:
-            df_usuarios_duplicados = resultado_duplicados['df_enriquecido']
+        if not resultado_duplicados['ok']:
+            return {
+                'ok': False,
+                'mensagens': resultado_duplicados['mensagens'],
+                'total_dataset': resultado_duplicados.get('total_dataset', len(df_duplicados)),
+                'total_match': resultado_duplicados.get('total_match', 0),
+                'total_sem_match': resultado_duplicados.get('total_sem_match', 0),
+                'codigo_erro': resultado_duplicados.get('codigo_erro', ERRO_CRIACAO_DATASET),
+            }
+        df_usuarios_duplicados = resultado_duplicados['df_enriquecido']
         df_usuarios_resolvidos = pd.DataFrame(columns=COLUNAS_FINAIS_DATASET)
 
         etapa_atual = 'PERSISTENCIA_XLSX'

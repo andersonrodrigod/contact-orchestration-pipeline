@@ -93,7 +93,7 @@ Fontes migradas:
   - Unificar politica de bloqueio/alerta por contexto e explicitar no retorno um status de qualidade padronizado.
 
 2. Preflight pode aprovar sem validar data de status_resposta
-- Status: `RESOLVIDO` (por contrato operacional)
+- Status: `ABERTO`
 - Situação registrada:
   - No preflight, ausencia de coluna de atendimento gera aviso (`avisos`) sem bloquear.
 - Decisao aplicada:
@@ -106,7 +106,7 @@ Fontes migradas:
   - Opcional: reforcar via orquestracao para impedir ingestao sem preflight quando o modo exigir.
 
 3. Falta de tratamento de excecao em `executar_ingestao_unificar`
-- Status: `RESOLVIDO` (por decisão operacional)
+- Status: `ABERTO`
 - Situação registrada:
   - A funcao orquestra concatenacao e normalizacao sem bloco `try/except` proprio.
 - Decisao aplicada:
@@ -159,7 +159,7 @@ Fontes migradas:
 ### Baixa prioridade / técnica
 
 0. Dependencia implicita de atualidade do arquivo unificado no preflight
-- Status: `RESOLVIDO` (por decisão operacional)
+- Status: `ABERTO`
 - Situação registrada:
   - Se `status_resposta_eletivo_internacao` existir, o preflight prioriza esse arquivo.
 - Decisao aplicada:
@@ -252,3 +252,4 @@ Fontes migradas:
 1. Novos bugs entram aqui, com status e data.
 2. Evitar novos relatórios soltos para o mesmo escopo.
 3. Quando item mudar de status, atualizar este arquivo e citar commit relacionado.
+

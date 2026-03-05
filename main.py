@@ -7,7 +7,7 @@ from src.services.observabilidade_service import registrar_historico_execucao
 from src.utils.resumo_execucao import imprimir_resumo_execucao
 
 
-ALLOW_MODOS_INDIVIDUAIS = False
+ALLOW_MODOS_INDIVIDUAIS = True
 
 
 def _obter_registro_modos():

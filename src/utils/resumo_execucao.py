@@ -8,6 +8,8 @@ def imprimir_resumo_execucao(resultado):
         print(f"Codigo erro: {resultado.get('codigo_erro')}")
     if 'arquivo_saida' in resultado:
         print(f"Arquivo final: {resultado['arquivo_saida']}")
+    if 'arquivo_log_individual' in resultado:
+        print(f"Log individual: {resultado['arquivo_log_individual']}")
     if 'total_status' in resultado:
         print(f"Total status: {resultado['total_status']}")
     if 'total_linhas' in resultado:
@@ -19,6 +21,8 @@ def imprimir_resumo_execucao(resultado):
     if 'resultados' in resultado:
         for nome, res in resultado['resultados'].items():
             print(f"{nome}: OK={res.get('ok', False)} arquivo={res.get('arquivo_saida', '')}")
+            if 'arquivo_log_individual' in res:
+                print(f"  - {nome}: log={res['arquivo_log_individual']}")
             mensagens_filho = res.get('mensagens', [])
             if mensagens_filho:
                 for mensagem in mensagens_filho:

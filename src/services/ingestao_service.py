@@ -370,7 +370,7 @@ def executar_ingestao_somente_status(
     logger.info('INICIO', f'limiar_nat_data_origem={origem_limiar}')
     etapa_atual = 'INICIO'
     try:
-        alertas_data = []
+        erros_qualidade_data = []
         nat_status = 0
         pct_nat_status = 0.0
         etapa_atual = 'LEITURA_STATUS'
@@ -392,12 +392,38 @@ def executar_ingestao_somente_status(
                 mensagem_alerta = _mensagem_alerta_nat(
                     'Data agendamento', pct_nat_status, nat_status, len(df_status)
                 )
-                logger.warning('VALIDACAO_DATA', mensagem_alerta)
-                alertas_data.append(mensagem_alerta)
+                logger.error('VALIDACAO_DATA', mensagem_alerta)
+                erros_qualidade_data.append(mensagem_alerta)
         etapa_atual = 'LIMPEZA_TEXTO'
         df_status = limpar_texto_exceto_colunas(df_status, colunas_ignorar=['Data agendamento'])
         etapa_atual = 'CRIAR_DT_ENVIO'
         criar_coluna_dt_envio_por_data_agendamento(df_status)
+
+        if len(erros_qualidade_data) > 0:
+            mensagem_bloqueio = (
+                f"Saida bloqueada na etapa={etapa_atual}: arquivo nao foi salvo. "
+                f"codigo_erro={ERRO_QUALIDADE_DATA}. Motivo: {erros_qualidade_data[-1]}"
+            )
+            logger.warning('BLOQUEIO_SAIDA', mensagem_bloqueio)
+            if not logger_externo:
+                logger.finalizar('FALHA_QUALIDADE_DATA')
+            return {
+                'ok': False,
+                'mensagens': erros_qualidade_data + [mensagem_bloqueio],
+                'codigo_erro': ERRO_QUALIDADE_DATA,
+                'nat_data_agendamento': nat_status,
+                'pct_nat_data_agendamento': round(pct_nat_status, 2),
+                'nat_dt_atendimento': 0,
+                'pct_nat_dt_atendimento': 0.0,
+                'limiar_nat_data_em_uso': limiar_nat_data,
+                'qualidade_data': {
+                    'data_agendamento': {
+                        'nat': nat_status,
+                        'pct_nat': round(pct_nat_status, 2),
+                        'limiar': limiar_nat_data,
+                    }
+                },
+            }
 
         etapa_atual = 'SALVAR_ARQUIVO'
         salvar_dataframe(df_status, saida_status)
@@ -406,7 +432,7 @@ def executar_ingestao_somente_status(
         return {
             'ok': True,
             'arquivo_saida': saida_status,
-            'mensagens': ['Ingestao somente status executada com sucesso.'] + alertas_data,
+            'mensagens': ['Ingestao somente status executada com sucesso.'],
             'nat_data_agendamento': nat_status,
             'pct_nat_data_agendamento': round(pct_nat_status, 2),
             'nat_dt_atendimento': 0,
@@ -466,98 +492,116 @@ def executar_ingestao_unificar(
     logger.info('MODO', f'limiar_nat_data_em_uso={limiar_nat_data}')
     logger.info('MODO', f'limiar_nat_data_origem={origem_limiar}')
 
-    resultado_concat = run_unificar_status_respostas_pipeline(
-        arquivo_eletivo=arquivo_status_resposta_eletivo,
-        arquivo_internacao=arquivo_status_resposta_internacao,
-        arquivo_saida=arquivo_status_resposta_unificado,
-        logger=logger,
-    )
-    logger.info(
-        'CONCATENACAO',
-        f"ok={resultado_concat['ok']} mensagens={resultado_concat['mensagens']}",
-    )
-    if 'total_eletivo' in resultado_concat:
-        logger.info('CONCATENACAO', f"total_eletivo={resultado_concat['total_eletivo']}")
-    if 'total_internacao' in resultado_concat:
-        logger.info('CONCATENACAO', f"total_internacao={resultado_concat['total_internacao']}")
-    if 'total_concatenado' in resultado_concat:
-        logger.info('CONCATENACAO', f"total_concatenado={resultado_concat['total_concatenado']}")
+    etapa_atual = 'INICIO'
+    try:
+        etapa_atual = 'CONCATENACAO_CSV'
+        resultado_concat = run_unificar_status_respostas_pipeline(
+            arquivo_eletivo=arquivo_status_resposta_eletivo,
+            arquivo_internacao=arquivo_status_resposta_internacao,
+            arquivo_saida=arquivo_status_resposta_unificado,
+            logger=logger,
+        )
+        logger.info(
+            'CONCATENACAO',
+            f"ok={resultado_concat['ok']} mensagens={resultado_concat['mensagens']}",
+        )
+        if 'total_eletivo' in resultado_concat:
+            logger.info('CONCATENACAO', f"total_eletivo={resultado_concat['total_eletivo']}")
+        if 'total_internacao' in resultado_concat:
+            logger.info('CONCATENACAO', f"total_internacao={resultado_concat['total_internacao']}")
+        if 'total_concatenado' in resultado_concat:
+            logger.info('CONCATENACAO', f"total_concatenado={resultado_concat['total_concatenado']}")
 
-    if not resultado_concat['ok']:
-        logger.warning('CONCATENACAO', 'Concatenacao nao executada por validacao')
-        if not resultado_concat.get('codigo_erro'):
-            resultado_concat['codigo_erro'] = ERRO_CONCATENACAO
+        if not resultado_concat['ok']:
+            logger.warning('CONCATENACAO', 'Concatenacao nao executada por validacao')
+            if not resultado_concat.get('codigo_erro'):
+                resultado_concat['codigo_erro'] = ERRO_CONCATENACAO
+            if not logger_externo:
+                logger.finalizar('FALHA_CONCATENACAO')
+            return resultado_concat
+
+        etapa_atual = 'NORMALIZACAO_CSV'
+        resultado_csv = executar_normalizacao_padronizacao(
+            arquivo_status=arquivo_status,
+            arquivo_status_resposta=arquivo_status_resposta_unificado,
+            saida_status=saida_status,
+            saida_status_resposta=saida_status_resposta,
+            limiar_nat_data=limiar_nat_data,
+            contexto='internacao_eletivo',
+            permitir_override_limiar=permitir_override_limiar,
+            mensagens_iniciais=resultado_concat['mensagens'],
+            logger=logger,
+            finalizar_logger=not logger_externo,
+        )
+        if not resultado_csv.get('ok'):
+            return resultado_csv
+
+        etapa_atual = 'PREPARO_XLSX'
+        arquivo_status_xlsx, tem_status_xlsx = _preferir_xlsx_se_existir(arquivo_status)
+        arquivo_eletivo_xlsx, tem_eletivo_xlsx = _preferir_xlsx_se_existir(arquivo_status_resposta_eletivo)
+        arquivo_internacao_xlsx, tem_internacao_xlsx = _preferir_xlsx_se_existir(
+            arquivo_status_resposta_internacao
+        )
+        if not (tem_status_xlsx or tem_eletivo_xlsx or tem_internacao_xlsx):
+            logger.info('MODO_XLSX', 'Nenhum XLSX de entrada encontrado para execucao adicional.')
+            return resultado_csv
+
+        arquivo_unificado_xlsx = _caminho_xlsx_pareado(arquivo_status_resposta_unificado)
+        saida_status_xlsx = _obter_saida_status_xlsx(saida_status)
+        saida_resposta_xlsx = _obter_saida_status_resposta_xlsx(saida_status_resposta)
+        logger.info('MODO_XLSX', 'Execucao adicional XLSX iniciada (unificacao + limpeza).')
+        logger.info('MODO_XLSX', f'arquivo_status={arquivo_status_xlsx}')
+        logger.info('MODO_XLSX', f'arquivo_eletivo={arquivo_eletivo_xlsx}')
+        logger.info('MODO_XLSX', f'arquivo_internacao={arquivo_internacao_xlsx}')
+        logger.info('MODO_XLSX', f'arquivo_unificado={arquivo_unificado_xlsx}')
+
+        etapa_atual = 'CONCATENACAO_XLSX'
+        resultado_concat_xlsx = run_unificar_status_respostas_pipeline(
+            arquivo_eletivo=arquivo_eletivo_xlsx,
+            arquivo_internacao=arquivo_internacao_xlsx,
+            arquivo_saida=arquivo_unificado_xlsx,
+            logger=logger,
+        )
+        if not resultado_concat_xlsx.get('ok'):
+            logger.warning('MODO_XLSX', 'Falha na unificacao XLSX; fluxo CSV foi mantido.')
+            resultado_csv['mensagens'] = resultado_csv.get('mensagens', []) + [
+                'Aviso: falha na execucao adicional XLSX durante unificacao.',
+            ]
+            return resultado_csv
+
+        etapa_atual = 'NORMALIZACAO_XLSX'
+        resultado_xlsx = executar_normalizacao_padronizacao(
+            arquivo_status=arquivo_status_xlsx,
+            arquivo_status_resposta=arquivo_unificado_xlsx,
+            saida_status=saida_status_xlsx,
+            saida_status_resposta=saida_resposta_xlsx,
+            limiar_nat_data=limiar_nat_data,
+            contexto='internacao_eletivo',
+            permitir_override_limiar=permitir_override_limiar,
+            mensagens_iniciais=['Execucao adicional XLSX (unificacao + limpeza de status).'],
+            logger=logger,
+            finalizar_logger=False,
+        )
+        if resultado_xlsx.get('ok'):
+            logger.info('MODO_XLSX', 'Execucao adicional XLSX finalizada com sucesso.')
+            resultado_csv['mensagens'] = resultado_csv.get('mensagens', []) + [
+                f'Saida XLSX gerada: {saida_status_xlsx}',
+                f'Saida XLSX gerada: {saida_resposta_xlsx}',
+            ]
+        else:
+            logger.warning('MODO_XLSX', 'Falha na limpeza XLSX; fluxo CSV foi mantido.')
+            resultado_csv['mensagens'] = resultado_csv.get('mensagens', []) + [
+                'Aviso: falha na execucao adicional XLSX durante limpeza de status.',
+            ]
+        return resultado_csv
+    except Exception as erro:
+        logger.exception('ERRO_EXECUCAO', erro)
         if not logger_externo:
-            logger.finalizar('FALHA_CONCATENACAO')
-        return resultado_concat
-
-    resultado_csv = executar_normalizacao_padronizacao(
-        arquivo_status=arquivo_status,
-        arquivo_status_resposta=arquivo_status_resposta_unificado,
-        saida_status=saida_status,
-        saida_status_resposta=saida_status_resposta,
-        limiar_nat_data=limiar_nat_data,
-        contexto='internacao_eletivo',
-        permitir_override_limiar=permitir_override_limiar,
-        mensagens_iniciais=resultado_concat['mensagens'],
-        logger=logger,
-        finalizar_logger=not logger_externo,
-    )
-    if not resultado_csv.get('ok'):
-        return resultado_csv
-
-    arquivo_status_xlsx, tem_status_xlsx = _preferir_xlsx_se_existir(arquivo_status)
-    arquivo_eletivo_xlsx, tem_eletivo_xlsx = _preferir_xlsx_se_existir(arquivo_status_resposta_eletivo)
-    arquivo_internacao_xlsx, tem_internacao_xlsx = _preferir_xlsx_se_existir(
-        arquivo_status_resposta_internacao
-    )
-    if not (tem_status_xlsx or tem_eletivo_xlsx or tem_internacao_xlsx):
-        logger.info('MODO_XLSX', 'Nenhum XLSX de entrada encontrado para execucao adicional.')
-        return resultado_csv
-
-    arquivo_unificado_xlsx = _caminho_xlsx_pareado(arquivo_status_resposta_unificado)
-    saida_status_xlsx = _obter_saida_status_xlsx(saida_status)
-    saida_resposta_xlsx = _obter_saida_status_resposta_xlsx(saida_status_resposta)
-    logger.info('MODO_XLSX', 'Execucao adicional XLSX iniciada (unificacao + limpeza).')
-    logger.info('MODO_XLSX', f'arquivo_status={arquivo_status_xlsx}')
-    logger.info('MODO_XLSX', f'arquivo_eletivo={arquivo_eletivo_xlsx}')
-    logger.info('MODO_XLSX', f'arquivo_internacao={arquivo_internacao_xlsx}')
-    logger.info('MODO_XLSX', f'arquivo_unificado={arquivo_unificado_xlsx}')
-
-    resultado_concat_xlsx = run_unificar_status_respostas_pipeline(
-        arquivo_eletivo=arquivo_eletivo_xlsx,
-        arquivo_internacao=arquivo_internacao_xlsx,
-        arquivo_saida=arquivo_unificado_xlsx,
-        logger=logger,
-    )
-    if not resultado_concat_xlsx.get('ok'):
-        logger.warning('MODO_XLSX', 'Falha na unificacao XLSX; fluxo CSV foi mantido.')
-        resultado_csv['mensagens'] = resultado_csv.get('mensagens', []) + [
-            'Aviso: falha na execucao adicional XLSX durante unificacao.',
-        ]
-        return resultado_csv
-
-    resultado_xlsx = executar_normalizacao_padronizacao(
-        arquivo_status=arquivo_status_xlsx,
-        arquivo_status_resposta=arquivo_unificado_xlsx,
-        saida_status=saida_status_xlsx,
-        saida_status_resposta=saida_resposta_xlsx,
-        limiar_nat_data=limiar_nat_data,
-        contexto='internacao_eletivo',
-        permitir_override_limiar=permitir_override_limiar,
-        mensagens_iniciais=['Execucao adicional XLSX (unificacao + limpeza de status).'],
-        logger=logger,
-        finalizar_logger=False,
-    )
-    if resultado_xlsx.get('ok'):
-        logger.info('MODO_XLSX', 'Execucao adicional XLSX finalizada com sucesso.')
-        resultado_csv['mensagens'] = resultado_csv.get('mensagens', []) + [
-            f'Saida XLSX gerada: {saida_status_xlsx}',
-            f'Saida XLSX gerada: {saida_resposta_xlsx}',
-        ]
-    else:
-        logger.warning('MODO_XLSX', 'Falha na limpeza XLSX; fluxo CSV foi mantido.')
-        resultado_csv['mensagens'] = resultado_csv.get('mensagens', []) + [
-            'Aviso: falha na execucao adicional XLSX durante limpeza de status.',
-        ]
-    return resultado_csv
+            logger.finalizar('ERRO')
+        return {
+            'ok': False,
+            'mensagens': [
+                f'Erro na ingestao unificar (etapa={etapa_atual}): {type(erro).__name__}: {erro}'
+            ],
+            'codigo_erro': ERRO_INGESTAO,
+        }

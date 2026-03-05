@@ -87,7 +87,9 @@ def _executar_preflight_com_dataframes(
                 )
             )
     else:
-        avisos.append('Coluna de atendimento ausente em status_resposta para avaliacao de qualidade.')
+        bloqueios.append(
+            'Qualidade de data indisponivel: coluna de atendimento ausente em status_resposta.'
+        )
 
     detalhes['qualidade_data'] = qualidade
     detalhes['validacao_colunas_origem'] = validacao_origem
@@ -129,6 +131,18 @@ def _executar_preflight_com_dataframes(
     )
     logger.finalizar('SUCESSO' if ok else 'FALHA_VALIDACAO')
     return resultado
+
+
+def _arquivo_unificado_esta_atualizado(arquivo_unificado, arquivo_eletivo, arquivo_internacao):
+    if not Path(arquivo_unificado).exists():
+        return False
+
+    mtime_unificado = Path(arquivo_unificado).stat().st_mtime
+    mtime_eletivo = Path(arquivo_eletivo).stat().st_mtime if Path(arquivo_eletivo).exists() else 0
+    mtime_internacao = (
+        Path(arquivo_internacao).stat().st_mtime if Path(arquivo_internacao).exists() else 0
+    )
+    return mtime_unificado >= max(mtime_eletivo, mtime_internacao)
 
 
 def run_preflight_pipeline(
@@ -213,7 +227,7 @@ def run_preflight_internacao_eletivo(limiar_nat_data=None):
     arquivo_internacao = DEFAULTS_INTERNACAO_ELETIVO['arquivo_status_resposta_internacao']
     arquivo_dataset_origem = DEFAULTS_INTERNACAO_ELETIVO['arquivo_dataset_origem_internacao']
 
-    if Path(arquivo_unificado).exists():
+    if _arquivo_unificado_esta_atualizado(arquivo_unificado, arquivo_eletivo, arquivo_internacao):
         return run_preflight_pipeline(
             contexto='internacao_eletivo',
             arquivo_status=arquivo_status,
@@ -228,7 +242,16 @@ def run_preflight_internacao_eletivo(limiar_nat_data=None):
         contexto='internacao_eletivo',
     )
     logger = PipelineLogger(nome_pipeline='preflight_internacao_eletivo')
-    logger.info('INICIO', 'Arquivo unificado ausente; usando fallback eletivo+internacao em memoria.')
+    if Path(arquivo_unificado).exists():
+        logger.warning(
+            'INICIO',
+            (
+                'Arquivo unificado desatualizado em relacao a eletivo/internacao; '
+                'usando fallback eletivo+internacao em memoria.'
+            ),
+        )
+    else:
+        logger.info('INICIO', 'Arquivo unificado ausente; usando fallback eletivo+internacao em memoria.')
     logger.info('INICIO', f'limiar_nat_data={limiar_nat_data}')
     logger.info('INICIO', f'limiar_nat_data_origem={origem_limiar}')
     validacao_arquivos = validar_arquivos_existem(
