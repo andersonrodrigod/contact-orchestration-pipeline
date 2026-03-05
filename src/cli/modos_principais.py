@@ -12,6 +12,10 @@ from src.pipelines.internacao_eletivo_pipeline import (
     run_pipeline_internacao_eletivo_com_resposta,
     run_pipeline_internacao_eletivo_somente_status,
 )
+from src.pipelines.preflight_pipeline import (
+    run_preflight_complicacao,
+    run_preflight_internacao_eletivo,
+)
 
 
 MODOS_PRINCIPAIS = {
@@ -25,6 +29,8 @@ MODOS_PRINCIPAIS = {
     'internacao_eletivo_somente_status': run_pipeline_internacao_eletivo_somente_status,
     'internacao_eletivo_gerar_status_dataset': run_internacao_eletivo_pipeline_gerar_status_dataset,
     'internacao_eletivo_orquestracao': run_pipeline_internacao_eletivo_orquestracao,
+    'preflight_complicacao': run_preflight_complicacao,
+    'preflight_internacao_eletivo': run_preflight_internacao_eletivo,
 }
 
 MODOS_AGREGADOS = ['ambos_com_resposta', 'ambos_somente_status', 'ambos']

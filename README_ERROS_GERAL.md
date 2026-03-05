@@ -69,6 +69,17 @@ Fontes migradas:
 - Próximo passo:
   - Evoluir para pre-flight avançado no app (feature futura).
 
+6. Preflight de internação/eletivo dependia do arquivo unificado prévio
+- Status: `RESOLVIDO`
+- Situação detectada nos testes de refatoração:
+  - O modo de preflight podia falhar se `status_resposta_eletivo_internacao.csv` ainda não existisse.
+- Correção aplicada:
+  - Fallback para concatenação em memória de:
+    - `status_resposta_eletivo.csv`
+    - `status_resposta_internacao.csv`
+- Resultado:
+  - Preflight de `internacao_eletivo` funciona mesmo sem etapa de unificação prévia.
+
 ### Baixa prioridade / técnica
 
 6. Parse de data com risco de compatibilidade de versão (`format='mixed'`)
