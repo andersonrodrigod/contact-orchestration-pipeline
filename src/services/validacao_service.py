@@ -1,3 +1,4 @@
+import re
 import pandas as pd
 from src.config.schemas import (
     COLUNAS_MINIMAS_STATUS_RESPOSTA_CONCATENACAO,
@@ -123,6 +124,10 @@ def validar_colunas_origem_dataset_complicacao(colunas_arquivo, contexto='datase
     colunas_normalizadas = [str(c).strip() for c in colunas_arquivo]
     set_colunas = set(colunas_normalizadas)
     faltando = [col for col in colunas_obrigatorias if col not in set_colunas]
+    padrao_coluna_mascarada = re.compile(r'^P[1-4]\.\d+$')
+    colunas_mascaradas_duplicadas = sorted(
+        [col for col in colunas_normalizadas if padrao_coluna_mascarada.match(col)]
+    )
     colunas_duplicadas = sorted(
         {
             col
@@ -130,6 +135,22 @@ def validar_colunas_origem_dataset_complicacao(colunas_arquivo, contexto='datase
             if colunas_normalizadas.count(col) > 1
         }
     )
+
+    if colunas_mascaradas_duplicadas:
+        return {
+            'ok': False,
+            'mensagens': [
+                (
+                    f'Coluna essencial duplicada mascarada detectada no dataset de {contexto}: '
+                    f'{colunas_mascaradas_duplicadas}'
+                ),
+                'Renomeie ou apague a coluna duplicada na origem antes de executar o pipeline.',
+            ],
+            'colunas_obrigatorias': colunas_obrigatorias,
+            'colunas_faltando': faltando,
+            'colunas_duplicadas': colunas_duplicadas,
+            'colunas_mascaradas_duplicadas': colunas_mascaradas_duplicadas,
+        }
 
     if colunas_duplicadas:
         return {
@@ -144,6 +165,7 @@ def validar_colunas_origem_dataset_complicacao(colunas_arquivo, contexto='datase
             'colunas_obrigatorias': colunas_obrigatorias,
             'colunas_faltando': faltando,
             'colunas_duplicadas': colunas_duplicadas,
+            'colunas_mascaradas_duplicadas': [],
         }
 
     if faltando:
@@ -156,6 +178,7 @@ def validar_colunas_origem_dataset_complicacao(colunas_arquivo, contexto='datase
             'colunas_obrigatorias': colunas_obrigatorias,
             'colunas_faltando': faltando,
             'colunas_duplicadas': [],
+            'colunas_mascaradas_duplicadas': [],
         }
 
     return {
@@ -164,4 +187,5 @@ def validar_colunas_origem_dataset_complicacao(colunas_arquivo, contexto='datase
         'colunas_obrigatorias': colunas_obrigatorias,
         'colunas_faltando': [],
         'colunas_duplicadas': [],
+        'colunas_mascaradas_duplicadas': [],
     }

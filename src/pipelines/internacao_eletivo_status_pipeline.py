@@ -154,6 +154,12 @@ def run_internacao_eletivo_pipeline_enviar_status_com_resposta(
             'total_status': resultado_integracao.get('total_status', 0),
             'com_match': resultado_integracao.get('com_match', 0),
             'sem_match': resultado_integracao.get('sem_match', 0),
+            'descartados_status_data_invalida': resultado_integracao.get(
+                'descartados_status_data_invalida', 0
+            ),
+            'descartados_resposta_data_invalida': resultado_integracao.get(
+                'descartados_resposta_data_invalida', 0
+            ),
         },
         arquivos={'arquivo_status_integrado': resultado_integracao.get('arquivo_saida')},
     )
@@ -198,6 +204,12 @@ def run_internacao_eletivo_pipeline_enviar_status_somente_status(
             'total_status': resultado_status.get('total_status', 0),
             'com_match': resultado_status.get('com_match', 0),
             'sem_match': resultado_status.get('sem_match', 0),
+            'descartados_status_data_invalida': resultado_status.get(
+                'descartados_status_data_invalida', 0
+            ),
+            'descartados_resposta_data_invalida': resultado_status.get(
+                'descartados_resposta_data_invalida', 0
+            ),
         },
         arquivos={'arquivo_status_integrado': resultado_status.get('arquivo_saida')},
     )
@@ -254,6 +266,12 @@ def run_internacao_eletivo_pipeline_gerar_status_dataset(
             'total_status': resultado_status.get('total_status', 0),
             'com_match': resultado_status.get('com_match', 0),
             'sem_match': resultado_status.get('sem_match', 0),
+            'descartados_status_data_invalida': resultado_status.get(
+                'descartados_status_data_invalida', 0
+            ),
+            'descartados_resposta_data_invalida': resultado_status.get(
+                'descartados_resposta_data_invalida', 0
+            ),
             'total_linhas': resultado_dataset.get('total_linhas', 0),
         },
         arquivos={'arquivo_status_dataset': resultado_dataset.get('arquivo_saida')},
@@ -302,6 +320,12 @@ def run_internacao_eletivo_pipeline_gerar_status_dataset_somente_status(
             'total_status': resultado_status.get('total_status', 0),
             'com_match': resultado_status.get('com_match', 0),
             'sem_match': resultado_status.get('sem_match', 0),
+            'descartados_status_data_invalida': resultado_status.get(
+                'descartados_status_data_invalida', 0
+            ),
+            'descartados_resposta_data_invalida': resultado_status.get(
+                'descartados_resposta_data_invalida', 0
+            ),
             'total_linhas': resultado_dataset.get('total_linhas', 0),
         },
         arquivos={'arquivo_status_dataset': resultado_dataset.get('arquivo_saida')},

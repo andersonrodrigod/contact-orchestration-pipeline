@@ -80,7 +80,6 @@ def aplicar_classificacao_processo_acao(df):
 
     s_lida_sim = _serie_numerica(df, col_lida_sim)
     s_lida_nao = _serie_numerica(df, col_lida_nao)
-    s_lida_envio = _serie_numerica(df, 'SEGUNDO_ENVIO')
     s_lida_sem = _serie_numerica(df, 'LIDA_SEM_RESPOSTA')
     s_entregue = _serie_numerica(df, 'ENTREGUE')
     s_enviada = _serie_numerica(df, 'ENVIADA')
@@ -99,7 +98,6 @@ def aplicar_classificacao_processo_acao(df):
         (s_lida_nao >= 1, 'MUDAR_CONTATO_LIDO_NAO', MARCADOR_ACAO_PROXIMO),
         (s_lida_sem == 1, 'SEGUNDO_ENVIO', MARCADOR_ACAO_PRIORIDADE),
         (s_lida_sem >= 2, 'MUDAR_CONTATO_LIDO_SEM_RESPOSTA', MARCADOR_ACAO_PROXIMO),
-        (s_lida_envio == 1, 'SEGUNDO_ENVIO_LIDO', MARCADOR_ACAO_PRIORIDADE),
         (s_entregue >= 3, 'MUDAR_CONTATO_ENTREGUE', MARCADOR_ACAO_PROXIMO),
         (s_enviada >= 3, 'MUDAR_CONTATO_ENVIADO', MARCADOR_ACAO_PROXIMO),
         (s_nao_entregue_meta >= 3, 'MUDAR_CONTATO_NAO_ENTREGUE_META', MARCADOR_ACAO_PROXIMO),

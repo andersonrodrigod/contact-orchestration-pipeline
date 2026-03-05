@@ -36,6 +36,15 @@ def _run_unificar_status_resposta_pipeline(
         logger.info('MATCH', f"total_status={resultado['total_status']}")
         logger.info('MATCH', f"com_match={resultado['com_match']}")
         logger.info('MATCH', f"sem_match={resultado['sem_match']}")
+        descartados_status = int(resultado.get('descartados_status_data_invalida', 0))
+        descartados_resposta = int(resultado.get('descartados_resposta_data_invalida', 0))
+        logger.info('MATCH', f'descartados_status_data_invalida={descartados_status}')
+        logger.info('MATCH', f'descartados_resposta_data_invalida={descartados_resposta}')
+        mensagens = resultado.get('mensagens', [])
+        resultado['mensagens'] = mensagens + [
+            f'Descartados por data invalida (status): {descartados_status}',
+            f'Descartados por data invalida (status_resposta): {descartados_resposta}',
+        ]
         if not logger_externo:
             logger.finalizar('SUCESSO')
         return resultado
@@ -117,6 +126,15 @@ def _run_status_somente_pipeline(
         logger.info('FILTRO_HSM', f"status antes={resumo_filtro['total_antes']}")
         logger.info('FILTRO_HSM', f"status depois={resumo_filtro['total_depois']}")
         logger.info('RESULTADO', f"total_status={resultado['total_status']}")
+        descartados_status = int(resultado.get('descartados_status_data_invalida', 0))
+        descartados_resposta = int(resultado.get('descartados_resposta_data_invalida', 0))
+        logger.info('RESULTADO', f'descartados_status_data_invalida={descartados_status}')
+        logger.info('RESULTADO', f'descartados_resposta_data_invalida={descartados_resposta}')
+        mensagens = resultado.get('mensagens', [])
+        resultado['mensagens'] = mensagens + [
+            f'Descartados por data invalida (status): {descartados_status}',
+            f'Descartados por data invalida (status_resposta): {descartados_resposta}',
+        ]
         if not logger_externo:
             logger.finalizar('SUCESSO')
         return resultado

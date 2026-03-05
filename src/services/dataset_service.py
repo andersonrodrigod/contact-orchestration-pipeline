@@ -470,6 +470,9 @@ def criar_dataset_complicacao(
             'colunas_arquivo': list(df.columns),
             'colunas_faltando': validacao_colunas['colunas_faltando'],
             'colunas_duplicadas': validacao_colunas.get('colunas_duplicadas', []),
+            'colunas_mascaradas_duplicadas': validacao_colunas.get(
+                'colunas_mascaradas_duplicadas', []
+            ),
         }
 
     colunas_criticas_segmentacao = ['STATUS', 'P1']

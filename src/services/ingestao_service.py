@@ -54,6 +54,7 @@ def executar_normalizacao_padronizacao(
     arquivo_status_resposta='src/data/status_resposta_complicacao.csv',
     saida_status='src/data/arquivo_limpo/status_limpo.csv',
     saida_status_resposta='src/data/arquivo_limpo/status_resposta_complicacao_limpo.csv',
+    limiar_nat_data=LIMIAR_AVISO_PERCENTUAL_NAT_DATA,
     mensagens_iniciais=None,
     logger=None,
     finalizar_logger=True,
@@ -66,6 +67,7 @@ def executar_normalizacao_padronizacao(
     logger.info('INICIO', f'arquivo_status_resposta={arquivo_status_resposta}')
     logger.info('INICIO', f'saida_status={saida_status}')
     logger.info('INICIO', f'saida_status_resposta={saida_status_resposta}')
+    logger.info('INICIO', f'limiar_nat_data_em_uso={limiar_nat_data}')
 
     etapa_atual = 'INICIO'
     try:
@@ -127,7 +129,7 @@ def executar_normalizacao_padronizacao(
                 'NORMALIZACAO',
                 f'Data agendamento NaT={pct_nat_status:.2f}% ({qtd_nat_status}/{len(df_status)})',
             )
-            if pct_nat_status >= LIMIAR_AVISO_PERCENTUAL_NAT_DATA:
+            if pct_nat_status >= limiar_nat_data:
                 mensagem_alerta = _mensagem_alerta_nat(
                     'Data agendamento', pct_nat_status, qtd_nat_status, len(df_status)
                 )
@@ -140,7 +142,7 @@ def executar_normalizacao_padronizacao(
                 'NORMALIZACAO',
                 f'DT_ATENDIMENTO NaT={pct_nat_resposta:.2f}% ({qtd_nat_resposta}/{len(df_status_resposta)})',
             )
-            if pct_nat_resposta >= LIMIAR_AVISO_PERCENTUAL_NAT_DATA:
+            if pct_nat_resposta >= limiar_nat_data:
                 mensagem_alerta = _mensagem_alerta_nat(
                     'DT_ATENDIMENTO', pct_nat_resposta, qtd_nat_resposta, len(df_status_resposta)
                 )
@@ -219,6 +221,7 @@ def executar_ingestao_complicacao(
     arquivo_status_resposta_complicacao='src/data/status_resposta_complicacao.csv',
     saida_status='src/data/arquivo_limpo/status_limpo.csv',
     saida_status_resposta='src/data/arquivo_limpo/status_resposta_complicacao_limpo.csv',
+    limiar_nat_data=LIMIAR_AVISO_PERCENTUAL_NAT_DATA,
     logger=None,
 ):
     logger_externo = logger is not None
@@ -230,6 +233,7 @@ def executar_ingestao_complicacao(
         arquivo_status_resposta=arquivo_status_resposta_complicacao,
         saida_status=saida_status,
         saida_status_resposta=saida_status_resposta,
+        limiar_nat_data=limiar_nat_data,
         mensagens_iniciais=['Modo complicacao selecionado.'],
         logger=logger,
         finalizar_logger=not logger_externo,
@@ -258,6 +262,7 @@ def executar_ingestao_complicacao(
         arquivo_status_resposta=arquivo_resposta_xlsx,
         saida_status=saida_status_xlsx,
         saida_status_resposta=saida_resposta_xlsx,
+        limiar_nat_data=limiar_nat_data,
         mensagens_iniciais=['Execucao adicional XLSX (status + status_resposta).'],
         logger=logger,
         finalizar_logger=False,
@@ -280,6 +285,7 @@ def executar_ingestao_somente_status(
     arquivo_status='src/data/status.csv',
     saida_status='src/data/arquivo_limpo/status_limpo.csv',
     nome_logger='ingestao_somente_status',
+    limiar_nat_data=LIMIAR_AVISO_PERCENTUAL_NAT_DATA,
     logger=None,
 ):
     logger_externo = logger is not None
@@ -287,6 +293,7 @@ def executar_ingestao_somente_status(
         logger = PipelineLogger(nome_pipeline=nome_logger)
     logger.info('INICIO', f'arquivo_status={arquivo_status}')
     logger.info('INICIO', f'saida_status={saida_status}')
+    logger.info('INICIO', f'limiar_nat_data_em_uso={limiar_nat_data}')
     etapa_atual = 'INICIO'
     try:
         alertas_data = []
@@ -305,7 +312,7 @@ def executar_ingestao_somente_status(
                 'NORMALIZACAO',
                 f'Data agendamento NaT={pct_nat_status:.2f}% ({qtd_nat_status}/{len(df_status)})',
             )
-            if pct_nat_status >= LIMIAR_AVISO_PERCENTUAL_NAT_DATA:
+            if pct_nat_status >= limiar_nat_data:
                 mensagem_alerta = _mensagem_alerta_nat(
                     'Data agendamento', pct_nat_status, qtd_nat_status, len(df_status)
                 )
@@ -342,6 +349,7 @@ def executar_ingestao_unificar(
     arquivo_status_resposta_unificado='src/data/status_resposta_eletivo_internacao.csv',
     saida_status='src/data/arquivo_limpo/status_limpo.csv',
     saida_status_resposta='src/data/arquivo_limpo/status_resposta_eletivo_internacao_limpo.csv',
+    limiar_nat_data=LIMIAR_AVISO_PERCENTUAL_NAT_DATA,
     logger=None,
 ):
     logger_externo = logger is not None
@@ -351,6 +359,7 @@ def executar_ingestao_unificar(
     logger.info('MODO', f'arquivo_eletivo={arquivo_status_resposta_eletivo}')
     logger.info('MODO', f'arquivo_internacao={arquivo_status_resposta_internacao}')
     logger.info('MODO', f'arquivo_unificado={arquivo_status_resposta_unificado}')
+    logger.info('MODO', f'limiar_nat_data_em_uso={limiar_nat_data}')
 
     resultado_concat = run_unificar_status_respostas_pipeline(
         arquivo_eletivo=arquivo_status_resposta_eletivo,
@@ -380,6 +389,7 @@ def executar_ingestao_unificar(
         arquivo_status_resposta=arquivo_status_resposta_unificado,
         saida_status=saida_status,
         saida_status_resposta=saida_status_resposta,
+        limiar_nat_data=limiar_nat_data,
         mensagens_iniciais=resultado_concat['mensagens'],
         logger=logger,
         finalizar_logger=not logger_externo,
@@ -423,6 +433,7 @@ def executar_ingestao_unificar(
         arquivo_status_resposta=arquivo_unificado_xlsx,
         saida_status=saida_status_xlsx,
         saida_status_resposta=saida_resposta_xlsx,
+        limiar_nat_data=limiar_nat_data,
         mensagens_iniciais=['Execucao adicional XLSX (unificacao + limpeza de status).'],
         logger=logger,
         finalizar_logger=False,
