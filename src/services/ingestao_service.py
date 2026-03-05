@@ -230,8 +230,23 @@ def executar_normalizacao_padronizacao(
         if not resultado_final['ok']:
             if len(erros_qualidade_data) > 0:
                 resultado_final['codigo_erro'] = ERRO_QUALIDADE_DATA
+                status_final = 'FALHA_QUALIDADE_DATA'
             else:
                 resultado_final['codigo_erro'] = ERRO_VALIDACAO_COLUNAS
+                status_final = 'FALHA_VALIDACAO_DATA'
+
+            motivo_principal = (
+                resultado_final['mensagens'][-1] if len(resultado_final['mensagens']) > 0 else 'Motivo nao informado.'
+            )
+            mensagem_bloqueio = (
+                f"Saida bloqueada na etapa={etapa_atual}: arquivos nao foram salvos. "
+                f"codigo_erro={resultado_final['codigo_erro']}. Motivo: {motivo_principal}"
+            )
+            logger.warning('BLOQUEIO_SAIDA', mensagem_bloqueio)
+            resultado_final['mensagens'] = resultado_final['mensagens'] + [mensagem_bloqueio]
+            if finalizar_logger:
+                logger.finalizar(status_final)
+            return resultado_final
 
         etapa_atual = 'FORMATAR_DT_ATENDIMENTO'
         logger.info('FORMATACAO', 'Formatando DT_ATENDIMENTO para BR')
@@ -247,11 +262,8 @@ def executar_normalizacao_padronizacao(
         logger.info('SAIDA', f'Salvando status_resposta em {saida_status_resposta}')
         salvar_dataframe(df_status_resposta, saida_status_resposta)
 
-        status_final = 'SUCESSO' if resultado_final['ok'] else 'FALHA_VALIDACAO_DATA'
-        if len(erros_qualidade_data) > 0:
-            status_final = 'FALHA_QUALIDADE_DATA'
         if finalizar_logger:
-            logger.finalizar(status_final)
+            logger.finalizar('SUCESSO')
         return resultado_final
     except Exception as erro:
         logger.exception('ERRO_EXECUCAO', erro)

@@ -465,134 +465,175 @@ def criar_dataset_complicacao(
     arquivo_status_integrado,
     contexto='dataset',
 ):
-    df = ler_arquivo_csv(arquivo_complicacao)
-    df.columns = [str(col).strip() for col in df.columns]
+    etapa_atual = 'INICIO'
+    try:
+        etapa_atual = 'LEITURA_ARQUIVO_COMPLICACAO'
+        df = ler_arquivo_csv(arquivo_complicacao)
+        df.columns = [str(col).strip() for col in df.columns]
 
-    validacao_colunas = validar_colunas_origem_dataset_complicacao(df.columns, contexto=contexto)
-    if not validacao_colunas['ok']:
+        etapa_atual = 'VALIDACAO_COLUNAS_ORIGEM'
+        validacao_colunas = validar_colunas_origem_dataset_complicacao(df.columns, contexto=contexto)
+        if not validacao_colunas['ok']:
+            return {
+                'ok': False,
+                'mensagens': validacao_colunas['mensagens'],
+                'colunas_arquivo': list(df.columns),
+                'colunas_faltando': validacao_colunas['colunas_faltando'],
+                'colunas_duplicadas': validacao_colunas.get('colunas_duplicadas', []),
+                'colunas_mascaradas_duplicadas': validacao_colunas.get(
+                    'colunas_mascaradas_duplicadas', []
+                ),
+                'codigo_erro': ERRO_CRIACAO_DATASET,
+            }
+
+        etapa_atual = 'VALIDACAO_SEGMENTACAO'
+        colunas_criticas_segmentacao = ['STATUS', 'P1']
+        colunas_criticas_faltando = [c for c in colunas_criticas_segmentacao if c not in df.columns]
+        if len(colunas_criticas_faltando) > 0:
+            return {
+                'ok': False,
+                'mensagens': [
+                    'Estrutura de segmentacao invalida para abas secundarias.',
+                    f'Colunas obrigatorias ausentes: {colunas_criticas_faltando}',
+                    'Ajuste os nomes das colunas para STATUS e P1 no arquivo de origem.',
+                ],
+                'colunas_arquivo': list(df.columns),
+                'colunas_faltando': colunas_criticas_faltando,
+                'codigo_erro': ERRO_CRIACAO_DATASET,
+            }
+
+        etapa_atual = 'SEPARACAO_DUPLICADOS'
+        mask_duplicados = df.duplicated(subset=['COD USUARIO'], keep=False)
+        df_duplicados = df[mask_duplicados].copy()
+        df_sem_duplicados = df[~mask_duplicados].copy()
+
+        etapa_atual = 'CARREGAR_STATUS_LOOKUP'
+        resultado_status = _carregar_status_para_lookup(arquivo_status_integrado)
+        if not resultado_status['ok']:
+            return {
+                'ok': False,
+                'mensagens': resultado_status['mensagens'],
+                'codigo_erro': resultado_status.get('codigo_erro', ERRO_CRIACAO_DATASET),
+            }
+        df_status_por_contato = resultado_status['df_status_por_contato']
+        df_status_por_nome_tel = resultado_status['df_status_por_nome_tel']
+        df_status_full = resultado_status['df_status_full']
+
+        etapa_atual = 'ENRIQUECER_ABA_PRINCIPAL'
+        df_usuarios = _montar_df_final_complicacao(df_sem_duplicados)
+        resultado_enriquecimento = _enriquecer_dataset_com_status(
+            df_usuarios,
+            df_status_full,
+            df_status_por_contato,
+            df_status_por_nome_tel,
+        )
+        if not resultado_enriquecimento['ok']:
+            return {
+                'ok': False,
+                'mensagens': resultado_enriquecimento['mensagens'],
+                'total_dataset': resultado_enriquecimento.get('total_dataset', 0),
+                'total_match': resultado_enriquecimento.get('total_match', 0),
+                'total_sem_match': resultado_enriquecimento.get('total_sem_match', 0),
+                'codigo_erro': resultado_enriquecimento.get('codigo_erro', ERRO_CRIACAO_DATASET),
+            }
+        df_usuarios = resultado_enriquecimento['df_enriquecido']
+        df_usuarios['__DT_ENVIO_ORDENACAO'] = pd.to_datetime(
+            df_usuarios['DT ENVIO'],
+            errors='coerce',
+            dayfirst=True,
+        )
+        df_usuarios = df_usuarios.sort_values('__DT_ENVIO_ORDENACAO', ascending=False, na_position='last')
+        df_usuarios = df_usuarios.drop(columns=['__DT_ENVIO_ORDENACAO'])
+
+        etapa_atual = 'MONTAR_ABAS_SECUNDARIAS'
+        if 'P1' in df_sem_duplicados.columns:
+            p1_preenchido = _normalizar_texto_serie(df_sem_duplicados['P1']) != ''
+            if 'STATUS' in df_sem_duplicados.columns:
+                status_respondidos = {'obito', 'nao quis'}
+                status_norm = df_sem_duplicados['STATUS'].apply(_simplificar_texto)
+                mask_respondidos = p1_preenchido | status_norm.isin(status_respondidos)
+            else:
+                mask_respondidos = p1_preenchido
+            df_resp_base = df_sem_duplicados[mask_respondidos]
+        elif 'STATUS' in df_sem_duplicados.columns:
+            status_respondidos = {'obito', 'nao quis'}
+            status_norm = df_sem_duplicados['STATUS'].apply(_simplificar_texto)
+            df_resp_base = df_sem_duplicados[status_norm.isin(status_respondidos)]
+        else:
+            df_resp_base = df_sem_duplicados.iloc[0:0]
+        if len(df_resp_base) == 0:
+            return {
+                'ok': False,
+                'mensagens': [
+                    'Nenhum usuario respondido encontrado para montar a aba usuarios_respondidos.',
+                    'Fluxo interrompido para evitar geracao silenciosa de aba vazia em cenário de respondidos.',
+                ],
+                'codigo_erro': ERRO_CRIACAO_DATASET,
+            }
+
+        etapa_atual = 'ENRIQUECER_USUARIOS_RESPONDIDOS'
+        df_usuarios_respondidos = _montar_df_final_complicacao(df_resp_base)
+        resultado_respondidos = _enriquecer_dataset_com_status(
+            df_usuarios_respondidos,
+            df_status_full,
+            df_status_por_contato,
+            df_status_por_nome_tel,
+        )
+        if not resultado_respondidos['ok']:
+            return {
+                'ok': False,
+                'mensagens': resultado_respondidos['mensagens'],
+                'total_dataset': resultado_respondidos.get('total_dataset', len(df_resp_base)),
+                'total_match': resultado_respondidos.get('total_match', 0),
+                'total_sem_match': resultado_respondidos.get('total_sem_match', 0),
+                'codigo_erro': resultado_respondidos.get('codigo_erro', ERRO_CRIACAO_DATASET),
+            }
+        df_usuarios_respondidos = resultado_respondidos['df_enriquecido']
+
+        etapa_atual = 'ENRIQUECER_USUARIOS_DUPLICADOS'
+        df_usuarios_duplicados = _montar_df_final_complicacao(df_duplicados)
+        resultado_duplicados = _enriquecer_dataset_com_status(
+            df_usuarios_duplicados,
+            df_status_full,
+            df_status_por_contato,
+            df_status_por_nome_tel,
+        )
+        if resultado_duplicados['ok']:
+            df_usuarios_duplicados = resultado_duplicados['df_enriquecido']
+        df_usuarios_resolvidos = pd.DataFrame(columns=COLUNAS_FINAIS_DATASET)
+
+        etapa_atual = 'PERSISTENCIA_XLSX'
+        with pd.ExcelWriter(arquivo_saida_dataset, engine='openpyxl') as writer:
+            df_usuarios.to_excel(writer, sheet_name='usuarios', index=False)
+            df_usuarios_respondidos.to_excel(writer, sheet_name='usuarios_respondidos', index=False)
+            df_usuarios_duplicados.to_excel(writer, sheet_name='usuarios_duplicados', index=False)
+            df_usuarios_resolvidos.to_excel(writer, sheet_name='usuarios_resolvidos', index=False)
+
         return {
-            'ok': False,
-            'mensagens': validacao_colunas['mensagens'],
+            'ok': True,
+            'arquivo_saida': arquivo_saida_dataset,
+            'total_linhas': len(df_usuarios),
+            'total_dataset': resultado_enriquecimento['total_dataset'],
+            'total_match': resultado_enriquecimento['total_match'],
+            'total_sem_match': resultado_enriquecimento['total_sem_match'],
+            'qtd_identificacao': resultado_enriquecimento['qtd_identificacao'],
+            'pct_identificacao': resultado_enriquecimento['pct_identificacao'],
+            'qtd_resposta': resultado_enriquecimento['qtd_resposta'],
+            'pct_resposta': resultado_enriquecimento['pct_resposta'],
+            'distribuicao_status': resultado_enriquecimento['distribuicao_status'],
+            'mensagens': validacao_colunas['mensagens'] + [f'Dataset de {contexto} criado com sucesso.'],
             'colunas_arquivo': list(df.columns),
-            'colunas_faltando': validacao_colunas['colunas_faltando'],
-            'colunas_duplicadas': validacao_colunas.get('colunas_duplicadas', []),
-            'colunas_mascaradas_duplicadas': validacao_colunas.get(
-                'colunas_mascaradas_duplicadas', []
-            ),
-            'codigo_erro': ERRO_CRIACAO_DATASET,
+            'colunas_faltando': [],
         }
-
-    colunas_criticas_segmentacao = ['STATUS', 'P1']
-    colunas_criticas_faltando = [c for c in colunas_criticas_segmentacao if c not in df.columns]
-    if len(colunas_criticas_faltando) > 0:
+    except Exception as erro:
         return {
             'ok': False,
             'mensagens': [
-                'Estrutura de segmentacao invalida para abas secundarias.',
-                f'Colunas obrigatorias ausentes: {colunas_criticas_faltando}',
-                'Ajuste os nomes das colunas para STATUS e P1 no arquivo de origem.',
+                (
+                    f'Erro inesperado na criacao do dataset (etapa={etapa_atual}): '
+                    f'{type(erro).__name__}: {erro}'
+                )
             ],
-            'colunas_arquivo': list(df.columns),
-            'colunas_faltando': colunas_criticas_faltando,
             'codigo_erro': ERRO_CRIACAO_DATASET,
         }
-
-    mask_duplicados = df.duplicated(subset=['COD USUARIO'], keep=False)
-    df_duplicados = df[mask_duplicados].copy()
-    df_sem_duplicados = df[~mask_duplicados].copy()
-
-    resultado_status = _carregar_status_para_lookup(arquivo_status_integrado)
-    if not resultado_status['ok']:
-        return {
-            'ok': False,
-            'mensagens': resultado_status['mensagens'],
-            'codigo_erro': resultado_status.get('codigo_erro', ERRO_CRIACAO_DATASET),
-        }
-    df_status_por_contato = resultado_status['df_status_por_contato']
-    df_status_por_nome_tel = resultado_status['df_status_por_nome_tel']
-    df_status_full = resultado_status['df_status_full']
-
-    df_usuarios = _montar_df_final_complicacao(df_sem_duplicados)
-    resultado_enriquecimento = _enriquecer_dataset_com_status(
-        df_usuarios,
-        df_status_full,
-        df_status_por_contato,
-        df_status_por_nome_tel,
-    )
-    if not resultado_enriquecimento['ok']:
-        return {
-            'ok': False,
-            'mensagens': resultado_enriquecimento['mensagens'],
-            'total_dataset': resultado_enriquecimento.get('total_dataset', 0),
-            'total_match': resultado_enriquecimento.get('total_match', 0),
-            'total_sem_match': resultado_enriquecimento.get('total_sem_match', 0),
-            'codigo_erro': resultado_enriquecimento.get('codigo_erro', ERRO_CRIACAO_DATASET),
-        }
-    df_usuarios = resultado_enriquecimento['df_enriquecido']
-    df_usuarios['__DT_ENVIO_ORDENACAO'] = pd.to_datetime(
-        df_usuarios['DT ENVIO'],
-        errors='coerce',
-        dayfirst=True,
-    )
-    df_usuarios = df_usuarios.sort_values('__DT_ENVIO_ORDENACAO', ascending=False, na_position='last')
-    df_usuarios = df_usuarios.drop(columns=['__DT_ENVIO_ORDENACAO'])
-
-    if 'P1' in df_sem_duplicados.columns:
-        p1_preenchido = _normalizar_texto_serie(df_sem_duplicados['P1']) != ''
-        if 'STATUS' in df_sem_duplicados.columns:
-            status_respondidos = {'obito', 'nao quis'}
-            status_norm = df_sem_duplicados['STATUS'].apply(_simplificar_texto)
-            mask_respondidos = p1_preenchido | status_norm.isin(status_respondidos)
-        else:
-            mask_respondidos = p1_preenchido
-        df_resp_base = df_sem_duplicados[mask_respondidos]
-    elif 'STATUS' in df_sem_duplicados.columns:
-        status_respondidos = {'obito', 'nao quis'}
-        status_norm = df_sem_duplicados['STATUS'].apply(_simplificar_texto)
-        df_resp_base = df_sem_duplicados[status_norm.isin(status_respondidos)]
-    else:
-        df_resp_base = df_sem_duplicados.iloc[0:0]
-    df_usuarios_respondidos = _montar_df_final_complicacao(df_resp_base)
-    resultado_respondidos = _enriquecer_dataset_com_status(
-        df_usuarios_respondidos,
-        df_status_full,
-        df_status_por_contato,
-        df_status_por_nome_tel,
-    )
-    if resultado_respondidos['ok']:
-        df_usuarios_respondidos = resultado_respondidos['df_enriquecido']
-
-    df_usuarios_duplicados = _montar_df_final_complicacao(df_duplicados)
-    resultado_duplicados = _enriquecer_dataset_com_status(
-        df_usuarios_duplicados,
-        df_status_full,
-        df_status_por_contato,
-        df_status_por_nome_tel,
-    )
-    if resultado_duplicados['ok']:
-        df_usuarios_duplicados = resultado_duplicados['df_enriquecido']
-    df_usuarios_resolvidos = pd.DataFrame(columns=COLUNAS_FINAIS_DATASET)
-
-    with pd.ExcelWriter(arquivo_saida_dataset, engine='openpyxl') as writer:
-        df_usuarios.to_excel(writer, sheet_name='usuarios', index=False)
-        df_usuarios_respondidos.to_excel(writer, sheet_name='usuarios_respondidos', index=False)
-        df_usuarios_duplicados.to_excel(writer, sheet_name='usuarios_duplicados', index=False)
-        df_usuarios_resolvidos.to_excel(writer, sheet_name='usuarios_resolvidos', index=False)
-
-    return {
-        'ok': True,
-        'arquivo_saida': arquivo_saida_dataset,
-        'total_linhas': len(df_usuarios),
-        'total_dataset': resultado_enriquecimento['total_dataset'],
-        'total_match': resultado_enriquecimento['total_match'],
-        'total_sem_match': resultado_enriquecimento['total_sem_match'],
-        'qtd_identificacao': resultado_enriquecimento['qtd_identificacao'],
-        'pct_identificacao': resultado_enriquecimento['pct_identificacao'],
-        'qtd_resposta': resultado_enriquecimento['qtd_resposta'],
-        'pct_resposta': resultado_enriquecimento['pct_resposta'],
-        'distribuicao_status': resultado_enriquecimento['distribuicao_status'],
-        'mensagens': validacao_colunas['mensagens'] + [f'Dataset de {contexto} criado com sucesso.'],
-        'colunas_arquivo': list(df.columns),
-        'colunas_faltando': [],
-    }
 
