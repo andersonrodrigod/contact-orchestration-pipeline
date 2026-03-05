@@ -2,6 +2,7 @@ from core.logger import PipelineLogger
 from pathlib import Path
 from core.pipeline_result import error_result
 from core.pipeline_result import ok_result
+from src.contexts.pipeline_contextos import CONTEXTO_PIPELINE_COMPLICACAO
 from src.pipelines.join_status_resposta_pipeline import (
     run_status_somente_complicacao_pipeline,
     run_unificar_status_resposta_complicacao_pipeline,
@@ -84,16 +85,18 @@ def _run_criacao_dataset_status(
 
 
 def run_complicacao_pipeline_enviar_status_com_resposta(
-    arquivo_status='src/data/status.csv',
-    arquivo_status_resposta_complicacao='src/data/status_resposta_complicacao.csv',
-    saida_status='src/data/arquivo_limpo/status_limpo.csv',
-    saida_status_resposta='src/data/arquivo_limpo/status_resposta_complicacao_limpo.csv',
-    saida_status_integrado='src/data/arquivo_limpo/status_complicacao.csv',
+    arquivo_status=CONTEXTO_PIPELINE_COMPLICACAO.defaults['arquivo_status'],
+    arquivo_status_resposta_complicacao=CONTEXTO_PIPELINE_COMPLICACAO.defaults[
+        'arquivo_status_resposta_complicacao'
+    ],
+    saida_status=CONTEXTO_PIPELINE_COMPLICACAO.defaults['saida_status'],
+    saida_status_resposta=CONTEXTO_PIPELINE_COMPLICACAO.defaults['saida_status_resposta'],
+    saida_status_integrado=CONTEXTO_PIPELINE_COMPLICACAO.defaults['saida_status_integrado'],
     logger=None,
 ):
     logger_externo = logger is not None
     if logger is None:
-        logger = PipelineLogger(nome_pipeline='status_complicacao_pipeline')
+        logger = PipelineLogger(nome_pipeline=CONTEXTO_PIPELINE_COMPLICACAO.logger_status_com_resposta)
     resultado_ingestao = executar_ingestao_complicacao(
         arquivo_status=arquivo_status,
         arquivo_status_resposta_complicacao=arquivo_status_resposta_complicacao,
@@ -165,14 +168,16 @@ def run_complicacao_pipeline_enviar_status_com_resposta(
 
 
 def run_complicacao_pipeline_enviar_status_somente_status(
-    arquivo_status='src/data/status.csv',
-    saida_status='src/data/arquivo_limpo/status_limpo.csv',
-    saida_status_integrado='src/data/arquivo_limpo/status_complicacao.csv',
+    arquivo_status=CONTEXTO_PIPELINE_COMPLICACAO.defaults['arquivo_status'],
+    saida_status=CONTEXTO_PIPELINE_COMPLICACAO.defaults['saida_status'],
+    saida_status_integrado=CONTEXTO_PIPELINE_COMPLICACAO.defaults['saida_status_integrado'],
     logger=None,
 ):
     logger_externo = logger is not None
     if logger is None:
-        logger = PipelineLogger(nome_pipeline='status_complicacao_somente_status_pipeline')
+        logger = PipelineLogger(
+            nome_pipeline=CONTEXTO_PIPELINE_COMPLICACAO.logger_status_somente_status
+        )
     resultado_ingestao = executar_ingestao_somente_status(
         arquivo_status=arquivo_status,
         saida_status=saida_status,
@@ -215,15 +220,19 @@ def run_complicacao_pipeline_enviar_status_somente_status(
 
 
 def run_complicacao_pipeline_gerar_status_dataset(
-    arquivo_status='src/data/status.csv',
-    arquivo_status_resposta_complicacao='src/data/status_resposta_complicacao.csv',
-    arquivo_dataset_origem_complicacao='src/data/complicacao.xlsx',
-    saida_status='src/data/arquivo_limpo/status_limpo.csv',
-    saida_status_resposta='src/data/arquivo_limpo/status_resposta_complicacao_limpo.csv',
-    saida_status_integrado='src/data/arquivo_limpo/status_complicacao.csv',
-    saida_dataset_status='src/data/arquivo_limpo/complicacao_status.xlsx',
+    arquivo_status=CONTEXTO_PIPELINE_COMPLICACAO.defaults['arquivo_status'],
+    arquivo_status_resposta_complicacao=CONTEXTO_PIPELINE_COMPLICACAO.defaults[
+        'arquivo_status_resposta_complicacao'
+    ],
+    arquivo_dataset_origem_complicacao=CONTEXTO_PIPELINE_COMPLICACAO.defaults[
+        'arquivo_dataset_origem_complicacao'
+    ],
+    saida_status=CONTEXTO_PIPELINE_COMPLICACAO.defaults['saida_status'],
+    saida_status_resposta=CONTEXTO_PIPELINE_COMPLICACAO.defaults['saida_status_resposta'],
+    saida_status_integrado=CONTEXTO_PIPELINE_COMPLICACAO.defaults['saida_status_integrado'],
+    saida_dataset_status=CONTEXTO_PIPELINE_COMPLICACAO.defaults['saida_dataset_status'],
 ):
-    logger = PipelineLogger(nome_pipeline='status_complicacao_pipeline')
+    logger = PipelineLogger(nome_pipeline=CONTEXTO_PIPELINE_COMPLICACAO.logger_status_com_resposta)
     resultado_status = run_complicacao_pipeline_enviar_status_com_resposta(
         arquivo_status=arquivo_status,
         arquivo_status_resposta_complicacao=arquivo_status_resposta_complicacao,
@@ -240,8 +249,8 @@ def run_complicacao_pipeline_gerar_status_dataset(
         arquivo_origem_dataset=arquivo_dataset_origem_complicacao,
         arquivo_status_integrado=saida_status_integrado,
         arquivo_saida_dataset=saida_dataset_status,
-        nome_logger='criacao_dataset_complicacao',
-        contexto='complicacao',
+        nome_logger=CONTEXTO_PIPELINE_COMPLICACAO.logger_criacao_dataset,
+        contexto=CONTEXTO_PIPELINE_COMPLICACAO.nome,
         logger=logger,
         finalizar_logger=False,
     )
@@ -273,13 +282,15 @@ def run_complicacao_pipeline_gerar_status_dataset(
 
 
 def run_complicacao_pipeline_gerar_status_dataset_somente_status(
-    arquivo_status='src/data/status.csv',
-    arquivo_dataset_origem_complicacao='src/data/complicacao.xlsx',
-    saida_status='src/data/arquivo_limpo/status_limpo.csv',
-    saida_status_integrado='src/data/arquivo_limpo/status_complicacao.csv',
-    saida_dataset_status='src/data/arquivo_limpo/complicacao_status.xlsx',
+    arquivo_status=CONTEXTO_PIPELINE_COMPLICACAO.defaults['arquivo_status'],
+    arquivo_dataset_origem_complicacao=CONTEXTO_PIPELINE_COMPLICACAO.defaults[
+        'arquivo_dataset_origem_complicacao'
+    ],
+    saida_status=CONTEXTO_PIPELINE_COMPLICACAO.defaults['saida_status'],
+    saida_status_integrado=CONTEXTO_PIPELINE_COMPLICACAO.defaults['saida_status_integrado'],
+    saida_dataset_status=CONTEXTO_PIPELINE_COMPLICACAO.defaults['saida_dataset_status'],
 ):
-    logger = PipelineLogger(nome_pipeline='status_complicacao_somente_status_pipeline')
+    logger = PipelineLogger(nome_pipeline=CONTEXTO_PIPELINE_COMPLICACAO.logger_status_somente_status)
     resultado_status = run_complicacao_pipeline_enviar_status_somente_status(
         arquivo_status=arquivo_status,
         saida_status=saida_status,
@@ -294,8 +305,8 @@ def run_complicacao_pipeline_gerar_status_dataset_somente_status(
         arquivo_origem_dataset=arquivo_dataset_origem_complicacao,
         arquivo_status_integrado=saida_status_integrado,
         arquivo_saida_dataset=saida_dataset_status,
-        nome_logger='criacao_dataset_complicacao_somente_status',
-        contexto='complicacao',
+        nome_logger=CONTEXTO_PIPELINE_COMPLICACAO.logger_criacao_dataset_somente_status,
+        contexto=CONTEXTO_PIPELINE_COMPLICACAO.nome,
         logger=logger,
         finalizar_logger=False,
     )
@@ -327,11 +338,11 @@ def run_complicacao_pipeline_gerar_status_dataset_somente_status(
 
 
 def run_complicacao_pipeline_criar_dataset_status(
-    arquivo_origem_dataset='src/data/complicacao.xlsx',
-    arquivo_status_integrado='src/data/arquivo_limpo/status_complicacao.csv',
-    arquivo_saida_dataset='src/data/arquivo_limpo/complicacao_status.xlsx',
-    nome_logger='criacao_dataset_complicacao',
-    contexto='complicacao',
+    arquivo_origem_dataset=CONTEXTO_PIPELINE_COMPLICACAO.defaults['arquivo_dataset_origem_complicacao'],
+    arquivo_status_integrado=CONTEXTO_PIPELINE_COMPLICACAO.defaults['saida_status_integrado'],
+    arquivo_saida_dataset=CONTEXTO_PIPELINE_COMPLICACAO.defaults['saida_dataset_status'],
+    nome_logger=CONTEXTO_PIPELINE_COMPLICACAO.logger_criacao_dataset,
+    contexto=CONTEXTO_PIPELINE_COMPLICACAO.nome,
     logger=None,
     finalizar_logger=True,
 ):

@@ -112,6 +112,33 @@ Resultado:
 3. Adicionar testes automatizados (unitarios) para cenarios de bloqueio/aviso.
 4. Tratar warning de parse de data (`dayfirst=True` com formato ISO) de forma deterministica.
 
+## Andamento geral por fase
+
+### Fase 1 - Contrato e preflight
+Status: `CONCLUIDA`
+1. Contrato de preflight implementado.
+2. Pipeline de preflight implementado.
+3. Modos CLI de preflight adicionados.
+
+### Fase 2 - Unificar pipelines por contexto
+Status: `EM ANDAMENTO AVANCADO`
+Ja concluido:
+1. Contextos de integracao extraidos (`HSMs` e colunas de limpeza).
+2. Core comum de pipeline por contexto implementado.
+3. Pipelines principais (`complicacao` e `internacao_eletivo`) migrados para core comum.
+4. Status pipelines migrados para usar contexto central de defaults/loggers.
+
+Pendente para encerrar fase:
+1. Extrair configuracoes restantes de contexto para modos individuais.
+2. Consolidar nomenclatura de logger por etapa em um contrato unico.
+
+### Fase 3 - Endurecimento e observabilidade
+Status: `NAO INICIADA`
+Planejado:
+1. Persistencia historica de metricas de qualidade.
+2. Codigos de erro padronizados por categoria.
+3. Regras de limiar configuraveis por ambiente/app (com governanca).
+
 ## Rodada seguinte - Inicio da Fase 2 (separacao por contexto)
 
 ### O que foi implementado
@@ -170,3 +197,5 @@ Resultado:
 1. O modo `complicacao_gerar_status_dataset` pode apresentar metricas diferentes de `complicacao`
    por usar fluxo/saidas de etapa diferentes.
 2. Para regressao do pipeline completo de complicacao, a comparacao correta deve usar `--modo complicacao`.
+3. Durante teste paralelo de modos que gravam no mesmo `xlsx`, ocorreu `BadZipFile` por concorrencia de escrita.
+4. Reexecucao em serie confirmou estabilidade (`OK=True`); risco documentado no `README_ERROS_GERAL.md`.

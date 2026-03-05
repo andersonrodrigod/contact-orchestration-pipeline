@@ -102,6 +102,21 @@ Fontes migradas:
 - Resultado:
   - Warning eliminado sem alteração das métricas finais nos testes de regressão.
 
+8. Execução concorrente pode corromper XLSX de saída (BadZipFile)
+- Status: `ABERTO` (risco operacional)
+- Situação detectada:
+  - Rodadas paralelas escrevendo o mesmo `*.xlsx` de saída podem gerar:
+    - `BadZipFile: Bad CRC-32 for file 'docProps/core.xml'`
+- Causa provável:
+  - Concorrência de escrita sobre o mesmo arquivo final.
+- Impacto:
+  - Falha intermitente em orquestração/finalização quando duas execuções compartilham destinos.
+- Mitigação atual:
+  - Evitar rodar modos que escrevem os mesmos arquivos em paralelo.
+  - Executar fluxos completos em série.
+- Próxima solução recomendada:
+  - Adotar lock de arquivo por destino ou diretório de saída por execução (com timestamp/uuid).
+
 7. Estratégia avançada de padronização total antes do processo
 - Status: `ADIADO` (feature futura)
 - Planejado:

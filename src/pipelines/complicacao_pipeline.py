@@ -5,11 +5,11 @@ from src.pipelines.complicacao_status_pipeline import (
     run_complicacao_pipeline_gerar_status_dataset,
     run_complicacao_pipeline_gerar_status_dataset_somente_status,
 )
+from src.contexts.pipeline_contextos import CONTEXTO_PIPELINE_COMPLICACAO
 from src.pipelines.contexto_pipeline_core import (
     run_pipeline_contexto_com_resposta,
     run_pipeline_contexto_somente_status,
 )
-from src.config.paths import DEFAULTS_COMPLICACAO
 
 
 def run_complicacao_pipeline(
@@ -43,42 +43,45 @@ def run_complicacao_pipeline(
 
 
 def run_pipeline_complicacao_com_resposta():
+    defaults = CONTEXTO_PIPELINE_COMPLICACAO.defaults
     return run_complicacao_pipeline(
-        arquivo_status=DEFAULTS_COMPLICACAO['arquivo_status'],
-        arquivo_status_resposta_complicacao=DEFAULTS_COMPLICACAO['arquivo_status_resposta_complicacao'],
-        arquivo_dataset_origem_complicacao=DEFAULTS_COMPLICACAO['arquivo_dataset_origem_complicacao'],
-        saida_status=DEFAULTS_COMPLICACAO['saida_status'],
-        saida_status_resposta=DEFAULTS_COMPLICACAO['saida_status_resposta'],
-        saida_status_integrado=DEFAULTS_COMPLICACAO['saida_status_integrado'],
-        saida_dataset_status=DEFAULTS_COMPLICACAO['saida_dataset_status'],
-        saida_dataset_final=DEFAULTS_COMPLICACAO['saida_dataset_final'],
+        arquivo_status=defaults['arquivo_status'],
+        arquivo_status_resposta_complicacao=defaults['arquivo_status_resposta_complicacao'],
+        arquivo_dataset_origem_complicacao=defaults['arquivo_dataset_origem_complicacao'],
+        saida_status=defaults['saida_status'],
+        saida_status_resposta=defaults['saida_status_resposta'],
+        saida_status_integrado=defaults['saida_status_integrado'],
+        saida_dataset_status=defaults['saida_dataset_status'],
+        saida_dataset_final=defaults['saida_dataset_final'],
     )
 
 
 def run_pipeline_complicacao_somente_status():
+    defaults = CONTEXTO_PIPELINE_COMPLICACAO.defaults
     return run_pipeline_contexto_somente_status(
         funcao_status_dataset=run_complicacao_pipeline_gerar_status_dataset_somente_status,
         kwargs_status_dataset={
-            'arquivo_status': DEFAULTS_COMPLICACAO['arquivo_status'],
-            'arquivo_origem_dataset': DEFAULTS_COMPLICACAO['arquivo_dataset_origem_complicacao'],
-            'saida_status': DEFAULTS_COMPLICACAO['saida_status'],
-            'saida_status_integrado': DEFAULTS_COMPLICACAO['saida_status_integrado'],
-            'saida_dataset_status': DEFAULTS_COMPLICACAO['saida_dataset_status'],
+            'arquivo_status': defaults['arquivo_status'],
+            'arquivo_origem_dataset': defaults['arquivo_dataset_origem_complicacao'],
+            'saida_status': defaults['saida_status'],
+            'saida_status_integrado': defaults['saida_status_integrado'],
+            'saida_dataset_status': defaults['saida_dataset_status'],
         },
         funcao_orquestracao=run_complicacao_pipeline_orquestrar,
         kwargs_orquestracao={
-            'arquivo_dataset_status': DEFAULTS_COMPLICACAO['saida_dataset_status'],
-            'arquivo_saida_final': DEFAULTS_COMPLICACAO['saida_dataset_final'],
-            'nome_logger': 'orquestracao_complicacao_somente_status',
+            'arquivo_dataset_status': defaults['saida_dataset_status'],
+            'arquivo_saida_final': defaults['saida_dataset_final'],
+            'nome_logger': CONTEXTO_PIPELINE_COMPLICACAO.logger_orquestracao_somente_status,
         },
     )
 
 
 def run_pipeline_complicacao_orquestracao():
+    defaults = CONTEXTO_PIPELINE_COMPLICACAO.defaults
     return run_complicacao_pipeline_orquestrar(
-        arquivo_dataset_status=DEFAULTS_COMPLICACAO['saida_dataset_status'],
-        arquivo_saida_final=DEFAULTS_COMPLICACAO['saida_dataset_final'],
-        nome_logger='orquestracao_complicacao',
+        arquivo_dataset_status=defaults['saida_dataset_status'],
+        arquivo_saida_final=defaults['saida_dataset_final'],
+        nome_logger=CONTEXTO_PIPELINE_COMPLICACAO.logger_orquestracao,
     )
 
 
