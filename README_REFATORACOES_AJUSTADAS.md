@@ -91,6 +91,20 @@ Resultado:
 5. `Sem match: 10720`
 6. Mensagens de descartes por data inválida permanecem consistentes.
 
+### Teste D - Verificacao de warnings de parse de data
+Contexto:
+1. Durante a rodada anterior apareceu `UserWarning` do pandas por parse ISO com `dayfirst=True`.
+
+Ajuste aplicado:
+1. Parser de datas separado por tipo:
+   - ISO (`yyyy-mm-dd` e variações com hora) parseado com `dayfirst=False`.
+   - Demais formatos parseados com `dayfirst=True`.
+   - Fallback final para formatos alternativos.
+
+Resultado:
+1. Warning eliminado nos testes.
+2. Métricas de saída preservadas (`33243 / 22523 / 10720 / 11873` no modo `complicacao_gerar_status_dataset`).
+
 ## Ajustes pendentes (proxima rodada)
 
 1. Expandir contrato comum para outros pipelines (alem de preflight).

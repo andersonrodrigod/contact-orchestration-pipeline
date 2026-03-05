@@ -90,6 +90,18 @@ Fontes migradas:
 - Observação:
   - Pode haver warning de inferência em alguns cenários mistos, sem quebrar execução.
 
+7. Warning de parse ISO com `dayfirst=True` em normalização de datas
+- Status: `RESOLVIDO`
+- Situação detectada:
+  - `UserWarning` do pandas ao parsear formatos `%Y-%m-%d %H:%M:%S` com `dayfirst=True`.
+- Correção aplicada:
+  - Separação do parse por padrão:
+    - ISO com `dayfirst=False`
+    - não-ISO com `dayfirst=True`
+    - fallback final para formatos alternativos
+- Resultado:
+  - Warning eliminado sem alteração das métricas finais nos testes de regressão.
+
 7. Estratégia avançada de padronização total antes do processo
 - Status: `ADIADO` (feature futura)
 - Planejado:

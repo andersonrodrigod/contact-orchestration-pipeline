@@ -52,3 +52,23 @@ Itens previstos:
 1. Thresholds por ambiente (dev/hml/prod).
 2. Regras de falha por contexto (ingestão, integração, dataset).
 3. Modo estrito/tolerante configurável no app.
+
+## 4) Execução parcial no modo "ambos" (feature de UX operacional)
+
+Problema atual:
+1. No modo `ambos`, o sistema tenta executar `complicacao` e `internacao_eletivo`.
+2. Se faltar arquivo de um dos contextos, a execução pode terminar como falha parcial/total.
+
+Feature proposta:
+1. Antes de executar, validar presença de arquivos por contexto.
+2. Se faltar apenas um contexto, exibir confirmação no app:
+   - "Faltam arquivos de internação/eletivo. Deseja executar apenas complicação?"
+3. Se usuário confirmar, executar somente o contexto disponível.
+
+Regras sugeridas:
+1. Padrão inicial permanece estrito (sem confirmar, comportamento atual).
+2. A opção de continuar parcial deve ser habilitada por configuração no app.
+3. Sempre registrar no resumo final:
+   - contexto executado
+   - contexto pulado
+   - motivo do pulo (arquivo ausente)
