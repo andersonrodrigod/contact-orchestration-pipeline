@@ -113,6 +113,7 @@ def aplicar_classificacao_processo_acao(df):
     s_lida_sim = _serie_numerica(df, col_lida_sim)
     s_lida_nao = _serie_numerica(df, col_lida_nao)
     s_lida_sem = _serie_numerica(df, 'LIDA_SEM_RESPOSTA')
+    s_lida = _serie_numerica(df, 'LIDA')
     s_entregue = _serie_numerica(df, 'ENTREGUE')
     s_enviada = _serie_numerica(df, 'ENVIADA')
     s_nao_entregue_meta = _serie_numerica(df, 'NAO_ENTREGUE_META')
@@ -136,6 +137,7 @@ def aplicar_classificacao_processo_acao(df):
         (s_msg_nao_entregue >= 3, 'MUDAR_CONTATO_MENSAGEM_NAO_ENTREGUE', MARCADOR_ACAO_PROXIMO),
         (s_experimento >= 3, 'MUDAR_CONTATO_EXPERIMENTO', MARCADOR_ACAO_PROXIMO),
         (s_opt_out >= 3, 'MUDAR_CONTATO_OPT_OUT', MARCADOR_ACAO_PROXIMO),
+        (s_lida >= 2, 'MUDAR_CONTATO_LIDO_EXCEDENTE', MARCADOR_ACAO_PROXIMO),
         (resposta_norm == 'nao tenho interesse', 'ENCERRAR_CONTATO_NAO_QUIS', 'ENCERRADO'),
         (somatorio_de_valores >= 4, 'MUDAR_CONTATO_DISPAROS_EXCEDENTE', MARCADOR_ACAO_PROXIMO),
         (somatorio_de_valores <= 3, 'DISPARAR_NOVAMENTE', MARCADOR_ACAO_PRIORIDADE),
@@ -217,12 +219,18 @@ def _criar_aba_disparo(df_usuarios_orquestrados, df_usuarios_base):
         mask = acao_norm == acao
         if mask.any():
             telefone_disparo.loc[mask] = normalizar_texto_serie(df.loc[mask, coluna_telefone])
-    df['TELEFONE DISPARO'] = telefone_disparo
+    df['TELEFONE DISPARO'] = telefone_disparo.apply(normalizar_telefone)
 
     for coluna in COLUNAS_DISPARO:
         if coluna not in df.columns:
             df[coluna] = ''
     df_disparo = df[COLUNAS_DISPARO].copy()
+    df_disparo['TELEFONE ENVIADO'] = normalizar_texto_serie(df_disparo['TELEFONE ENVIADO']).apply(
+        normalizar_telefone
+    )
+    df_disparo['TELEFONE DISPARO'] = normalizar_texto_serie(df_disparo['TELEFONE DISPARO']).apply(
+        normalizar_telefone
+    )
     df_disparo = df_disparo.drop_duplicates(subset=['CHAVE RELATORIO'])
 
     if 'CHAVE RELATORIO' not in df_usuarios_base.columns:
