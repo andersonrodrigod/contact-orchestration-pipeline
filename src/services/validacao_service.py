@@ -146,6 +146,32 @@ def validar_colunas_minimas_status_concatenacao(df_complicacao, df_internacao_el
 def validar_colunas_origem_dataset_complicacao(colunas_arquivo, contexto='dataset'):
     colunas_obrigatorias = COLUNAS_OBRIGATORIAS_DATASET_ORIGEM
     colunas_normalizadas = [str(c).strip() for c in colunas_arquivo]
+    colunas_com_valor = [c for c in colunas_normalizadas if c != '']
+    cabecalho_sem_valor_linha_1 = len(colunas_com_valor) == 0
+    cabecalho_so_unnamed = (
+        len(colunas_com_valor) > 0
+        and all(c.lower().startswith('unnamed:') for c in colunas_com_valor)
+    )
+
+    if cabecalho_sem_valor_linha_1 or cabecalho_so_unnamed:
+        return {
+            'ok': False,
+            'mensagens': [
+                (
+                    f'Cabecalho invalido no dataset de {contexto}: '
+                    'na linha 1 do cabecalho nao ha dados validos.'
+                ),
+                (
+                    'Nao foi encontrado nenhum valor de cabecalho na linha 1. '
+                    'Revise a planilha e garanta que os nomes das colunas estejam na primeira linha.'
+                ),
+            ],
+            'colunas_obrigatorias': colunas_obrigatorias,
+            'colunas_faltando': colunas_obrigatorias,
+            'colunas_duplicadas': [],
+            'colunas_mascaradas_duplicadas': [],
+        }
+
     set_colunas = set(colunas_normalizadas)
     faltando = [col for col in colunas_obrigatorias if col not in set_colunas]
     padrao_coluna_mascarada = re.compile(r'^P[1-4]\.\d+$')
