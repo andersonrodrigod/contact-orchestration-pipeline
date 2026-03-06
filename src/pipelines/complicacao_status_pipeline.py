@@ -108,6 +108,7 @@ def run_complicacao_pipeline_enviar_status_com_resposta(
     saida_status=CONTEXTO_PIPELINE_COMPLICACAO.defaults['saida_status'],
     saida_status_resposta=CONTEXTO_PIPELINE_COMPLICACAO.defaults['saida_status_resposta'],
     saida_status_integrado=CONTEXTO_PIPELINE_COMPLICACAO.defaults['saida_status_integrado'],
+    executar_xlsx_adicional=False,
     logger=None,
 ):
     logger_externo = logger is not None
@@ -118,6 +119,7 @@ def run_complicacao_pipeline_enviar_status_com_resposta(
         arquivo_status_resposta_complicacao=arquivo_status_resposta_complicacao,
         saida_status=saida_status,
         saida_status_resposta=saida_status_resposta,
+        executar_xlsx_adicional=executar_xlsx_adicional,
         logger=logger,
     )
     if not resultado_ingestao.get('ok'):
@@ -138,7 +140,7 @@ def run_complicacao_pipeline_enviar_status_com_resposta(
 
     arquivo_status_xlsx = _caminho_xlsx_pareado(saida_status)
     arquivo_resposta_xlsx = _caminho_xlsx_pareado(saida_status_resposta)
-    if Path(arquivo_status_xlsx).exists() and Path(arquivo_resposta_xlsx).exists():
+    if executar_xlsx_adicional and Path(arquivo_status_xlsx).exists() and Path(arquivo_resposta_xlsx).exists():
         arquivo_saida_xlsx = _caminho_xlsx_pareado(saida_status_integrado)
         logger.info('MODO_XLSX', 'Execucao adicional XLSX iniciada (integracao status + resposta).')
         logger.info('MODO_XLSX', f'arquivo_status={arquivo_status_xlsx}')
@@ -160,7 +162,7 @@ def run_complicacao_pipeline_enviar_status_com_resposta(
             resultado_integracao['mensagens'] = resultado_integracao.get('mensagens', []) + [
                 'Aviso: falha na execucao adicional XLSX durante integracao de status.',
             ]
-    else:
+    elif executar_xlsx_adicional:
         logger.info('MODO_XLSX', 'Arquivos limpos XLSX nao encontrados para integracao adicional.')
 
     metricas_por_etapa = {

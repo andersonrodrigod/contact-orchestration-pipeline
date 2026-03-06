@@ -1,6 +1,7 @@
 import pandas as pd
 from core.error_codes import ERRO_ORQUESTRACAO
 
+from src.services.normalizacao_services import normalizar_telefone
 from src.services.texto_service import normalizar_texto_serie
 
 VALOR_SEM_TELEFONE_DISPONIVEL = 'SEM_TELEFONE_DISPONIVEL'
@@ -13,6 +14,36 @@ ABAS_OBRIGATORIAS_FINALIZACAO = [
     'usuarios_respondidos',
     'usuarios_duplicados',
     'usuarios_resolvidos',
+]
+
+PROCESSOS_PERMITIDOS_DISPARO = {
+    'MUDAR_CONTATO_LIDO_NAO',
+    'MUDAR_CONTATO_LIDO_SEM_RESPOSTA',
+    'MUDAR_CONTATO_ENTREGUE',
+    'MUDAR_CONTATO_ENVIADO',
+    'MUDAR_CONTATO_NAO_ENTREGUE_META',
+    'MUDAR_CONTATO_MENSAGEM_NAO_ENTREGUE',
+    'MUDAR_CONTATO_EXPERIMENTO',
+    'MUDAR_CONTATO_OPT_OUT',
+    'DISPARAR_NOVAMENTE',
+    'SEGUNDO_ENVIO',
+    'MUDAR_CONTATO_DISPAROS_EXCEDENTE',
+}
+
+COLUNAS_DISPARO = [
+    'USUARIO',
+    'PRESTADOR',
+    'PROCEDIMENTO',
+    'DT INTERNACAO',
+    'TELEFONE DISPARO',
+    'TP ATENDIMENTO',
+    'DT ENVIO',
+    'TELEFONE PRIORIDADE',
+    'TELEFONE ENVIADO',
+    'PROXIMO TELEFONE DISPONIVEL',
+    'PROCESSO',
+    'ACAO',
+    'CHAVE RELATORIO',
 ]
 
 
@@ -143,6 +174,78 @@ def orquestrar_usuarios_respondidos(df_usuarios, df_usuarios_respondidos):
     return df_usuarios_restantes, df_usuarios_resolvidos
 
 
+def _criar_aba_disparo(df_usuarios_orquestrados, df_usuarios_base):
+    df = df_usuarios_orquestrados.copy()
+    for coluna in [
+        'STATUS CHAVE',
+        'PROCESSO',
+        'ACAO',
+        'CHAVE RELATORIO',
+        'TELEFONE 1',
+        'TELEFONE 2',
+        'TELEFONE 3',
+        'TELEFONE 4',
+        'TELEFONE 5',
+        'TELEFONE PRIORIDADE',
+        'TELEFONE ENVIADO',
+        'PROXIMO TELEFONE DISPONIVEL',
+        'USUARIO',
+        'PRESTADOR',
+        'PROCEDIMENTO',
+        'DT INTERNACAO',
+        'TP ATENDIMENTO',
+        'DT ENVIO',
+    ]:
+        if coluna not in df.columns:
+            df[coluna] = ''
+
+    status_chave = normalizar_texto_serie(df['STATUS CHAVE']).str.upper()
+    df = df[status_chave.isin(['OK_PRINCIPAL', 'OK_FALLBACK'])]
+    processos = normalizar_texto_serie(df['PROCESSO']).str.upper()
+    df = df[processos.isin(PROCESSOS_PERMITIDOS_DISPARO)]
+
+    mapa_coluna_acao = {
+        'TELEFONE 1': 'TELEFONE 1',
+        'TELEFONE 2': 'TELEFONE 2',
+        'TELEFONE 3': 'TELEFONE 3',
+        'TELEFONE 4': 'TELEFONE 4',
+        'TELEFONE 5': 'TELEFONE 5',
+    }
+    acao_norm = normalizar_texto_serie(df['ACAO']).str.upper()
+    telefone_disparo = pd.Series('', index=df.index, dtype='object')
+    for acao, coluna_telefone in mapa_coluna_acao.items():
+        mask = acao_norm == acao
+        if mask.any():
+            telefone_disparo.loc[mask] = normalizar_texto_serie(df.loc[mask, coluna_telefone])
+    df['TELEFONE DISPARO'] = telefone_disparo
+
+    for coluna in COLUNAS_DISPARO:
+        if coluna not in df.columns:
+            df[coluna] = ''
+    df_disparo = df[COLUNAS_DISPARO].copy()
+    df_disparo = df_disparo.drop_duplicates(subset=['CHAVE RELATORIO'])
+
+    if 'CHAVE RELATORIO' not in df_usuarios_base.columns:
+        df_usuarios_base['CHAVE RELATORIO'] = ''
+    chaves_base = set(normalizar_texto_serie(df_usuarios_base['CHAVE RELATORIO']))
+    chaves_disparo = normalizar_texto_serie(df_disparo['CHAVE RELATORIO'])
+    df_disparo['VALIDACAO CHAVE'] = chaves_disparo.apply(
+        lambda chave: 'OK' if chave in chaves_base else 'NAO ENCONTRADO'
+    )
+
+    telefones_base = set()
+    for coluna in ['TELEFONE 1', 'TELEFONE 2', 'TELEFONE 3', 'TELEFONE 4', 'TELEFONE 5']:
+        if coluna in df_usuarios_base.columns:
+            serie_tel = normalizar_texto_serie(df_usuarios_base[coluna]).apply(normalizar_telefone)
+            telefones_base.update(serie_tel[serie_tel != ''])
+    telefone_disparo_norm = normalizar_texto_serie(df_disparo['TELEFONE DISPARO']).apply(normalizar_telefone)
+    df_disparo['VALIDACAO FINAL'] = telefone_disparo_norm.apply(
+        lambda tel: 'OK' if tel in telefones_base else 'NAO ENCONTRADO'
+    )
+
+    return df_disparo
+
+
 def gerar_dataset_final(arquivo_dataset_entrada, arquivo_dataset_saida):
     planilhas = pd.read_excel(arquivo_dataset_entrada, sheet_name=None)
     if len(planilhas) == 0:
@@ -165,6 +268,7 @@ def gerar_dataset_final(arquivo_dataset_entrada, arquivo_dataset_saida):
     mensagens = []
 
     usuarios = planilhas['usuarios'].copy()
+    usuarios_base = usuarios.copy()
     usuarios_respondidos = planilhas['usuarios_respondidos'].copy()
     usuarios_resolvidos_existente = planilhas['usuarios_resolvidos'].copy()
 
@@ -187,6 +291,7 @@ def gerar_dataset_final(arquivo_dataset_entrada, arquivo_dataset_saida):
     planilhas['usuarios'] = usuarios
     planilhas['usuarios_respondidos'] = usuarios_respondidos
     planilhas['usuarios_resolvidos'] = usuarios_resolvidos
+    planilhas['disparo'] = _criar_aba_disparo(usuarios, usuarios_base)
 
     with pd.ExcelWriter(arquivo_dataset_saida, engine='openpyxl') as writer:
         for aba, df in planilhas.items():
@@ -196,6 +301,8 @@ def gerar_dataset_final(arquivo_dataset_entrada, arquivo_dataset_saida):
         mensagens.append('Aba usuarios foi gerada vazia.')
     if len(planilhas['usuarios_respondidos']) == 0:
         mensagens.append('Aba usuarios_respondidos esta vazia; nenhuma movimentacao para resolvidos foi feita.')
+    if len(planilhas['disparo']) == 0:
+        mensagens.append('Aba disparo foi gerada vazia para este ciclo.')
     if len(mensagens) == 0:
         mensagens = ['Finalizacao de dataset executada com sucesso.']
     else:
@@ -206,5 +313,6 @@ def gerar_dataset_final(arquivo_dataset_entrada, arquivo_dataset_saida):
         'arquivo_saida': arquivo_dataset_saida,
         'total_usuarios': len(planilhas['usuarios']),
         'total_usuarios_resolvidos': len(planilhas['usuarios_resolvidos']),
+        'total_disparo': len(planilhas['disparo']),
         'mensagens': mensagens,
     }

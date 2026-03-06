@@ -284,6 +284,7 @@ def executar_ingestao_complicacao(
     saida_status_resposta='src/data/arquivo_limpo/status_resposta_complicacao_limpo.csv',
     limiar_nat_data=None,
     permitir_override_limiar=True,
+    executar_xlsx_adicional=False,
     logger=None,
 ):
     logger_externo = logger is not None
@@ -303,6 +304,10 @@ def executar_ingestao_complicacao(
         finalizar_logger=not logger_externo,
     )
     if not resultado.get('ok'):
+        return resultado
+
+    if not executar_xlsx_adicional:
+        logger.info('MODO_XLSX', 'Execucao adicional XLSX desabilitada para este modo.')
         return resultado
 
     arquivo_status_xlsx, tem_status_xlsx = _preferir_xlsx_se_existir(arquivo_status)
@@ -475,6 +480,7 @@ def executar_ingestao_unificar(
     saida_status_resposta='src/data/arquivo_limpo/status_resposta_eletivo_internacao_limpo.csv',
     limiar_nat_data=None,
     permitir_override_limiar=True,
+    executar_xlsx_adicional=False,
     logger=None,
 ):
     logger_externo = logger is not None
@@ -534,6 +540,10 @@ def executar_ingestao_unificar(
             finalizar_logger=not logger_externo,
         )
         if not resultado_csv.get('ok'):
+            return resultado_csv
+
+        if not executar_xlsx_adicional:
+            logger.info('MODO_XLSX', 'Execucao adicional XLSX desabilitada para este modo.')
             return resultado_csv
 
         etapa_atual = 'PREPARO_XLSX'

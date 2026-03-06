@@ -14,6 +14,8 @@ def imprimir_resumo_execucao(resultado):
         print(f"Total status: {resultado['total_status']}")
     if 'total_linhas' in resultado:
         print(f"Total dataset: {resultado['total_linhas']}")
+    if 'total_disparo' in resultado:
+        print(f"Total disparo: {resultado['total_disparo']}")
     if 'com_match' in resultado:
         print(f"Com match: {resultado['com_match']}")
     if 'sem_match' in resultado:

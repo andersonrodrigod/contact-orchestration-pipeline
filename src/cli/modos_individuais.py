@@ -97,21 +97,6 @@ def _executar_modo_individual(nome_modo, permitir_execucao, funcao_execucao):
 
 
 def obter_modos_individuais(permitir_execucao=False):
-    def _run_individual_unificar_status_respostas():
-        # Executa concatenacao + normalizacao via ingestao_unificar.
-        return _executar_modo_individual(
-            'individual_unificar_status_respostas',
-            permitir_execucao,
-            lambda: executar_ingestao_unificar(
-                arquivo_status=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status'],
-                arquivo_status_resposta_eletivo=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status_resposta_eletivo'],
-                arquivo_status_resposta_internacao=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status_resposta_internacao'],
-                arquivo_status_resposta_unificado=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status_resposta_unificado'],
-                saida_status=DEFAULTS_INTERNACAO_ELETIVO['saida_status'],
-                saida_status_resposta=DEFAULTS_INTERNACAO_ELETIVO['saida_status_resposta'],
-            ),
-        )
-
     def _run_individual_unificar_status_respostas_com_normalizacao():
         # Modo dedicado para o app: unifica eletivo+internacao garantindo normalizacao.
         return _executar_modo_individual(
@@ -124,6 +109,7 @@ def obter_modos_individuais(permitir_execucao=False):
                 arquivo_status_resposta_unificado=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status_resposta_unificado'],
                 saida_status=DEFAULTS_INTERNACAO_ELETIVO['saida_status'],
                 saida_status_resposta=DEFAULTS_INTERNACAO_ELETIVO['saida_status_resposta'],
+                executar_xlsx_adicional=True,
             ),
         )
 
@@ -162,6 +148,7 @@ def obter_modos_individuais(permitir_execucao=False):
                 arquivo_status_resposta_unificado=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status_resposta_unificado'],
                 saida_status=DEFAULTS_INTERNACAO_ELETIVO['saida_status'],
                 saida_status_resposta=DEFAULTS_INTERNACAO_ELETIVO['saida_status_resposta'],
+                executar_xlsx_adicional=True,
             ),
         )
 
@@ -197,6 +184,7 @@ def obter_modos_individuais(permitir_execucao=False):
                 saida_status=DEFAULTS_COMPLICACAO['saida_status'],
                 saida_status_resposta=DEFAULTS_COMPLICACAO['saida_status_resposta'],
                 saida_status_integrado=DEFAULTS_COMPLICACAO['saida_status_integrado'],
+                executar_xlsx_adicional=True,
             ),
         )
 
@@ -212,6 +200,7 @@ def obter_modos_individuais(permitir_execucao=False):
                 saida_status=DEFAULTS_INTERNACAO_ELETIVO['saida_status'],
                 saida_status_resposta=DEFAULTS_INTERNACAO_ELETIVO['saida_status_resposta'],
                 saida_status_integrado=DEFAULTS_INTERNACAO_ELETIVO['saida_status_integrado'],
+                executar_xlsx_adicional=True,
             ),
         )
 
@@ -347,34 +336,6 @@ def obter_modos_individuais(permitir_execucao=False):
             ),
         )
 
-    def _run_individual_integrar_status_resposta_complicacao():
-        return _executar_modo_individual(
-            'individual_integrar_status_resposta_complicacao',
-            permitir_execucao,
-            lambda: run_complicacao_pipeline_enviar_status_com_resposta(
-                arquivo_status=DEFAULTS_COMPLICACAO['arquivo_status'],
-                arquivo_status_resposta_complicacao=DEFAULTS_COMPLICACAO['arquivo_status_resposta_complicacao'],
-                saida_status=DEFAULTS_COMPLICACAO['saida_status'],
-                saida_status_resposta=DEFAULTS_COMPLICACAO['saida_status_resposta'],
-                saida_status_integrado=DEFAULTS_COMPLICACAO['saida_status_integrado'],
-            ),
-        )
-
-    def _run_individual_integrar_status_resposta_internacao_eletivo():
-        return _executar_modo_individual(
-            'individual_integrar_status_resposta_internacao_eletivo',
-            permitir_execucao,
-            lambda: run_internacao_eletivo_pipeline_enviar_status_com_resposta(
-                arquivo_status=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status'],
-                arquivo_status_resposta_eletivo=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status_resposta_eletivo'],
-                arquivo_status_resposta_internacao=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status_resposta_internacao'],
-                arquivo_status_resposta_unificado=DEFAULTS_INTERNACAO_ELETIVO['arquivo_status_resposta_unificado'],
-                saida_status=DEFAULTS_INTERNACAO_ELETIVO['saida_status'],
-                saida_status_resposta=DEFAULTS_INTERNACAO_ELETIVO['saida_status_resposta'],
-                saida_status_integrado=DEFAULTS_INTERNACAO_ELETIVO['saida_status_integrado'],
-            ),
-        )
-
     def _run_individual_integrar_status_somente_complicacao():
         return _executar_modo_individual(
             'individual_integrar_status_somente_complicacao',
@@ -444,7 +405,6 @@ def obter_modos_individuais(permitir_execucao=False):
         )
 
     return {
-        'individual_unificar_status_respostas': _run_individual_unificar_status_respostas,
         'individual_unificar_status_respostas_com_normalizacao': (
             _run_individual_unificar_status_respostas_com_normalizacao
         ),
@@ -457,12 +417,6 @@ def obter_modos_individuais(permitir_execucao=False):
         'individual_status_somente_internacao_eletivo': _run_individual_status_somente_internacao_eletivo,
         'individual_status_filtrado_complicacao': _run_individual_status_filtrado_complicacao,
         'individual_status_filtrado_internacao_eletivo': _run_individual_status_filtrado_internacao_eletivo,
-        'individual_integrar_status_resposta_complicacao': (
-            _run_individual_integrar_status_resposta_complicacao
-        ),
-        'individual_integrar_status_resposta_internacao_eletivo': (
-            _run_individual_integrar_status_resposta_internacao_eletivo
-        ),
         'individual_integrar_status_somente_complicacao': (
             _run_individual_integrar_status_somente_complicacao
         ),

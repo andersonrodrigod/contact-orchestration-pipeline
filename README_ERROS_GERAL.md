@@ -1,255 +1,146 @@
-# README Geral de Erros, Riscos e Correções
+# README Geral de Erros, Riscos e Correcoes
 
-Este arquivo consolida os antigos relatórios de bugs em uma visão única e contínua.
-Objetivo: centralizar histórico, status atual e plano de ação sem espalhar informação em múltiplos arquivos.
+Este arquivo consolida os relatorios de bugs em uma visao unica e continua.
+Objetivo: centralizar historico, status atual e plano de acao.
 
 ## Escopo
 
-1. Código em `src/` (legacy fora do foco principal).
-2. Erros de regra de negócio, qualidade de dados e contratos de integração.
+1. Codigo em `src/` (legacy fora do foco principal).
+2. Erros de regra de negocio, qualidade de dados e contratos de integracao.
 3. Status de cada item: `RESOLVIDO`, `PARCIAL`, `ABERTO`, `ADIADO`.
 
-## Histórico consolidado
+## Historico consolidado
 
 Fontes migradas:
-1. `RELATORIO_BUGS_ESCALA_1_2.md` (auditoria inicial).
-2. `RELATORIO_BUGS_ESCALA_2_2026-03-05.md` (revisão posterior).
+1. `RELATORIO_BUGS_ESCALA_1_2.md`.
+2. `RELATORIO_BUGS_ESCALA_2_2026-03-05.md`.
 
 ## Itens por prioridade e status
 
 ### Alta prioridade
 
 0. Persistencia de arquivos mesmo com falha de validacao de dados
-- Status: `ABERTO`
-- Situação detectada:
-  - Em `executar_normalizacao_padronizacao`, o retorno pode ficar `ok=False` por validacao/qualidade de data, mas o fluxo segue para formatacao e grava `saida_status` e `saida_status_resposta`.
-- Possível causa:
-  - Ausencia de curto-circuito antes da etapa de persistencia quando ha bloqueio de validacao.
-- Impacto potencial:
-  - Saida invalidada pode sobrescrever artefatos anteriores e ser consumida por etapas seguintes como se estivesse pronta.
-- Mitigação atual (se existir):
-  - O dicionario final retorna `ok=False` e `codigo_erro` (`ERRO_QUALIDADE_DATA` ou `ERRO_VALIDACAO_COLUNAS`).
-- Próxima solução recomendada:
-  - Interromper antes de salvar quando `resultado_final["ok"]` for falso, ou salvar em caminho quarantinado com sufixo de erro.
-
-1. Criacao de dataset sem tratamento global de excecao e sem codigo_erro padrao
-- Status: `ABERTO`
-- Situação detectada:
-  - `criar_dataset_complicacao` executa leitura, enriquecimento e escrita XLSX sem `try/except` na funcao principal.
-- Possível causa:
-  - Dependencia de que servicos internos sempre retornem dicionario de erro em vez de levantar excecao.
-- Impacto potencial:
-  - Falhas de I/O, lock de arquivo ou erro de dataframe podem derrubar a execucao sem contrato padrao de `codigo_erro`.
-- Mitigação atual (se existir):
-  - Existem validacoes de colunas e retornos estruturados em partes do fluxo.
-- Próxima solução recomendada:
-  - Encapsular a funcao com tratamento centralizado e mapear excecoes inesperadas para `ERRO_CRIACAO_DATASET`.
-1. Regra redundante/ambígua de segundo envio (`SEGUNDO_ENVIO_LIDO`)
 - Status: `RESOLVIDO`
-- Situação anterior:
-  - Regra podia ficar morta por depender de coluna não confiável no contrato.
-- Correção aplicada:
-  - Regra `SEGUNDO_ENVIO_LIDO` removida.
-  - Fluxo mantém apenas `SEGUNDO_ENVIO` via `LIDA_SEM_RESPOSTA == 1`.
-- Evidência:
-  - Busca em `src/` sem ocorrência de `SEGUNDO_ENVIO_LIDO`.
 
-2. Duplicidade mascarada de colunas essenciais (`P1.1`, `P2.1`, `P3.1`, `P4.1`)
+1. Criacao de dataset sem tratamento global de excecao e sem `codigo_erro` padrao
 - Status: `RESOLVIDO`
-- Situação anterior:
-  - `pandas` renomeava duplicadas com sufixo `.<numero>` e a validação exata não barrava.
-- Correção aplicada:
-  - Validação explícita para padrão `^P[1-4]\.\d+$`.
-  - Retorno técnico novo: `colunas_mascaradas_duplicadas`.
-- Resultado:
-  - Pipeline bloqueia com mensagem acionável antes de seguir.
 
-### Média prioridade
+2. Regra redundante/ambigua de segundo envio (`SEGUNDO_ENVIO_LIDO`)
+- Status: `RESOLVIDO`
+
+3. Duplicidade mascarada de colunas essenciais (`P1.1`, `P2.1`, `P3.1`, `P4.1`)
+- Status: `RESOLVIDO`
+
+### Media prioridade
 
 0. Falha silenciosa no enriquecimento de abas secundarias do dataset
-- Status: `ABERTO`
-- Situação detectada:
-  - Quando `_enriquecer_dataset_com_status` falha para `usuarios_respondidos` ou `usuarios_duplicados`, o erro e ignorado e a planilha segue sendo gerada.
-- Possível causa:
-  - Fluxo trata erro apenas para aba principal e adota fallback implicito para abas secundarias.
-- Impacto potencial:
-  - Resultado final pode aparentar sucesso com abas incompletas/desalinhadas, reduzindo confiabilidade operacional.
-- Mitigação atual (se existir):
-  - A aba principal (`usuarios`) bloqueia em caso de falha de enriquecimento.
-- Próxima solução recomendada:
-  - Propagar falha (com `codigo_erro`) ou registrar aviso estruturado por aba no retorno final.
+- Status: `RESOLVIDO`
 
 1. Regra de qualidade de data inconsistente entre modos de ingestao
-- Status: `ABERTO`
-- Situação detectada:
-  - `executar_normalizacao_padronizacao` bloqueia por limiar de NaT, mas `executar_ingestao_somente_status` apenas alerta e retorna `ok=True`.
-- Possível causa:
-  - Contratos de erro divergentes entre funcoes que deveriam representar o mesmo criterio de qualidade.
-- Impacto potencial:
-  - Operacao pode processar arquivos com baixa qualidade de data dependendo do modo acionado, dificultando governanca.
-- Mitigação atual (se existir):
-  - Logs de `VALIDACAO_DATA` e metrica de percentual NaT.
-- Próxima solução recomendada:
-  - Unificar politica de bloqueio/alerta por contexto e explicitar no retorno um status de qualidade padronizado.
+- Status: `RESOLVIDO`
 
-2. Preflight pode aprovar sem validar data de status_resposta
-- Status: `ABERTO`
-- Situação registrada:
-  - No preflight, ausencia de coluna de atendimento gera aviso (`avisos`) sem bloquear.
-- Decisao aplicada:
-  - Fluxo oficial passa por preflight antes da ingestao, com validacoes de qualidade centralizadas.
-- Impacto residual:
-  - Risco existe apenas se alguem executar ingestao fora do fluxo padrao.
-- Mitigação atual:
-  - Governanca de execucao: obrigatoriedade de preflight antes da ingestao.
-- Proxima acao recomendada:
-  - Opcional: reforcar via orquestracao para impedir ingestao sem preflight quando o modo exigir.
+2. Preflight pode aprovar sem validar data de `status_resposta`
+- Status: `RESOLVIDO`
 
 3. Falta de tratamento de excecao em `executar_ingestao_unificar`
-- Status: `ABERTO`
-- Situação registrada:
-  - A funcao orquestra concatenacao e normalizacao sem bloco `try/except` proprio.
-- Decisao aplicada:
-  - Mantido o modelo de propagacao de retorno estruturado dos servicos internos no fluxo oficial.
-- Impacto residual:
-  - Excecoes inesperadas podem subir apenas em cenarios fora do contrato esperado dos servicos.
-- Mitigação atual:
-  - Validacoes e retornos `ok=False` com `codigo_erro` nas etapas internas criticas.
-- Proxima acao recomendada:
-  - Opcional: adicionar `try/except` agregador em `executar_ingestao_unificar` para reforco defensivo.
-3. Baixa observabilidade de descartes por data inválida na integração
 - Status: `RESOLVIDO`
-- Situação anterior:
-  - Descarte ocorria, mas sem exposição consistente no pipeline final.
-- Correção aplicada:
-  - Contadores expostos em retorno e mensagens:
-    - `descartados_status_data_invalida`
-    - `descartados_resposta_data_invalida`
-  - Log final das etapas de integração com ambos os contadores.
 
-4. Limiar de qualidade de data fixo e sem parametrização operacional
+4. Baixa observabilidade de descartes por data invalida na integracao
 - Status: `RESOLVIDO`
-- Situação anterior:
-  - Regra fixa dificultava ajuste por ambiente/contexto.
-- Correção aplicada:
-  - Parâmetro `limiar_nat_data` adicionado nas funções de ingestão.
-  - Valor padrão preservado em `30.0`.
-  - Log explícito do limiar em uso.
 
-5. Contrato estrito de colunas obrigatórias na criação de dataset
-- Status: `PARCIAL` (decisão de produto)
-- Situação:
-  - Continua bloqueando quando falta coluna crítica (com mensagem clara).
-- Motivo do status:
-  - Comportamento foi mantido por decisão de negócio.
-- Próximo passo:
-  - Evoluir para pre-flight avançado no app (feature futura).
-
-6. Preflight de internação/eletivo dependia do arquivo unificado prévio
+5. Limiar de qualidade de data fixo e sem parametrizacao operacional
 - Status: `RESOLVIDO`
-- Situação detectada nos testes de refatoração:
-  - O modo de preflight podia falhar se `status_resposta_eletivo_internacao.csv` ainda não existisse.
-- Correção aplicada:
-  - Fallback para concatenação em memória de:
-    - `status_resposta_eletivo.csv`
-    - `status_resposta_internacao.csv`
-- Resultado:
-  - Preflight de `internacao_eletivo` funciona mesmo sem etapa de unificação prévia.
 
-### Baixa prioridade / técnica
+6. Contrato estrito de colunas obrigatorias na criacao de dataset
+- Status: `PARCIAL` (decisao de produto)
+- Situacao: continua bloqueando quando falta coluna critica, com erro claro.
+- Justificativa: regra foi mantida para proteger qualidade da base.
 
-0. Dependencia implicita de atualidade do arquivo unificado no preflight
-- Status: `ABERTO`
-- Situação registrada:
-  - Se `status_resposta_eletivo_internacao` existir, o preflight prioriza esse arquivo.
-- Decisao aplicada:
-  - Mantido comportamento atual com governanca de atualizacao do unificado no processo oficial.
-- Impacto residual:
-  - Divergencia pode ocorrer apenas se o arquivo unificado estiver desatualizado por execucao manual fora do fluxo.
-- Mitigação atual:
-  - Fallback em memoria quando o unificado esta ausente.
-- Proxima acao recomendada:
-  - Opcional: adicionar checagem de frescor (timestamp/hash) como reforco tecnico.
+7. Preflight de internacao/eletivo dependia do arquivo unificado previo
+- Status: `RESOLVIDO`
+
+### Baixa prioridade / tecnica
 
 1. Execucao adicional XLSX usa criterio parcial de disponibilidade
-- Status: `ABERTO`
-- Situação detectada:
-  - Modo XLSX adicional e acionado quando apenas um dos arquivos pareados existe em XLSX, misturando possivelmente CSV/XLSX na mesma rodada.
-- Possível causa:
-  - Condicao de entrada considera `status OR status_resposta` em vez de exigir par completo.
-- Impacto potencial:
-  - Variacao de parsing e comportamento nao deterministico entre execucoes com mesmas regras de negocio.
-- Mitigação atual (se existir):
-  - Falha do modo adicional nao derruba o fluxo CSV principal.
-- Próxima solução recomendada:
-  - Exigir ambos os arquivos em XLSX para o modo adicional ou registrar modo misto explicitamente nas metricas.
-6. Parse de data com risco de compatibilidade de versão (`format='mixed'`)
-- Status: `RESOLVIDO`
-- Correção aplicada:
-  - Dependência removida.
-  - Fallback mantido para formatos alternativos.
-- Observação:
-  - Pode haver warning de inferência em alguns cenários mistos, sem quebrar execução.
+- Status: `PARCIAL` (decisao de produto)
+- Situacao atual:
+  - O fluxo geral nao roda mais rodada XLSX adicional automaticamente.
+  - XLSX ficou restrito ao modo individual, apenas nos fluxos de concatenacao/unificacao definidos.
+- Decisao de produto:
+  - Manter separacao explicita entre execucao geral e execucao individual para reduzir ambiguidade operacional.
+- Impacto residual:
+  - Ainda pode existir combinacao mista CSV/XLSX se o operador montar entradas heterogeneas no modo individual.
+- Proxima acao recomendada:
+  - Opcional: bloquear formato misto no mesmo passo individual ou exigir escolha explicita do formato.
 
-7. Warning de parse ISO com `dayfirst=True` em normalização de datas
-- Status: `RESOLVIDO`
-- Situação detectada:
-  - `UserWarning` do pandas ao parsear formatos `%Y-%m-%d %H:%M:%S` com `dayfirst=True`.
-- Correção aplicada:
-  - Separação do parse por padrão:
-    - ISO com `dayfirst=False`
-    - não-ISO com `dayfirst=True`
-    - fallback final para formatos alternativos
-- Resultado:
-  - Warning eliminado sem alteração das métricas finais nos testes de regressão.
-
-8. Execução concorrente pode corromper XLSX de saída (BadZipFile)
-- Status: `ABERTO` (risco operacional)
-- Situação detectada:
-  - Rodadas paralelas escrevendo o mesmo `*.xlsx` de saída podem gerar:
-    - `BadZipFile: Bad CRC-32 for file 'docProps/core.xml'`
-- Causa provável:
-  - Concorrência de escrita sobre o mesmo arquivo final.
+2. Aba `disparo` pode conter registro sem telefone de disparo
+- Status: `PARCIAL` (decisao de produto)
+- Situacao:
+  - A aba `disparo` mantem registros elegiveis por processo mesmo quando `TELEFONE DISPARO` fica vazio.
+- Justificativa da decisao:
+  - Produto optou por manter rastreabilidade operacional dos elegiveis, mesmo sem telefone valido para envio imediato.
 - Impacto:
-  - Falha intermitente em orquestração/finalização quando duas execuções compartilham destinos.
-- Mitigação atual:
-  - Evitar rodar modos que escrevem os mesmos arquivos em paralelo.
-  - Executar fluxos completos em série.
-- Próxima solução recomendada:
-  - Adotar lock de arquivo por destino ou diretório de saída por execução (com timestamp/uuid).
+  - A aba pode conter linhas nao disparaveis no ciclo atual.
+- Mitigacao atual:
+  - `VALIDACAO FINAL` permite separar rapidamente o que esta apto para disparo.
+- Proxima acao recomendada:
+  - Opcional: flag no app para exportar apenas disparaveis (`TELEFONE DISPARO` valido).
 
-7. Estratégia avançada de padronização total antes do processo
+3. Duplicidade por `CHAVE RELATORIO` na aba `disparo`
+- Status: `RESOLVIDO` (decisao de produto)
+- Situacao:
+  - A deduplicacao por `CHAVE RELATORIO` e intencional para impedir reenvio ao mesmo usuario/chave no mesmo ciclo.
+- Regra adotada:
+  - Manter apenas uma linha por `CHAVE RELATORIO` na aba `disparo`.
+- Observacao:
+  - Comportamento alinhado com a regra de negocio de anti-duplicidade de disparo.
+
+4. Validacao de chave na aba `disparo` e funcional, mas pouco discriminante
+- Status: `PARCIAL`
+- Situacao:
+  - `VALIDACAO CHAVE` compara contra a base de usuarios do mesmo arquivo final.
+- Impacto:
+  - Em condicao normal tende a gerar muitos `OK`, com baixo poder diagnostico.
+- Proxima acao recomendada:
+  - Evoluir para validacao contra referencia externa ou manter apenas como auditoria basica.
+
+5. Parse de data com risco de compatibilidade de versao (`format='mixed'`)
+- Status: `RESOLVIDO`
+
+6. Warning de parse ISO com `dayfirst=True` em normalizacao de datas
+- Status: `RESOLVIDO`
+
+7. Execucao concorrente pode corromper XLSX de saida (`BadZipFile`)
+- Status: `PARCIAL` (nao aplicavel no fluxo oficial do app)
+- Contexto de produto:
+  - No modo ambos (execucao geral), o app aceita apenas CSV.
+  - XLSX fica restrito a fluxos individuais de concatenacao/unificacao, com escolha explicita de formato pelo usuario.
+- Impacto residual:
+  - O risco permanece apenas para execucao manual/externa em paralelo escrevendo no mesmo arquivo de saida.
+- Proxima acao recomendada:
+  - Opcional: lock de arquivo se houver necessidade de suportar concorrencia fora do fluxo oficial.
+
+8. Estrategia avancada de padronizacao total antes do processo
 - Status: `ADIADO` (feature futura)
-- Planejado:
-  - Pipeline de pre-flight.
-  - Normalização completa de headers/tipos/datas antes das regras de negócio.
-- Referência:
-  - `README_FEATURES_FUTURAS.md`
-  - `README_REFATORACAO_SUGESTOES.md`
 
-## Decisões de negócio registradas
+## Decisoes de negocio registradas
 
-1. `P1` permanece obrigatória para criação/segmentação de dataset.
-2. Item de sinônimos para resposta (`SIM/NAO`) não será alterado agora.
-3. Política de integração com data inválida:
-  - falha em cenário extremo conforme regra do serviço;
-  - manter observabilidade dos descartes para decisão operacional.
+1. `P1` permanece obrigatoria para criacao/segmentacao de dataset.
+2. Sinonimos de resposta (`SIM/NAO`) nao serao alterados agora.
+3. Politica para data invalida: falha em cenario extremo e manter observabilidade dos descartes.
+4. Na aba `disparo`, manter registros elegiveis mesmo sem `TELEFONE DISPARO` valido (com `VALIDACAO FINAL`) por decisao de produto.
+5. Separacao de formatos: comportamento XLSX focado em modo individual para reduzir risco no fluxo geral.
+6. Deduplicacao por `CHAVE RELATORIO` na aba `disparo` e obrigatoria para evitar reenvio ao mesmo usuario/chave.
 
-## Runbook rápido para operação
+## Runbook rapido para operacao
 
-1. Se falhar por colunas faltantes:
-  - corrigir layout de origem e reprocessar.
-2. Se falhar por coluna mascarada (`P1.1` etc.):
-  - remover/renomear duplicata na fonte.
-3. Se cair qualidade de data:
-  - checar `%NaT` e ajustar a origem;
-  - usar `limiar_nat_data` adequado no contexto.
-4. Se `sem_match` subir:
-  - verificar contadores de descartes por data inválida primeiro.
+1. Se falhar por colunas faltantes: corrigir layout de origem e reprocessar.
+2. Se falhar por coluna mascarada (`P1.1` etc.): remover/renomear duplicata na fonte.
+3. Se cair qualidade de data: verificar `%NaT` e ajustar origem/limiar.
+4. Se `sem_match` subir: verificar descartes por data invalida primeiro.
 
-## Governança deste arquivo
+## Governanca deste arquivo
 
-1. Novos bugs entram aqui, com status e data.
-2. Evitar novos relatórios soltos para o mesmo escopo.
+1. Novos bugs entram aqui com status e data.
+2. Evitar novos relatorios soltos para o mesmo escopo.
 3. Quando item mudar de status, atualizar este arquivo e citar commit relacionado.
-

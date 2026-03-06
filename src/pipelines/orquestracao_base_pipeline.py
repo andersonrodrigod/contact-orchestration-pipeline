@@ -31,6 +31,7 @@ def executar_orquestracao_pipeline(arquivo_dataset_entrada, arquivo_dataset_said
                 'orquestracao': {
                     'total_usuarios': resultado.get('total_usuarios', 0),
                     'total_usuarios_resolvidos': resultado.get('total_usuarios_resolvidos', 0),
+                    'total_disparo': resultado.get('total_disparo', 0),
                 }
             }
         elif not resultado.get('codigo_erro'):
@@ -41,6 +42,7 @@ def executar_orquestracao_pipeline(arquivo_dataset_entrada, arquivo_dataset_said
             'RESULTADO',
             f"total_usuarios_resolvidos={resultado.get('total_usuarios_resolvidos', 0)}",
         )
+        logger.info('RESULTADO', f"total_disparo={resultado.get('total_disparo', 0)}")
         for mensagem in resultado.get('mensagens', []):
             logger.info('RESULTADO', mensagem)
         logger.finalizar('SUCESSO' if resultado.get('ok') else 'FALHA')
