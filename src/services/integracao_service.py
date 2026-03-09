@@ -17,6 +17,15 @@ def filtrar_status_por_hsm(arquivo_status, hsms_permitidos, arquivo_status_filtr
     hsms_permitidos_set = {simplificar_texto(h) for h in hsms_permitidos}
     hsm_normalizado = df_status['HSM'].astype(str).apply(simplificar_texto)
     mask = hsm_normalizado.isin(hsms_permitidos_set)
+
+    # Fallback resiliente para variacoes de encoding/nome no HSM de complicacao.
+    # So ativa quando o filtro exato nao encontra nenhuma linha.
+    if not bool(mask.any()):
+        usar_fallback_complicacao = any(
+            h.startswith('pesquisa complica') for h in hsms_permitidos_set
+        )
+        if usar_fallback_complicacao:
+            mask = hsm_normalizado.str.contains('pesquisa complica', na=False)
     df_filtrado = df_status[mask].copy()
     df_filtrado.to_csv(arquivo_status_filtrado, sep=';', index=False, encoding='utf-8-sig')
     return {'total_antes': total_antes, 'total_depois': len(df_filtrado)}

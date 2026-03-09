@@ -35,6 +35,7 @@ def corrigir_texto_bugado(texto):
         'n\u03c0o': 'n\u00e3o',
         'n\ufffdo': 'não',
         'n\u00cf\u20aco': 'n\u00e3o',
+        'Pesquisa Complica∩┐╜∩┐╜es Cirurgicas': 'Pesquisa Complicações Cirurgicas',
         'Pesquisa Complicaτ⌡es Cirurgicas': 'Pesquisa Complicações Cirurgicas',
         'Pesquisa Complica├º├╡es Cirurgicas': 'Pesquisa Complicações Cirurgicas',
         'Complica\u00cf\u201e\u00e2\u0152\u00a1es': 'Complica\u00e7\u00f5es',
