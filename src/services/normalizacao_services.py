@@ -1,10 +1,61 @@
-import re
+﻿import re
+import unicodedata
 
 import pandas as pd
 
 
+def _chave_canonica_texto(texto):
+    valor = str(texto).strip().lower()
+    valor = unicodedata.normalize('NFKD', valor)
+    valor = ''.join(ch for ch in valor if not unicodedata.combining(ch))
+    # Mantem separacao sem inventar palavra/conector.
+    valor = valor.replace('\ufffd', ' ')
+    valor = re.sub(r'[^a-z0-9\s]+', ' ', valor)
+    valor = re.sub(r'\s+', ' ', valor).strip()
+    return valor
+
+
+def _normalizar_fragmentos_quebrados_chave(chave):
+    # Reconstrucao de palavras quebradas por encoding ruim.
+    regras = [
+        (r'\bn\s*mero\b', 'numero'),
+        (r'\busu\s*rio\b', 'usuario'),
+        (r'\bn\s*o\b', 'nao'),
+        (r'\bcomplica\s*es\b', 'complicacoes'),
+    ]
+    saida = chave
+    for padrao, repl in regras:
+        saida = re.sub(padrao, repl, saida)
+    saida = re.sub(r'\s+', ' ', saida).strip()
+    return saida
+
+
+def _normalizar_frases_canonicas(texto):
+    chave = _chave_canonica_texto(texto)
+    chave = _normalizar_fragmentos_quebrados_chave(chave)
+
+    canonicos = {
+        'pesquisa complicacoes cirurgicas': 'Pesquisa Complicações Cirurgicas',
+        'numero e parte de um experimento': 'Número é parte de um experimento',
+        'usuario decidiu nao receber mkt messages': 'Usuário decidiu não receber MKT messages',
+        'nao': 'Não',
+    }
+    if chave in canonicos:
+        return canonicos[chave]
+
+    # Fallback controlado (apenas quando houver contexto forte da frase).
+    if 'pesquisa' in chave and 'complicacoes' in chave and 'cirurgicas' in chave:
+        return 'Pesquisa Complicações Cirurgicas'
+    if 'numero' in chave and 'parte de um experimento' in chave:
+        return 'Número é parte de um experimento'
+    if 'usuario decidiu' in chave and 'receber mkt messages' in chave and 'nao' in chave:
+        return 'Usuário decidiu não receber MKT messages'
+
+    return texto
+
+
 def _tentar_redecodificar_mojibake(texto):
-    marcadores = ['Ã', 'Â', 'â', '�']
+    marcadores = ['Ã', 'Â', 'â', '\ufffd']
     if not any(m in texto for m in marcadores):
         return texto
 
@@ -34,15 +85,13 @@ def corrigir_texto_bugado(texto):
         'N\ufffdo': 'Não',
         'n\u03c0o': 'n\u00e3o',
         'n\ufffdo': 'não',
-        'n\u00cf\u20aco': 'n\u00e3o',
-        'Pesquisa Complica∩┐╜∩┐╜es Cirurgicas': 'Pesquisa Complicações Cirurgicas',
-        'Pesquisa Complicaτ⌡es Cirurgicas': 'Pesquisa Complicações Cirurgicas',
+        'n\u00cf\u20aco': 'não',
         'Pesquisa Complica├º├╡es Cirurgicas': 'Pesquisa Complicações Cirurgicas',
-        'Complica\u00cf\u201e\u00e2\u0152\u00a1es': 'Complica\u00e7\u00f5es',
-        'N\u00c2\u00b7mero \u00ce\u02dc': 'N\u00famero \u00e9',
-        'N\u00c2\u00b7mero': 'N\u00famero',
-        'Usu\u00c3\u0178rio': 'Usu\u00e1rio',
-        'Mensagem n\u00cf\u20aco': 'Mensagem n\u00e3o',
+        'Complica\u00cf\u201e\u00e2\u0152\u00a1es': 'Complicações',
+        'N\u00c2\u00b7mero \u00ce\u02dc': 'Número é',
+        'N\u00c2\u00b7mero': 'Número',
+        'Usu\u00c3\u0178rio': 'Usuário',
+        'Mensagem n\u00cf\u20aco': 'Mensagem não',
         '\u00cf\u20ac': '\u00e3',
         '\u00ce\u02dc': '\u00e9',
         '\u00c3\u00a7': '\u00e7',
@@ -62,6 +111,7 @@ def corrigir_texto_bugado(texto):
         texto = texto.replace(antigo, novo)
 
     texto = _tentar_redecodificar_mojibake(texto)
+    texto = _normalizar_frases_canonicas(texto)
 
     return texto
 
