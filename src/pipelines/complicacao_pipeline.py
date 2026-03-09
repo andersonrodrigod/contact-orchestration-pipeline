@@ -62,7 +62,7 @@ def run_pipeline_complicacao_somente_status():
         funcao_status_dataset=run_complicacao_pipeline_gerar_status_dataset_somente_status,
         kwargs_status_dataset={
             'arquivo_status': defaults['arquivo_status'],
-            'arquivo_origem_dataset': defaults['arquivo_dataset_origem_complicacao'],
+            'arquivo_dataset_origem_complicacao': defaults['arquivo_dataset_origem_complicacao'],
             'saida_status': defaults['saida_status'],
             'saida_status_integrado': defaults['saida_status_integrado'],
             'saida_dataset_status': defaults['saida_dataset_status'],

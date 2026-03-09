@@ -31,6 +31,21 @@ Fontes migradas:
 3. Duplicidade mascarada de colunas essenciais (`P1.1`, `P2.1`, `P3.1`, `P4.1`)
 - Status: `RESOLVIDO`
 
+4. Modos `*_somente_status` quebravam em runtime por incompatibilidade de parametro
+- Status: `RESOLVIDO` (2026-03-09)
+- Causa:
+  - `run_pipeline_complicacao_somente_status` e `run_pipeline_internacao_eletivo_somente_status`
+    passavam `arquivo_origem_dataset`, mas as funcoes chamadas exigem
+    `arquivo_dataset_origem_complicacao` e `arquivo_dataset_origem_internacao`.
+- Correcao aplicada:
+  - Ajuste de chave de parametro em:
+    - `src/pipelines/complicacao_pipeline.py`
+    - `src/pipelines/internacao_eletivo_pipeline.py`
+- Validacao:
+  - `python main.py --modo complicacao_somente_status` -> OK
+  - `python main.py --modo internacao_eletivo_somente_status` -> OK
+  - `python main.py --modo ambos_somente_status` -> OK
+
 ### Media prioridade
 
 0. Falha silenciosa no enriquecimento de abas secundarias do dataset
@@ -58,6 +73,21 @@ Fontes migradas:
 
 7. Preflight de internacao/eletivo dependia do arquivo unificado previo
 - Status: `RESOLVIDO`
+
+8. Ausencia de suite de testes automatizados de regressao
+- Status: `PARCIAL` (2026-03-09)
+- Situacao:
+  - Foram adicionados testes automatizados iniciais com `unittest` para contratos estaveis:
+    - `tests/test_error_codes.py`
+    - `tests/test_governanca_config.py`
+  - Resultado atual: `python -m unittest discover -s tests -p "test_*.py"` -> `OK` (6 testes).
+- Impacto:
+  - Regressao funcional de fluxo fim-a-fim ainda pode passar sem deteccao.
+- Proxima acao recomendada:
+  - Expandir cobertura para modos de pipeline com massa controlada, cobrindo:
+    1) execucao de modos principais;
+    2) contrato de retorno (`ok`, `mensagens`, `codigo_erro`);
+    3) validacao de falha esperada para entrada invalida.
 
 ### Baixa prioridade / tecnica
 
@@ -122,6 +152,12 @@ Fontes migradas:
 
 8. Estrategia avancada de padronizacao total antes do processo
 - Status: `ADIADO` (feature futura)
+
+9. Arquivo de dependencias ausente/inconsistente para reproducao de ambiente
+- Status: `RESOLVIDO` (2026-03-09)
+- Correcao aplicada:
+  - Criado `requirements.txt` com dependencias minimas (`pandas`, `openpyxl`).
+  - Removido `requirements.txt.txt` vazio/duplicado.
 
 ## Decisoes de negocio registradas
 
