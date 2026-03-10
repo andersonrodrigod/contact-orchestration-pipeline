@@ -1,12 +1,6 @@
-
 *.xlsx
 *.csv
 *.pyc
 __pycache__/
 logs/
 .~lock.*#
-
-
-*.pyc
-
-__pycache__/

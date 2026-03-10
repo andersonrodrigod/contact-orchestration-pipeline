@@ -183,7 +183,7 @@ def limpar_texto_exceto_colunas(df, colunas_ignorar=None):
         if coluna in colunas_ignorar:
             continue
         if df[coluna].dtype == 'object':
-            df[coluna] = df[coluna].apply(corrigir_texto_bugado)
+            df[coluna] = _corrigir_texto_serie_com_cache(df[coluna])
 
     return df
 
@@ -204,11 +204,28 @@ def _resolver_colunas_alvo(df, colunas_alvo):
     ]
 
 
+def _corrigir_texto_serie_com_cache(serie):
+    if len(serie) == 0:
+        return serie
+
+    mask_na = serie.isna()
+    serie_nao_nula = serie.loc[~mask_na]
+    if len(serie_nao_nula) == 0:
+        return serie
+
+    valores_unicos = pd.unique(serie_nao_nula)
+    mapa_correcoes = {valor: corrigir_texto_bugado(valor) for valor in valores_unicos}
+
+    serie_corrigida = serie.copy()
+    serie_corrigida.loc[~mask_na] = serie_nao_nula.map(mapa_correcoes)
+    return serie_corrigida
+
+
 def limpar_texto_colunas_alvo(df, colunas_alvo=None):
     colunas_resolvidas = _resolver_colunas_alvo(df, colunas_alvo)
     for coluna in colunas_resolvidas:
         if df[coluna].dtype == 'object':
-            df[coluna] = df[coluna].apply(corrigir_texto_bugado)
+            df[coluna] = _corrigir_texto_serie_com_cache(df[coluna])
 
     return df
 

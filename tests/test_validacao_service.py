@@ -115,6 +115,24 @@ class ValidacaoServiceTests(unittest.TestCase):
         self.assertIn('Modo estrito de data de atendimento habilitado', mensagens)
         self.assertIn("aliases_legados=['dat_atendimento']", mensagens)
 
+    def test_validacao_falha_quando_resposta_ausente_no_status_resposta(self):
+        df_status = self._df_status_minimo()
+        df_status_resposta = pd.DataFrame(
+            [
+                {
+                    'nom_contato': 'usuario_1',
+                    'DT_ATENDIMENTO': '01/01/2026',
+                }
+            ]
+        )
+
+        resultado = validar_colunas_origem_para_padronizacao(df_status, df_status_resposta)
+        mensagens = '\n'.join(resultado['mensagens'])
+
+        self.assertFalse(resultado['ok'])
+        self.assertIn('Arquivo status_resposta com estrutura alterada.', mensagens)
+        self.assertIn('resposta (ou alias legado Resposta/RESPOSTA)', mensagens)
+
 
 if __name__ == '__main__':
     unittest.main()

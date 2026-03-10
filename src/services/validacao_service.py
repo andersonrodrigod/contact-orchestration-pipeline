@@ -9,6 +9,7 @@ from src.config.schemas import (
     COLUNAS_MINIMAS_STATUS_CONCATENACAO,
     COLUNAS_MINIMAS_STATUS_RESPOSTA_CONCATENACAO,
     COLUNAS_OBRIGATORIAS_DATASET_ORIGEM,
+    COLUNAS_STATUS_RESPOSTA_OBRIGATORIAS_PADRONIZACAO,
     COLUNAS_STATUS_OBRIGATORIAS_PADRONIZACAO,
 )
 from src.services.schema_resposta_service import (
@@ -58,8 +59,13 @@ def validar_colunas_origem_para_padronizacao(
     colunas_status_obrigatorias = COLUNAS_STATUS_OBRIGATORIAS_PADRONIZACAO
     faltando_status = [c for c in colunas_status_obrigatorias if c not in df_status.columns]
     faltando_status_resposta = []
-    if 'nom_contato' not in df_status_resposta.columns:
-        faltando_status_resposta.append('nom_contato')
+    for coluna in COLUNAS_STATUS_RESPOSTA_OBRIGATORIAS_PADRONIZACAO:
+        if coluna == 'resposta':
+            if not _tem_coluna_resposta(df_status_resposta):
+                faltando_status_resposta.append('resposta (ou alias legado Resposta/RESPOSTA)')
+            continue
+        if coluna not in df_status_resposta.columns:
+            faltando_status_resposta.append(coluna)
     if not _tem_coluna_data_atendimento(df_status_resposta):
         faltando_status_resposta.append('dat_atendimento ou DT_ATENDIMENTO')
 
@@ -105,32 +111,27 @@ def validar_colunas_origem_para_padronizacao(
                     'Modo estrito de data de atendimento habilitado: execucao bloqueada devido a alias legado.'
                 )
 
-        if not _tem_coluna_resposta(df_status_resposta):
+        resultado['mensagens'].append(
+            'Diagnostico coluna resposta no status_resposta: '
+            f'aliases_presentes={aliases_presentes}.'
+        )
+        if qtd_linhas_conflito > 0:
             resultado['mensagens'].append(
-                'Coluna resposta ausente no status_resposta; sera preenchida como vazia.'
+                'Aviso: conflito detectado entre aliases de resposta no status_resposta. '
+                f'linhas_com_valores_distintos={qtd_linhas_conflito}.'
             )
-        else:
+        if len(aliases_legados) > 0:
+            resultado['warnings_alias_resposta_legado'] = 1
             resultado['mensagens'].append(
-                'Diagnostico coluna resposta no status_resposta: '
-                f'aliases_presentes={aliases_presentes}.'
+                'Aviso de deprecacao: aliases legados de resposta detectados no status_resposta. '
+                f'aliases_legados={aliases_legados}. '
+                f'Criterio de corte: 0 warning por {janela_corte_alias_resposta_ciclos} ciclos consecutivos.'
             )
-            if qtd_linhas_conflito > 0:
+            if modo_estrito_alias_resposta:
+                resultado['ok'] = False
                 resultado['mensagens'].append(
-                    'Aviso: conflito detectado entre aliases de resposta no status_resposta. '
-                    f'linhas_com_valores_distintos={qtd_linhas_conflito}.'
+                    'Modo estrito de alias de resposta habilitado: execucao bloqueada devido a alias legado.'
                 )
-            if len(aliases_legados) > 0:
-                resultado['warnings_alias_resposta_legado'] = 1
-                resultado['mensagens'].append(
-                    'Aviso de deprecacao: aliases legados de resposta detectados no status_resposta. '
-                    f'aliases_legados={aliases_legados}. '
-                    f'Criterio de corte: 0 warning por {janela_corte_alias_resposta_ciclos} ciclos consecutivos.'
-                )
-                if modo_estrito_alias_resposta:
-                    resultado['ok'] = False
-                    resultado['mensagens'].append(
-                        'Modo estrito de alias de resposta habilitado: execucao bloqueada devido a alias legado.'
-                    )
 
     return resultado
 
