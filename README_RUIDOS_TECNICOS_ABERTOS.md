@@ -168,7 +168,11 @@ Todos os itens abaixo estao com **STATUS: ABERTO** por solicitacao, para voce de
   - aplicacao por celula em [normalizacao_services.py](c:/Users/anderson.dossantos/Desktop/dev/contact-orchestration-pipeline/src/services/normalizacao_services.py:210)
 - Risco: custo alto em volume grande (ja mitigado por escopo de colunas, mas nao resolvido estruturalmente).
 - Sugestao: avaliar cache por valor unico ou pipeline vetorizado para trocas comuns.
-- STATUS: ABERTO
+- Progresso:
+  - limpeza textual passou a reutilizar cache por valor unico antes de remapear a serie, reduzindo repeticao de `corrigir_texto_bugado`;
+  - `limpar_texto_colunas_alvo` e `limpar_texto_exceto_colunas` deixaram de depender de `apply` por celula para valores repetidos;
+  - validacao manual informada pelo usuario: `tests.test_normalizacao_colunas_alvo` executado com sucesso apos a mudanca.
+- STATUS: CONCLUIDO (10/03/2026)
 
 ### RT-011 - Resultado de testes de normalizacao indica acoplamento com encoding historico
 - Categoria: ambiguidade / qualidade
@@ -176,7 +180,11 @@ Todos os itens abaixo estao com **STATUS: ABERTO** por solicitacao, para voce de
   - asserts com textos mojibake em [test_normalizacao_frases.py](c:/Users/anderson.dossantos/Desktop/dev/contact-orchestration-pipeline/tests/test_normalizacao_frases.py:8)
 - Risco: manter comportamento "quebrado esperado" e dificultar evolucao para texto canonicamente correto.
 - Sugestao: separar teste de compatibilidade legado de teste de saida canonica alvo.
-- STATUS: ABERTO
+- Progresso:
+  - testes de normalizacao passaram a aceitar entradas legadas/mojibake, mas exigir saida canonica explicita;
+  - contrato de `normalizar_chave_texto` foi mantido com saida estavel para comparacao interna;
+  - suite deixou de validar texto quebrado como se fosse resultado alvo.
+- STATUS: CONCLUIDO (10/03/2026)
 
 ### RT-012 - Funcoes irmas com logs e tratamento de erro quase iguais
 - Categoria: refatoracao
