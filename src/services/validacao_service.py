@@ -6,6 +6,7 @@ from src.config.schemas import (
     COLUNAS_OBRIGATORIAS_DATASET_ORIGEM,
     COLUNAS_STATUS_OBRIGATORIAS_PADRONIZACAO,
 )
+from src.services.schema_resposta_service import tem_coluna_resposta
 
 
 def _tem_coluna_data_atendimento(df):
@@ -13,7 +14,7 @@ def _tem_coluna_data_atendimento(df):
 
 
 def _tem_coluna_resposta(df):
-    return 'resposta' in df.columns or 'Resposta' in df.columns or 'RESPOSTA' in df.columns
+    return tem_coluna_resposta(df)
 
 
 def validar_colunas_origem_para_padronizacao(df_status, df_status_resposta):

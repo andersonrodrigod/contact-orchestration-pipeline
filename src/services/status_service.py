@@ -1,5 +1,6 @@
 import pandas as pd
 
+from src.services.schema_resposta_service import normalizar_coluna_resposta
 from src.utils.arquivos import ler_arquivo_csv, salvar_dataframe
 
 
@@ -31,6 +32,11 @@ def integrar_status_com_resposta(
 ):
     df_status = ler_arquivo_csv(arquivo_status)
     df_resposta = ler_arquivo_csv(arquivo_status_resposta)
+    df_resposta = normalizar_coluna_resposta(
+        df_resposta,
+        criar_vazia=True,
+        remover_alias=True,
+    )
 
     colunas_status_obrigatorias = ['Contato', 'DT ENVIO']
     colunas_resposta_obrigatorias = ['nom_contato', 'DT_ATENDIMENTO', 'resposta']

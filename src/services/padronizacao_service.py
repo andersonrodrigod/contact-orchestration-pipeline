@@ -1,5 +1,7 @@
 """Regras simples de padronizacao de nomes de colunas entre fontes."""
 
+from src.services.schema_resposta_service import normalizar_coluna_resposta
+
 
 ORDEM_CANONICA_STATUS = [
     'Conta',
@@ -34,10 +36,6 @@ def padronizar_colunas_status(df):
 def padronizar_colunas_status_resposta(df):
     mapa_colunas = {
         'dat_atendimento': 'DT_ATENDIMENTO',
-        'Resposta': 'resposta',
-        'RESPOSTA': 'resposta',
     }
     df = df.rename(columns=mapa_colunas)
-    if 'resposta' not in df.columns:
-        df['resposta'] = ''
-    return df
+    return normalizar_coluna_resposta(df, criar_vazia=True, remover_alias=True)

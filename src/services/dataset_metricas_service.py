@@ -1,6 +1,7 @@
-﻿import pandas as pd
+import pandas as pd
 
 from src.services.normalizacao_services import normalizar_telefone
+from src.services.schema_resposta_service import normalizar_coluna_resposta
 from src.services.texto_service import limpar_valor_texto, normalizar_texto_serie, simplificar_texto
 
 
@@ -85,9 +86,11 @@ def _preencher_contagens_lida_resposta(df_destino, df_origem, prefixo=''):
 
 def _normalizar_status_para_contagens(df_status_full):
     df_status = df_status_full.copy()
-    col_resposta = 'RESPOSTA' if 'RESPOSTA' in df_status.columns else 'Resposta'
-    if col_resposta not in df_status.columns:
-        df_status[col_resposta] = ''
+    df_status = normalizar_coluna_resposta(
+        df_status,
+        criar_vazia=True,
+        remover_alias=False,
+    )
 
     df_status['Contato'] = normalizar_texto_serie(
         df_status.get('Contato', pd.Series(dtype=str))
@@ -96,9 +99,9 @@ def _normalizar_status_para_contagens(df_status_full):
         normalizar_telefone
     )
     df_status['Status'] = normalizar_texto_serie(df_status.get('Status', pd.Series(dtype=str)))
-    df_status[col_resposta] = normalizar_texto_serie(df_status[col_resposta])
+    df_status['resposta'] = normalizar_texto_serie(df_status['resposta'])
     df_status['__STATUS_MAPEADO'] = df_status['Status'].apply(_normalizar_status_para_mapa)
-    df_status['__RESPOSTA_LIDA'] = df_status[col_resposta].apply(_normalizar_resposta_lida)
+    df_status['__RESPOSTA_LIDA'] = df_status['resposta'].apply(_normalizar_resposta_lida)
     return df_status
 
 
