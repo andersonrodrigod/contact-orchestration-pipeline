@@ -192,7 +192,11 @@ Todos os itens abaixo estao com **STATUS: ABERTO** por solicitacao, para voce de
   - `_run_unificar_status_resposta_pipeline` e `_run_status_somente_pipeline` em [join_status_resposta_pipeline.py](c:/Users/anderson.dossantos/Desktop/dev/contact-orchestration-pipeline/src/pipelines/join_status_resposta_pipeline.py:13) e [join_status_resposta_pipeline.py](c:/Users/anderson.dossantos/Desktop/dev/contact-orchestration-pipeline/src/pipelines/join_status_resposta_pipeline.py:101)
 - Risco: repeticao de comportamento transversal (log, mensagens, codigo_erro).
 - Sugestao: extrair helper unico para execucao protegida e padrao de logging.
-- STATUS: ABERTO
+- Progresso:
+  - extraidos helpers comuns para resolver logger, montar retorno padrao de erro e finalizar sucesso com mensagens de descartes;
+  - `_run_unificar_status_resposta_pipeline` e `_run_status_somente_pipeline` passaram a compartilhar o mesmo esqueleto de tratamento transversal;
+  - regras de negocio e logs especificos de cada fluxo foram preservados.
+- STATUS: CONCLUIDO (10/03/2026)
 
 ## Proposta de priorizacao (sugestao)
 1. RT-001, RT-002, RT-003 (contrato de schema e ambiguidades)
