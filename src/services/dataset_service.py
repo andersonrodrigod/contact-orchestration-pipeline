@@ -6,7 +6,10 @@ from src.config.schemas import (
     COLUNAS_TELEFONE_DATASET,
 )
 
-from src.services.dataset_metricas_service import aplicar_contagens_status
+from src.services.dataset_metricas_service import (
+    aplicar_contagens_status,
+    preparar_contagens_status,
+)
 from src.services.normalizacao_services import (
     normalizar_colunas_telefone_dataframe,
     normalizar_telefone,
@@ -23,7 +26,10 @@ from src.services.padronizacao_service import (
     padronizar_colunas_status,
     padronizar_colunas_status_resposta,
 )
-from src.services.schema_resposta_service import garantir_contrato_resposta_canonica
+from src.services.schema_resposta_service import (
+    garantir_contrato_resposta_canonica,
+    normalizar_coluna_resposta,
+)
 from src.services.validacao_service import (
     validar_colunas_minimas_status_concatenacao,
     validar_colunas_minimas_status_resposta,
@@ -51,6 +57,15 @@ def _carregar_status_para_lookup(arquivo_status_integrado):
     for coluna in COLUNAS_STATUS_FONTE_DATASET:
         if coluna not in df_status.columns:
             df_status[coluna] = ''
+    df_status = normalizar_coluna_resposta(
+        df_status,
+        criar_vazia=True,
+        remover_alias=True,
+    )
+    garantir_contrato_resposta_canonica(
+        df_status,
+        contexto='dataset.status_integrado_pos_carregamento',
+    )
     if 'NOME_MANIPULADO' not in df_status.columns:
         if 'Contato' in df_status.columns:
             df_status['NOME_MANIPULADO'] = (
@@ -67,7 +82,7 @@ def _carregar_status_para_lookup(arquivo_status_integrado):
     df_status['DT ENVIO'] = _normalizar_texto_serie(df_status['DT ENVIO'])
     df_status['Status'] = _normalizar_texto_serie(df_status['Status']).apply(_limpar_valor_texto)
     df_status['Respondido'] = _normalizar_texto_serie(df_status['Respondido']).apply(_limpar_valor_texto)
-    df_status['RESPOSTA'] = _normalizar_texto_serie(df_status['RESPOSTA']).apply(_limpar_valor_texto)
+    df_status['resposta'] = _normalizar_texto_serie(df_status['resposta']).apply(_limpar_valor_texto)
     df_status['__DT_ENVIO_DATA'] = pd.to_datetime(
         df_status['DT ENVIO'],
         errors='coerce',
@@ -155,6 +170,7 @@ def _enriquecer_dataset_com_status(
     df_status_full,
     df_status_por_contato,
     df_status_por_nome_tel,
+    contagens_status_preparadas=None,
 ):
     df_saida = df_dataset.copy()
     if 'USUARIO' not in df_saida.columns:
@@ -209,7 +225,7 @@ def _enriquecer_dataset_com_status(
         chave = df_saida.loc[idx_principal, 'CHAVE RELATORIO']
         df_saida.loc[idx_principal, 'ULTIMO STATUS DE ENVIO'] = chave.map(mapa_principal['Status']).fillna('')
         df_saida.loc[idx_principal, 'DT ENVIO'] = chave.map(mapa_principal['DT ENVIO']).fillna('')
-        df_saida.loc[idx_principal, 'RESPOSTA'] = chave.map(mapa_principal['RESPOSTA']).fillna('')
+        df_saida.loc[idx_principal, 'RESPOSTA'] = chave.map(mapa_principal['resposta']).fillna('')
         df_saida.loc[idx_principal, 'IDENTIFICACAO'] = chave.map(mapa_principal['Respondido']).fillna('')
         df_saida.loc[idx_principal, 'TELEFONE ENVIADO'] = chave.map(mapa_principal['Telefone']).fillna('')
         df_saida.loc[idx_principal, 'CHAVE STATUS'] = df_saida.loc[idx_principal, 'CHAVE RELATORIO']
@@ -245,7 +261,7 @@ def _enriquecer_dataset_com_status(
                         'Contato',
                         'Status',
                         'Respondido',
-                        'RESPOSTA',
+                        'resposta',
                         'DT ENVIO',
                         '__DT_ENVIO_DATA',
                     ]
@@ -270,7 +286,7 @@ def _enriquecer_dataset_com_status(
                     .fillna('')
                 )
                 df_saida.loc[idx_fallback, 'RESPOSTA'] = (
-                    df_melhor_match.loc[idx_fallback, 'RESPOSTA'].fillna('')
+                    df_melhor_match.loc[idx_fallback, 'resposta'].fillna('')
                 )
                 df_saida.loc[idx_fallback, 'IDENTIFICACAO'] = (
                     df_melhor_match.loc[idx_fallback, 'Respondido'].fillna('')
@@ -334,7 +350,11 @@ def _enriquecer_dataset_com_status(
     _preencher_telefone_prioridade_fallback(df_saida, colunas_tel_existentes)
     _definir_proximo_telefone_disponivel(df_saida, colunas_tel_existentes)
 
-    resultado_contagens = aplicar_contagens_status(df_saida, df_status_full)
+    resultado_contagens = aplicar_contagens_status(
+        df_saida,
+        df_status_full,
+        contagens_preparadas=contagens_status_preparadas,
+    )
     if not resultado_contagens['ok']:
         return resultado_contagens
 
@@ -582,6 +602,14 @@ def criar_dataset_complicacao(
         df_status_por_contato = resultado_status['df_status_por_contato']
         df_status_por_nome_tel = resultado_status['df_status_por_nome_tel']
         df_status_full = resultado_status['df_status_full']
+        resultado_contagens_preparadas = preparar_contagens_status(df_status_full)
+        if not resultado_contagens_preparadas['ok']:
+            return {
+                'ok': False,
+                'mensagens': resultado_contagens_preparadas['mensagens'],
+                'codigo_erro': ERRO_CRIACAO_DATASET,
+            }
+        contagens_status_preparadas = resultado_contagens_preparadas
 
         etapa_atual = 'ENRIQUECER_ABA_PRINCIPAL'
         df_usuarios = _montar_df_final_complicacao(df_sem_duplicados)
@@ -590,6 +618,7 @@ def criar_dataset_complicacao(
             df_status_full,
             df_status_por_contato,
             df_status_por_nome_tel,
+            contagens_status_preparadas=contagens_status_preparadas,
         )
         if not resultado_enriquecimento['ok']:
             return {
@@ -642,6 +671,7 @@ def criar_dataset_complicacao(
             df_status_full,
             df_status_por_contato,
             df_status_por_nome_tel,
+            contagens_status_preparadas=contagens_status_preparadas,
         )
         if not resultado_respondidos['ok']:
             return {
@@ -661,6 +691,7 @@ def criar_dataset_complicacao(
             df_status_full,
             df_status_por_contato,
             df_status_por_nome_tel,
+            contagens_status_preparadas=contagens_status_preparadas,
         )
         if not resultado_duplicados['ok']:
             return {

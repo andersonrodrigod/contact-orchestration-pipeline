@@ -24,6 +24,9 @@ def _coletar_metricas(resultado):
         'descartados_status_data_invalida',
         'descartados_resposta_data_invalida',
         'limiar_nat_data_em_uso',
+        'warnings_alias_resposta_legado',
+        'modo_estrito_alias_resposta',
+        'janela_corte_alias_resposta_ciclos',
     ]
     metricas = {}
     for chave in chaves_fixas:

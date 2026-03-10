@@ -1,6 +1,9 @@
 import pandas as pd
 
-from src.services.schema_resposta_service import normalizar_coluna_resposta
+from src.services.schema_resposta_service import (
+    garantir_contrato_resposta_canonica,
+    normalizar_coluna_resposta,
+)
 from src.utils.arquivos import ler_arquivo_csv, salvar_dataframe
 
 
@@ -36,6 +39,10 @@ def integrar_status_com_resposta(
         df_resposta,
         criar_vazia=True,
         remover_alias=True,
+    )
+    garantir_contrato_resposta_canonica(
+        df_resposta,
+        contexto='status.integracao_resposta_pos_padronizacao',
     )
 
     colunas_status_obrigatorias = ['Contato', 'DT ENVIO']

@@ -6,7 +6,11 @@ from core.error_codes import (
     ERRO_QUALIDADE_DATA,
     ERRO_VALIDACAO_COLUNAS,
 )
-from src.config.governanca_config import resolver_limiar_nat_data
+from src.config.governanca_config import (
+    resolver_janela_corte_alias_resposta,
+    resolver_limiar_nat_data,
+    resolver_modo_estrito_alias_resposta,
+)
 from src.pipelines.concatenar_status_respostas_pipeline import run_unificar_status_respostas_pipeline
 from src.services.normalizacao_services import (
     criar_coluna_dt_envio_por_data_agendamento,
@@ -66,6 +70,8 @@ def executar_normalizacao_padronizacao(
     limiar_nat_data=None,
     contexto=None,
     permitir_override_limiar=True,
+    modo_estrito_alias_resposta=None,
+    janela_corte_alias_resposta_ciclos=None,
     mensagens_iniciais=None,
     logger=None,
     finalizar_logger=True,
@@ -79,12 +85,25 @@ def executar_normalizacao_padronizacao(
         contexto=contexto,
         permitir_override_limiar=permitir_override_limiar,
     )
+    modo_estrito_alias_resposta, origem_modo_estrito = resolver_modo_estrito_alias_resposta(
+        modo_estrito_alias_resposta
+    )
+    janela_corte_alias_resposta_ciclos, origem_janela_corte = resolver_janela_corte_alias_resposta(
+        janela_corte_alias_resposta_ciclos
+    )
     logger.info('INICIO', f'arquivo_status={arquivo_status}')
     logger.info('INICIO', f'arquivo_status_resposta={arquivo_status_resposta}')
     logger.info('INICIO', f'saida_status={saida_status}')
     logger.info('INICIO', f'saida_status_resposta={saida_status_resposta}')
     logger.info('INICIO', f'limiar_nat_data_em_uso={limiar_nat_data}')
     logger.info('INICIO', f'limiar_nat_data_origem={origem_limiar}')
+    logger.info('INICIO', f'modo_estrito_alias_resposta={modo_estrito_alias_resposta}')
+    logger.info('INICIO', f'modo_estrito_alias_resposta_origem={origem_modo_estrito}')
+    logger.info(
+        'INICIO',
+        f'janela_corte_alias_resposta_ciclos={janela_corte_alias_resposta_ciclos}',
+    )
+    logger.info('INICIO', f'janela_corte_alias_resposta_origem={origem_janela_corte}')
 
     etapa_atual = 'INICIO'
     try:
@@ -108,7 +127,10 @@ def executar_normalizacao_padronizacao(
         )
 
         resultado_colunas_origem = validar_colunas_origem_para_padronizacao(
-            df_status, df_status_resposta
+            df_status,
+            df_status_resposta,
+            modo_estrito_alias_resposta=modo_estrito_alias_resposta,
+            janela_corte_alias_resposta_ciclos=janela_corte_alias_resposta_ciclos,
         )
         logger.info(
             'VALIDACAO_ORIGEM',
@@ -222,6 +244,11 @@ def executar_normalizacao_padronizacao(
             'nat_dt_atendimento': nat_resposta,
             'pct_nat_dt_atendimento': round(pct_nat_resposta, 2),
             'limiar_nat_data_em_uso': limiar_nat_data,
+            'warnings_alias_resposta_legado': resultado_colunas_origem.get(
+                'warnings_alias_resposta_legado', 0
+            ),
+            'modo_estrito_alias_resposta': bool(modo_estrito_alias_resposta),
+            'janela_corte_alias_resposta_ciclos': int(janela_corte_alias_resposta_ciclos),
             'qualidade_data': {
                 'data_agendamento': {
                     'nat': nat_status,
@@ -241,6 +268,13 @@ def executar_normalizacao_padronizacao(
                     'nat_dt_atendimento': nat_resposta,
                     'pct_nat_dt_atendimento': round(pct_nat_resposta, 2),
                     'limiar_nat_data_em_uso': limiar_nat_data,
+                    'warnings_alias_resposta_legado': resultado_colunas_origem.get(
+                        'warnings_alias_resposta_legado', 0
+                    ),
+                    'modo_estrito_alias_resposta': bool(modo_estrito_alias_resposta),
+                    'janela_corte_alias_resposta_ciclos': int(
+                        janela_corte_alias_resposta_ciclos
+                    ),
                 }
             },
         }
@@ -301,6 +335,8 @@ def executar_ingestao_complicacao(
     saida_status_resposta='src/data/arquivo_limpo/status_resposta_complicacao_limpo.csv',
     limiar_nat_data=None,
     permitir_override_limiar=True,
+    modo_estrito_alias_resposta=None,
+    janela_corte_alias_resposta_ciclos=None,
     executar_xlsx_adicional=False,
     logger=None,
 ):
@@ -316,6 +352,8 @@ def executar_ingestao_complicacao(
         limiar_nat_data=limiar_nat_data,
         contexto='complicacao',
         permitir_override_limiar=permitir_override_limiar,
+        modo_estrito_alias_resposta=modo_estrito_alias_resposta,
+        janela_corte_alias_resposta_ciclos=janela_corte_alias_resposta_ciclos,
         mensagens_iniciais=['Modo complicacao selecionado.'],
         logger=logger,
         finalizar_logger=not logger_externo,
@@ -351,6 +389,8 @@ def executar_ingestao_complicacao(
         limiar_nat_data=limiar_nat_data,
         contexto='complicacao',
         permitir_override_limiar=permitir_override_limiar,
+        modo_estrito_alias_resposta=modo_estrito_alias_resposta,
+        janela_corte_alias_resposta_ciclos=janela_corte_alias_resposta_ciclos,
         mensagens_iniciais=['Execucao adicional XLSX (status + status_resposta).'],
         logger=logger,
         finalizar_logger=False,
@@ -500,6 +540,8 @@ def executar_ingestao_unificar(
     saida_status_resposta='src/data/arquivo_limpo/status_resposta_eletivo_internacao_limpo.csv',
     limiar_nat_data=None,
     permitir_override_limiar=True,
+    modo_estrito_alias_resposta=None,
+    janela_corte_alias_resposta_ciclos=None,
     executar_xlsx_adicional=False,
     logger=None,
 ):
@@ -555,6 +597,8 @@ def executar_ingestao_unificar(
             limiar_nat_data=limiar_nat_data,
             contexto='internacao_eletivo',
             permitir_override_limiar=permitir_override_limiar,
+            modo_estrito_alias_resposta=modo_estrito_alias_resposta,
+            janela_corte_alias_resposta_ciclos=janela_corte_alias_resposta_ciclos,
             mensagens_iniciais=resultado_concat['mensagens'],
             logger=logger,
             finalizar_logger=not logger_externo,
@@ -608,6 +652,8 @@ def executar_ingestao_unificar(
             limiar_nat_data=limiar_nat_data,
             contexto='internacao_eletivo',
             permitir_override_limiar=permitir_override_limiar,
+            modo_estrito_alias_resposta=modo_estrito_alias_resposta,
+            janela_corte_alias_resposta_ciclos=janela_corte_alias_resposta_ciclos,
             mensagens_iniciais=['Execucao adicional XLSX (unificacao + limpeza de status).'],
             logger=logger,
             finalizar_logger=False,

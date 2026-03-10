@@ -1,7 +1,10 @@
 import pandas as pd
 
 from src.services.normalizacao_services import normalizar_telefone
-from src.services.schema_resposta_service import normalizar_coluna_resposta
+from src.services.schema_resposta_service import (
+    garantir_contrato_resposta_canonica,
+    normalizar_coluna_resposta,
+)
 from src.services.texto_service import limpar_valor_texto, normalizar_texto_serie, simplificar_texto
 
 
@@ -91,6 +94,10 @@ def _normalizar_status_para_contagens(df_status_full):
         criar_vazia=True,
         remover_alias=True,
     )
+    garantir_contrato_resposta_canonica(
+        df_status,
+        contexto='dataset_metricas.status_pos_padronizacao',
+    )
 
     df_status['Contato'] = normalizar_texto_serie(
         df_status.get('Contato', pd.Series(dtype=str))
@@ -105,7 +112,50 @@ def _normalizar_status_para_contagens(df_status_full):
     return df_status
 
 
-def aplicar_contagens_status(df_saida, df_status_full):
+def _validar_colunas_obrigatorias_status(df_status_full):
+    colunas_obrigatorias_status = ['Contato', 'Telefone', 'Status']
+    faltando_status = [c for c in colunas_obrigatorias_status if c not in df_status_full.columns]
+    if len(faltando_status) > 0:
+        return {
+            'ok': False,
+            'mensagens': [f'Colunas obrigatorias ausentes no status para contagem: {faltando_status}'],
+        }
+    return {'ok': True, 'mensagens': []}
+
+
+def preparar_contagens_status(df_status_full):
+    validacao_status = _validar_colunas_obrigatorias_status(df_status_full)
+    if not validacao_status['ok']:
+        return validacao_status
+
+    df_status = _normalizar_status_para_contagens(df_status_full)
+    df_status_join = df_status[['Contato', '__STATUS_MAPEADO', '__RESPOSTA_LIDA']]
+    df_status_join = df_status_join[
+        (df_status_join['Contato'] != '')
+        & df_status_join['__STATUS_MAPEADO'].notna()
+        & (df_status_join['__STATUS_MAPEADO'] != '')
+    ]
+    if len(df_status_join) == 0:
+        return {
+            'ok': False,
+            'mensagens': ['Nenhuma correspondencia encontrada para CHAVE STATUS no arquivo status.'],
+        }
+
+    qt_telefones = (
+        df_status[(df_status['Contato'] != '') & (df_status['Telefone'] != '')]
+        .groupby('Contato')['Telefone']
+        .nunique()
+    )
+
+    return {
+        'ok': True,
+        'mensagens': [],
+        'df_status_join': df_status_join,
+        'qt_telefones': qt_telefones,
+    }
+
+
+def aplicar_contagens_status(df_saida, df_status_full, contagens_preparadas=None):
     colunas_obrigatorias_saida = ['CHAVE STATUS']
     faltando_saida = [c for c in colunas_obrigatorias_saida if c not in df_saida.columns]
     if len(faltando_saida) > 0:
@@ -114,16 +164,10 @@ def aplicar_contagens_status(df_saida, df_status_full):
             'mensagens': [f'Colunas obrigatorias ausentes no dataset para contagem: {faltando_saida}'],
         }
 
-    colunas_obrigatorias_status = ['Contato', 'Telefone', 'Status']
-    faltando_status = [c for c in colunas_obrigatorias_status if c not in df_status_full.columns]
-    if len(faltando_status) > 0:
-        return {
-            'ok': False,
-            'mensagens': [f'Colunas obrigatorias ausentes no status para contagem: {faltando_status}'],
-        }
-
-    df_status = _normalizar_status_para_contagens(df_status_full)
-    colunas_status_join = ['Contato', 'Telefone', '__STATUS_MAPEADO', '__RESPOSTA_LIDA']
+    if contagens_preparadas is None:
+        contagens_preparadas = preparar_contagens_status(df_status_full)
+    if not contagens_preparadas.get('ok', False):
+        return contagens_preparadas
 
     df_base = df_saida.copy()
     df_base['__ROW_ID'] = df_base.index
@@ -132,7 +176,7 @@ def aplicar_contagens_status(df_saida, df_status_full):
     )
     # Contagem por CHAVE STATUS (sem depender de TELEFONE ENVIADO)
     df_join_chave = df_base.merge(
-        df_status[colunas_status_join],
+        contagens_preparadas['df_status_join'],
         left_on='__CHAVE_STATUS_NORM',
         right_on='Contato',
         how='left',
@@ -151,15 +195,12 @@ def aplicar_contagens_status(df_saida, df_status_full):
     _preencher_contagens_status_mapeado(df_saida, df_join_chave_ok, prefixo='QT ')
     _preencher_contagens_lida_resposta(df_saida, df_join_chave_ok, prefixo='QT ')
 
-    qt_telefones = (
-        df_status[(df_status['Contato'] != '') & (df_status['Telefone'] != '')]
-        .groupby('Contato')['Telefone']
-        .nunique()
-    )
     _preencher_contagem_sem_zero(
         df_saida,
         'QT TELEFONES',
-        df_base.set_index('__ROW_ID')['__CHAVE_STATUS_NORM'].map(qt_telefones).fillna(0),
+        df_base.set_index('__ROW_ID')['__CHAVE_STATUS_NORM']
+        .map(contagens_preparadas['qt_telefones'])
+        .fillna(0),
     )
 
     return {'ok': True, 'mensagens': []}

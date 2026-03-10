@@ -83,7 +83,10 @@ Todos os itens abaixo estao com **STATUS: ABERTO** por solicitacao, para voce de
   - fallback para `LIDA_REPOSTA_SIM` e `LIDA_REPOSTA_NAO` em [orquestracao_service.py](c:/Users/anderson.dossantos/Desktop/dev/contact-orchestration-pipeline/src/services/orquestracao_service.py:109)
 - Risco: perpetuacao de typo no dominio e no contrato de dados.
 - Sugestao: manter compatibilidade apenas na borda de entrada e registrar warning quando typo aparecer.
-- STATUS: ABERTO
+- Progresso:
+  - orquestracao passou a priorizar `LIDA_RESPOSTA_SIM` e `LIDA_RESPOSTA_NAO` como nomes canonicos;
+  - compatibilidade com `LIDA_REPOSTA_SIM` e `LIDA_REPOSTA_NAO` foi mantida apenas com warning de deprecacao.
+- STATUS: CONCLUIDO (10/03/2026)
 
 ### RT-004 - Duplicacao alta entre pipelines de contexto
 - Categoria: refatoracao

@@ -1,4 +1,5 @@
 import pandas as pd
+import warnings
 from core.error_codes import ERRO_ORQUESTRACAO
 
 from src.services.normalizacao_services import normalizar_telefone
@@ -55,6 +56,19 @@ def _coluna_existente(df, preferida, alternativa=None):
     return preferida
 
 
+def _obter_coluna_canonica_com_warning(df, canonica, legado=None):
+    if canonica in df.columns:
+        return canonica
+    if legado and legado in df.columns:
+        warnings.warn(
+            f'Coluna legada detectada: {legado}. Use {canonica}.',
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return legado
+    return canonica
+
+
 def _serie_numerica(df, coluna):
     if coluna not in df.columns:
         return pd.Series(0, index=df.index, dtype='float64')
@@ -106,8 +120,8 @@ def aplicar_classificacao_processo_acao(df):
     status_chave = normalizar_texto_serie(df.get('STATUS CHAVE', pd.Series('', index=df.index))).str.upper()
     mask_elegivel_orquestracao = status_chave != 'SEM_MATCH'
 
-    col_lida_sim = _coluna_existente(df, 'LIDA_RESPOSTA_SIM', 'LIDA_REPOSTA_SIM')
-    col_lida_nao = _coluna_existente(df, 'LIDA_RESPOSTA_NAO', 'LIDA_REPOSTA_NAO')
+    col_lida_sim = _obter_coluna_canonica_com_warning(df, 'LIDA_RESPOSTA_SIM', 'LIDA_REPOSTA_SIM')
+    col_lida_nao = _obter_coluna_canonica_com_warning(df, 'LIDA_RESPOSTA_NAO', 'LIDA_REPOSTA_NAO')
 
 
     s_lida_sim = _serie_numerica(df, col_lida_sim)
