@@ -21,7 +21,30 @@ Todos os itens abaixo estao com **STATUS: ABERTO** por solicitacao, para voce de
 - Progresso:
   - Fase A (contrato canonico interno `resposta`): CONCLUIDA.
   - Fase B (adapter de borda para `Resposta`/`RESPOSTA`): CONCLUIDA.
-  - Fases C/D/E: ABERTAS.
+  - Fase C (observabilidade de alias e conflito de valor):
+    - Objetivo: tornar visivel quando legado (`Resposta`/`RESPOSTA`) ainda entra no fluxo e quando ha divergencia entre aliases.
+    - Inicio: 10/03/2026.
+    - Entregaveis iniciais:
+      - adicionar diagnostico de aliases presentes por arquivo na validacao;
+      - registrar warning quando houver mais de uma coluna de resposta com valores distintos na mesma linha;
+      - cobrir com teste unitario de conflito.
+    - STATUS: CONCLUIDA (10/03/2026).
+  - Fase D (contrato interno estrito em `resposta`):
+    - Objetivo: garantir que servicos internos operem apenas com `resposta`, mantendo `RESPOSTA` apenas na borda de saida.
+    - Inicio: 10/03/2026.
+    - Entregaveis iniciais:
+      - mapear pontos internos que ainda aceitam alias legado;
+      - remover dependencia de alias fora da borda de integracao;
+      - adicionar validacao de contrato apos padronizacao.
+    - STATUS: EM_EXECUCAO.
+  - Fase E (deprecacao controlada de alias legado):
+    - Objetivo: preparar remocao segura do suporte a `Resposta`/`RESPOSTA` na ingestao.
+    - Inicio: 10/03/2026.
+    - Entregaveis iniciais:
+      - definir janela de deprecacao e criterio de corte (sem warning por X ciclos);
+      - incluir flag de modo estrito para falhar quando chegar alias legado;
+      - documentar plano de rollback.
+    - STATUS: EM_EXECUCAO.
 - STATUS: EM_EXECUCAO
 
 ### RT-002 - Ambiguidade de nome de data de atendimento

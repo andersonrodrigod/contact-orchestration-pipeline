@@ -17,6 +17,26 @@ def tem_coluna_resposta(df):
     return len(colunas_resposta_presentes(df)) > 0
 
 
+def diagnosticar_coluna_resposta(df):
+    aliases_presentes = colunas_resposta_presentes(df)
+    qtd_linhas_conflito = 0
+
+    if len(aliases_presentes) > 1:
+        df_aliases = df[aliases_presentes].fillna('').astype(str).apply(lambda s: s.str.strip())
+
+        def _ha_conflito(row):
+            valores = {valor for valor in row if valor != ''}
+            return len(valores) > 1
+
+        qtd_linhas_conflito = int(df_aliases.apply(_ha_conflito, axis=1).sum())
+
+    return {
+        'aliases_presentes': aliases_presentes,
+        'qtd_aliases_presentes': len(aliases_presentes),
+        'qtd_linhas_conflito': qtd_linhas_conflito,
+    }
+
+
 def normalizar_coluna_resposta(
     df,
     criar_vazia=True,

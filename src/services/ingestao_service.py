@@ -11,7 +11,7 @@ from src.pipelines.concatenar_status_respostas_pipeline import run_unificar_stat
 from src.services.normalizacao_services import (
     criar_coluna_dt_envio_por_data_agendamento,
     formatar_coluna_data_br,
-    limpar_texto_exceto_colunas,
+    limpar_texto_colunas_alvo,
     normalizar_tipos_dataframe,
 )
 from src.services.padronizacao_service import (
@@ -51,6 +51,10 @@ def _mensagem_alerta_nat(coluna, percentual, quantidade, total):
         f'Alerta de qualidade: coluna {coluna} com NaT em {percentual:.2f}% '
         f'({quantidade}/{total}).'
     )
+
+
+COLUNAS_TEXTO_ALVO_STATUS = ['HSM', 'Status', 'Respondido', 'RESPOSTA']
+COLUNAS_TEXTO_ALVO_STATUS_RESPOSTA = ['HSM', 'Status', 'Respondido', 'RESPOSTA', 'resposta']
 
 
 def executar_normalizacao_padronizacao(
@@ -167,10 +171,18 @@ def executar_normalizacao_padronizacao(
                 erros_qualidade_data.append(mensagem_alerta)
 
         etapa_atual = 'LIMPEZA_TEXTO'
-        logger.info('NORMALIZACAO', 'Limpando texto nas colunas nao-data')
-        df_status = limpar_texto_exceto_colunas(df_status, colunas_ignorar=['Data agendamento'])
-        df_status_resposta = limpar_texto_exceto_colunas(
-            df_status_resposta, colunas_ignorar=['DT_ATENDIMENTO']
+        logger.info(
+            'NORMALIZACAO',
+            f'Limpando texto apenas nas colunas alvo status={COLUNAS_TEXTO_ALVO_STATUS} '
+            f'status_resposta={COLUNAS_TEXTO_ALVO_STATUS_RESPOSTA}',
+        )
+        df_status = limpar_texto_colunas_alvo(
+            df_status,
+            colunas_alvo=COLUNAS_TEXTO_ALVO_STATUS,
+        )
+        df_status_resposta = limpar_texto_colunas_alvo(
+            df_status_resposta,
+            colunas_alvo=COLUNAS_TEXTO_ALVO_STATUS_RESPOSTA,
         )
 
         etapa_atual = 'CRIAR_DT_ENVIO'
@@ -400,7 +412,10 @@ def executar_ingestao_somente_status(
                 logger.error('VALIDACAO_DATA', mensagem_alerta)
                 erros_qualidade_data.append(mensagem_alerta)
         etapa_atual = 'LIMPEZA_TEXTO'
-        df_status = limpar_texto_exceto_colunas(df_status, colunas_ignorar=['Data agendamento'])
+        df_status = limpar_texto_colunas_alvo(
+            df_status,
+            colunas_alvo=COLUNAS_TEXTO_ALVO_STATUS,
+        )
         etapa_atual = 'CRIAR_DT_ENVIO'
         criar_coluna_dt_envio_por_data_agendamento(df_status)
 

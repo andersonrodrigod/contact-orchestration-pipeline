@@ -6,7 +6,10 @@ from src.config.schemas import (
     COLUNAS_OBRIGATORIAS_DATASET_ORIGEM,
     COLUNAS_STATUS_OBRIGATORIAS_PADRONIZACAO,
 )
-from src.services.schema_resposta_service import tem_coluna_resposta
+from src.services.schema_resposta_service import (
+    diagnosticar_coluna_resposta,
+    tem_coluna_resposta,
+)
 
 
 def _tem_coluna_data_atendimento(df):
@@ -50,10 +53,24 @@ def validar_colunas_origem_para_padronizacao(df_status, df_status_resposta):
         resultado['mensagens'].append(
             'Colunas de origem para padronizacao foram encontradas com sucesso.'
         )
+        diagnostico_resposta = diagnosticar_coluna_resposta(df_status_resposta)
+        aliases_presentes = diagnostico_resposta['aliases_presentes']
+        qtd_linhas_conflito = diagnostico_resposta['qtd_linhas_conflito']
+
         if not _tem_coluna_resposta(df_status_resposta):
             resultado['mensagens'].append(
                 'Coluna resposta ausente no status_resposta; sera preenchida como vazia.'
             )
+        else:
+            resultado['mensagens'].append(
+                'Diagnostico coluna resposta no status_resposta: '
+                f'aliases_presentes={aliases_presentes}.'
+            )
+            if qtd_linhas_conflito > 0:
+                resultado['mensagens'].append(
+                    'Aviso: conflito detectado entre aliases de resposta no status_resposta. '
+                    f'linhas_com_valores_distintos={qtd_linhas_conflito}.'
+                )
 
     return resultado
 

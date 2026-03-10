@@ -16,11 +16,13 @@ Padronizar o projeto para comparacoes textuais sem acento/til (chave canonica), 
    - sem acento/til
    - espacos normalizados
 2. Documentar esse contrato e evitar comparacao com texto bruto.
+Status: CONCLUIDA.
 
 ### Etapa 2 - Centralizar normalizacao
 1. Manter uma unica funcao central para chave canonica em `normalizacao_services`/`texto_service`.
 2. Garantir que filtros e mapas dependam dessa camada unica.
 3. Evitar regras duplicadas espalhadas em modulos diferentes.
+Status: CONCLUIDA.
 
 ### Etapa 3 - Mapear pontos de aplicacao
 Aplicar a chave canonica, no minimo, em:
@@ -28,6 +30,7 @@ Aplicar a chave canonica, no minimo, em:
 2. Mapeamento de `STATUS_COLUNAS`.
 3. Regras de `RESPOSTA` (sim/nao/sem resposta).
 4. Regras de orquestracao que dependem de texto.
+Status: CONCLUIDA.
 
 ### Etapa 4 - Criar baseline antes da mudanca
 Gerar referencia numerica para comparacao em testes:
@@ -39,24 +42,39 @@ Gerar referencia numerica para comparacao em testes:
 Salvar baseline em arquivos dedicados (exemplo):
 - `tests/baseline/status_baseline.json`
 - `tests/baseline/status_resposta_baseline.json`
+Status: CONCLUIDA.
 
 ### Etapa 5 - Implementar em blocos pequenos
 1. Bloco A: normalizacao central + testes unitarios.
 2. Bloco B: integracao com `dataset_metricas_service`.
 3. Bloco C: integracao com filtro de HSM e resposta.
 4. Bloco D: validacao de pipelines principais.
+Status:
+- Bloco A: CONCLUIDO.
+- Bloco B: CONCLUIDO.
+- Bloco C: CONCLUIDO.
+- Bloco D: CONCLUIDO (smoke executado em 10/03/2026).
 
 ### Etapa 6 - Testes obrigatorios de regressao
 1. Unitarios: casos de texto quebrado e variacoes de acento/til.
 2. Integracao: mapeamento de status/resposta.
 3. Smoke: modos principais (`complicacao`, `internacao_eletivo`).
 4. Regra de aceite: diferenca de metrica so e aceita com explicacao documentada.
+Status:
+- Unitarios: CONCLUIDO (inclui casos de frases/encoding e limpeza por colunas alvo).
+- Integracao: CONCLUIDO (baseline de status/resposta validado).
+- Smoke: CONCLUIDO (modos `complicacao` e `internacao_eletivo` executados com `ok=True` em 10/03/2026).
+- Regra de aceite: EM USO (seguir exigindo justificativa quando metrica divergir).
 
 ## Critérios de aceite
 1. Nenhum modo principal deve quebrar apos a migracao.
 2. Contagens chave devem manter consistencia com baseline (salvo mudanca esperada).
 3. Logs devem permitir rastrear valores nao mapeados.
 
+## Evidencias de fechamento (10/03/2026)
+1. `python main.py --modo complicacao`: `ok=True`, `total_status=36782`, `total_linhas=10004`.
+2. `python main.py --modo internacao_eletivo`: `ok=True`, `total_status=164060`, `total_linhas=29206`.
+3. Historico atualizado em `logs/historico_execucoes.jsonl` com os dois modos concluidos.
+
 ## Proxima acao recomendada
-1. Gerar baseline atual de `Status` e `RESPOSTA` antes de qualquer nova refatoracao.
-2. Iniciar Bloco A com testes automatizados primeiro.
+1. Registrar no changelog interno o ganho de performance da limpeza textual por colunas alvo.

@@ -188,6 +188,31 @@ def limpar_texto_exceto_colunas(df, colunas_ignorar=None):
     return df
 
 
+def _normalizar_nome_coluna(nome_coluna):
+    return str(nome_coluna).strip().casefold()
+
+
+def _resolver_colunas_alvo(df, colunas_alvo):
+    if colunas_alvo is None:
+        return []
+
+    alvo_normalizado = {_normalizar_nome_coluna(c) for c in colunas_alvo}
+    return [
+        coluna
+        for coluna in df.columns
+        if _normalizar_nome_coluna(coluna) in alvo_normalizado
+    ]
+
+
+def limpar_texto_colunas_alvo(df, colunas_alvo=None):
+    colunas_resolvidas = _resolver_colunas_alvo(df, colunas_alvo)
+    for coluna in colunas_resolvidas:
+        if df[coluna].dtype == 'object':
+            df[coluna] = df[coluna].apply(corrigir_texto_bugado)
+
+    return df
+
+
 def formatar_coluna_data_br(df, coluna):
     if coluna in df.columns:
         df[coluna] = df[coluna].dt.strftime('%d/%m/%Y')
