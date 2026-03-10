@@ -133,7 +133,10 @@ Todos os itens abaixo estao com **STATUS: ABERTO** por solicitacao, para voce de
   - entradas repetidas em [.gitignore](c:/Users/anderson.dossantos/Desktop/dev/contact-orchestration-pipeline/.gitignore:1) e [.gitignore](c:/Users/anderson.dossantos/Desktop/dev/contact-orchestration-pipeline/.gitignore:8)
 - Risco: ruido de manutencao e dificuldade de revisar regras reais de ignore.
 - Sugestao: consolidar em bloco unico sem duplicatas.
-- STATUS: ABERTO
+- Progresso:
+  - entradas duplicadas de `*.pyc` e `__pycache__/` removidas;
+  - regras de ignore mantidas sem alteracao de comportamento.
+- STATUS: CONCLUIDO (10/03/2026)
 
 ### RT-008 - Constante de schema sem uso aparente
 - Categoria: inutilidade / padronizacao
@@ -141,7 +144,11 @@ Todos os itens abaixo estao com **STATUS: ABERTO** por solicitacao, para voce de
   - [schemas.py](c:/Users/anderson.dossantos/Desktop/dev/contact-orchestration-pipeline/src/config/schemas.py:11) `COLUNAS_STATUS_RESPOSTA_OBRIGATORIAS_PADRONIZACAO` sem referencias no codigo.
 - Risco: falsa sensacao de contrato ativo.
 - Sugestao: remover ou passar a usar explicitamente nas validacoes.
-- STATUS: ABERTO
+- Progresso:
+  - `COLUNAS_STATUS_RESPOSTA_OBRIGATORIAS_PADRONIZACAO` passou a ser usada em `validacao_service` como fonte unica das colunas obrigatorias de `status_resposta`;
+  - ausencia de `resposta` (considerando aliases legados `Resposta`/`RESPOSTA`) agora bloqueia a validacao de origem;
+  - teste unitario adicionado para garantir falha quando `resposta` estiver ausente.
+- STATUS: CONCLUIDO (10/03/2026)
 
 ### RT-009 - Historico de execucao sem politica de retencao
 - Categoria: operacao / observabilidade
@@ -149,7 +156,11 @@ Todos os itens abaixo estao com **STATUS: ABERTO** por solicitacao, para voce de
   - append continuo em [observabilidade_service.py](c:/Users/anderson.dossantos/Desktop/dev/contact-orchestration-pipeline/src/services/observabilidade_service.py:133)
 - Risco: crescimento indefinido do arquivo de historico.
 - Sugestao: implementar rotacao por tamanho ou por data.
-- STATUS: ABERTO
+- Progresso:
+  - historico passou a rotacionar por trimestre automaticamente (`YYYY_Qn`) mantendo arquivo separado por janela de 3 meses;
+  - escrita continua em JSONL por append, mas agora limitada ao arquivo do trimestre corrente;
+  - testes unitarios adicionados para validacao do nome rotacionado e persistencia no arquivo trimestral.
+- STATUS: CONCLUIDO (10/03/2026)
 
 ### RT-010 - Estrategia de limpeza textual ainda centrada em `apply`
 - Categoria: performance / refatoracao

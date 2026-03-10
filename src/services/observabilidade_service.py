@@ -98,15 +98,28 @@ def _coletar_metricas_por_etapa(resultado):
     return None
 
 
+def _identificador_trimestre(data_referencia):
+    trimestre = ((data_referencia.month - 1) // 3) + 1
+    return f'{data_referencia.year}_Q{trimestre}'
+
+
+def _resolver_arquivo_historico_trimestral(arquivo_historico, data_referencia):
+    caminho = Path(arquivo_historico)
+    identificador = _identificador_trimestre(data_referencia)
+    nome_rotacionado = f'{caminho.stem}_{identificador}{caminho.suffix}'
+    return caminho.with_name(nome_rotacionado)
+
+
 def registrar_historico_execucao(resultado, modo, arquivo_historico=ARQUIVO_HISTORICO_EXECUCOES):
     if not isinstance(resultado, dict):
         return None
 
-    caminho = Path(arquivo_historico)
+    timestamp_execucao = datetime.now()
+    caminho = _resolver_arquivo_historico_trimestral(arquivo_historico, timestamp_execucao)
     caminho.parent.mkdir(parents=True, exist_ok=True)
 
     payload = {
-        'timestamp': datetime.now().isoformat(),
+        'timestamp': timestamp_execucao.isoformat(),
         'modo': modo,
         'ok': _to_bool(resultado.get('ok')),
         'codigo_erro': resultado.get('codigo_erro'),
