@@ -121,7 +121,11 @@ Todos os itens abaixo estao com **STATUS: ABERTO** por solicitacao, para voce de
   - [finalizacao_service.py](c:/Users/anderson.dossantos/Desktop/dev/contact-orchestration-pipeline/src/services/finalizacao_service.py:6) usa `import *`
 - Risco: namespace opaco, baixa rastreabilidade e comportamento implicito.
 - Sugestao: deprecar formalmente o modulo ou substituir por reexports explicitos.
-- STATUS: ABERTO
+- Progresso:
+  - modulo de compatibilidade `finalizacao_service` marcado como deprecado de forma explicita no docstring;
+  - `import *` removido e substituido por reexports nominais com `__all__` para contrato publico rastreavel;
+  - compatibilidade retroativa preservada durante janela de migracao.
+- STATUS: CONCLUIDO (10/03/2026)
 
 ### RT-007 - Duplicacao em `.gitignore`
 - Categoria: padronizacao / limpeza
