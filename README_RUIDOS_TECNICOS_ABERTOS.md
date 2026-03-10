@@ -96,7 +96,11 @@ Todos os itens abaixo estao com **STATUS: ABERTO** por solicitacao, para voce de
     - `src/pipelines/internacao_eletivo_status_pipeline.py`
 - Risco: custo alto de manutencao e risco de drift entre fluxos teoricamente equivalentes.
 - Sugestao: extrair pipeline parametrizado por contexto (defaults, logger, arquivos e regras).
-- STATUS: ABERTO
+- Progresso:
+  - extraido modulo base compartilhado para comportamento comum de criacao de dataset/status:
+    - `src/pipelines/contexto_status_pipeline_base.py`;
+  - pipelines de `complicacao` e `internacao_eletivo` passaram a reutilizar o nucleo comum sem perder entradas/decisoes individuais.
+- STATUS: CONCLUIDO (10/03/2026)
 
 ### RT-005 - Funcoes monoliticas longas
 - Categoria: refatoracao
