@@ -89,7 +89,9 @@ def _normalizar_status_para_contagens(df_status_full):
     if col_resposta not in df_status.columns:
         df_status[col_resposta] = ''
 
-    df_status['Contato'] = normalizar_texto_serie(df_status.get('Contato', pd.Series(dtype=str)))
+    df_status['Contato'] = normalizar_texto_serie(
+        df_status.get('Contato', pd.Series(dtype=str))
+    ).apply(simplificar_texto)
     df_status['Telefone'] = normalizar_texto_serie(df_status.get('Telefone', pd.Series(dtype=str))).apply(
         normalizar_telefone
     )
@@ -122,7 +124,9 @@ def aplicar_contagens_status(df_saida, df_status_full):
 
     df_base = df_saida.copy()
     df_base['__ROW_ID'] = df_base.index
-    df_base['__CHAVE_STATUS_NORM'] = normalizar_texto_serie(df_base['CHAVE STATUS'])
+    df_base['__CHAVE_STATUS_NORM'] = normalizar_texto_serie(df_base['CHAVE STATUS']).apply(
+        simplificar_texto
+    )
     # Contagem por CHAVE STATUS (sem depender de TELEFONE ENVIADO)
     df_join_chave = df_base.merge(
         df_status[colunas_status_join],
