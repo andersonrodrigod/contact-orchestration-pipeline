@@ -109,7 +109,11 @@ Todos os itens abaixo estao com **STATUS: ABERTO** por solicitacao, para voce de
   - [ingestao_service.py](c:/Users/anderson.dossantos/Desktop/dev/contact-orchestration-pipeline/src/services/ingestao_service.py:489) `executar_ingestao_unificar` (~144 linhas)
 - Risco: baixa legibilidade, testes mais dificeis e maior chance de regressao.
 - Sugestao: quebrar por etapas puras (leitura, padronizacao, validacao, persistencia).
-- STATUS: ABERTO
+- Progresso:
+  - extraidos helpers internos em `ingestao_service.py` para separar leitura, validacao de origem, padronizacao, normalizacao de tipos/qualidade e montagem de resultado;
+  - fluxo XLSX de `executar_ingestao_unificar` isolado em helper dedicado, reduzindo acoplamento na funcao principal;
+  - comportamento mantido com validacao final em testes focados (`28` testes).
+- STATUS: CONCLUIDO (10/03/2026)
 
 ### RT-006 - Modulo de compatibilidade com wildcard import
 - Categoria: inutilidade / padronizacao
