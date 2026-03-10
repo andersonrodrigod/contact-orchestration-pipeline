@@ -89,7 +89,7 @@ def _normalizar_status_para_contagens(df_status_full):
     df_status = normalizar_coluna_resposta(
         df_status,
         criar_vazia=True,
-        remover_alias=False,
+        remover_alias=True,
     )
 
     df_status['Contato'] = normalizar_texto_serie(

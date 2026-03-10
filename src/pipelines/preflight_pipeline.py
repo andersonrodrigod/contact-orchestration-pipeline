@@ -16,12 +16,13 @@ from src.services.validacao_service import (
     validar_colunas_origem_dataset_complicacao,
     validar_colunas_origem_para_padronizacao,
 )
+from src.services.schema_resposta_service import COLUNA_DATA_ATENDIMENTO_CANONICA
 from src.utils.arquivos import ler_arquivo_csv, validar_arquivos_existem
 
 
 def _coluna_data_resposta(df_status_resposta):
-    if 'DT_ATENDIMENTO' in df_status_resposta.columns:
-        return 'DT_ATENDIMENTO'
+    if COLUNA_DATA_ATENDIMENTO_CANONICA in df_status_resposta.columns:
+        return COLUNA_DATA_ATENDIMENTO_CANONICA
     if 'dat_atendimento' in df_status_resposta.columns:
         return 'dat_atendimento'
     return None

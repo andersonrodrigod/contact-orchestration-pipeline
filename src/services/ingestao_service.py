@@ -18,6 +18,7 @@ from src.services.padronizacao_service import (
     padronizar_colunas_status,
     padronizar_colunas_status_resposta,
 )
+from src.services.schema_resposta_service import garantir_contrato_resposta_canonica
 from src.services.validacao_service import (
     validar_colunas_origem_para_padronizacao,
     validar_padronizacao_colunas_data,
@@ -54,7 +55,7 @@ def _mensagem_alerta_nat(coluna, percentual, quantidade, total):
 
 
 COLUNAS_TEXTO_ALVO_STATUS = ['HSM', 'Status', 'Respondido', 'RESPOSTA']
-COLUNAS_TEXTO_ALVO_STATUS_RESPOSTA = ['HSM', 'Status', 'Respondido', 'RESPOSTA', 'resposta']
+COLUNAS_TEXTO_ALVO_STATUS_RESPOSTA = ['HSM', 'Status', 'Respondido', 'resposta']
 
 
 def executar_normalizacao_padronizacao(
@@ -128,6 +129,10 @@ def executar_normalizacao_padronizacao(
         logger.info('PADRONIZACAO', 'Padronizando nomes de colunas')
         df_status = padronizar_colunas_status(df_status)
         df_status_resposta = padronizar_colunas_status_resposta(df_status_resposta)
+        garantir_contrato_resposta_canonica(
+            df_status_resposta,
+            contexto='ingestao.status_resposta_pos_padronizacao',
+        )
 
         etapa_atual = 'NORMALIZACAO_TIPOS'
         logger.info('NORMALIZACAO', 'Convertendo tipos de colunas')

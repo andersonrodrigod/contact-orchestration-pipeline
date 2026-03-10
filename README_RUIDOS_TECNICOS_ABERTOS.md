@@ -36,7 +36,14 @@ Todos os itens abaixo estao com **STATUS: ABERTO** por solicitacao, para voce de
       - mapear pontos internos que ainda aceitam alias legado;
       - remover dependencia de alias fora da borda de integracao;
       - adicionar validacao de contrato apos padronizacao.
-    - STATUS: EM_EXECUCAO.
+    - Progresso inicial (10/03/2026):
+      - validacao explicita de contrato canonico adicionada apos padronizacao na ingestao;
+      - concatenacao de status_resposta passou a falhar cedo se contrato canonico nao for respeitado;
+      - metricas internas passaram a remover aliases legados apos normalizacao.
+    - Fechamento (10/03/2026):
+      - carregamento de status integrado no dataset passou a canonizar `resposta` antes de qualquer lookup interno;
+      - enriquecimento de dataset deixou de depender de `RESPOSTA` internamente e manteve `RESPOSTA` apenas na projecao final de saida.
+    - STATUS: CONCLUIDA (10/03/2026).
   - Fase E (deprecacao controlada de alias legado):
     - Objetivo: preparar remocao segura do suporte a `Resposta`/`RESPOSTA` na ingestao.
     - Inicio: 10/03/2026.
@@ -44,8 +51,17 @@ Todos os itens abaixo estao com **STATUS: ABERTO** por solicitacao, para voce de
       - definir janela de deprecacao e criterio de corte (sem warning por X ciclos);
       - incluir flag de modo estrito para falhar quando chegar alias legado;
       - documentar plano de rollback.
-    - STATUS: EM_EXECUCAO.
-- STATUS: EM_EXECUCAO
+    - Fechamento (10/03/2026):
+      - janela de deprecacao padrao definida em `3` ciclos via `JANELA_CORTE_ALIAS_RESPOSTA_CICLOS`;
+      - criterio de corte formalizado: `0` warning de alias legado por `X` ciclos consecutivos;
+      - flag de modo estrito implementada via `MODO_ESTRITO_ALIAS_RESPOSTA` (ou parametro) para bloquear ingestao quando chegar `Resposta`/`RESPOSTA`;
+      - metricas de ciclo adicionadas ao resultado e historico: `warnings_alias_resposta_legado`, `modo_estrito_alias_resposta`, `janela_corte_alias_resposta_ciclos`.
+    - Plano de rollback:
+      - desativar modo estrito (`MODO_ESTRITO_ALIAS_RESPOSTA=0`) para voltar a aceitar alias legado temporariamente;
+      - manter observacao dos warnings ate estabilizar em `0` por `X` ciclos;
+      - reativar modo estrito apos correcao das fontes legadas.
+    - STATUS: CONCLUIDA (10/03/2026).
+- STATUS: CONCLUIDO (10/03/2026)
 
 ### RT-002 - Ambiguidade de nome de data de atendimento
 - Categoria: padronizacao / ambiguidade
@@ -55,7 +71,11 @@ Todos os itens abaixo estao com **STATUS: ABERTO** por solicitacao, para voce de
   - rename em [padronizacao_service.py](c:/Users/anderson.dossantos/Desktop/dev/contact-orchestration-pipeline/src/services/padronizacao_service.py:36)
 - Risco: lógica espalhada em varios pontos para o mesmo problema.
 - Sugestao: centralizar resolucao de alias de colunas em um unico utilitario de schema.
-- STATUS: ABERTO
+- Progresso:
+  - resolucao de alias centralizada no utilitario de schema para `DT_ATENDIMENTO`/`dat_atendimento`;
+  - validacao e preflight passaram a reutilizar o mesmo ponto de verdade para detectar a coluna de atendimento;
+  - modo estrito opcional adicionado via `MODO_ESTRITO_DATA_ATENDIMENTO`, mantendo compatibilidade por padrao.
+- STATUS: CONCLUIDO (10/03/2026)
 
 ### RT-003 - Compatibilidade com typo historico de coluna
 - Categoria: padronizacao / legado

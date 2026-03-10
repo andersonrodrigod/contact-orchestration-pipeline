@@ -23,6 +23,7 @@ from src.services.padronizacao_service import (
     padronizar_colunas_status,
     padronizar_colunas_status_resposta,
 )
+from src.services.schema_resposta_service import garantir_contrato_resposta_canonica
 from src.services.validacao_service import (
     validar_colunas_minimas_status_concatenacao,
     validar_colunas_minimas_status_resposta,
@@ -411,6 +412,20 @@ def concatenar_status_resposta_eletivo_internacao(
 
     df_concatenado = pd.concat([df_eletivo, df_internacao], ignore_index=True)
     df_concatenado = padronizar_colunas_status_resposta(df_concatenado)
+    try:
+        garantir_contrato_resposta_canonica(
+            df_concatenado,
+            contexto='dataset.concatenacao_status_resposta',
+        )
+    except ValueError as erro_contrato:
+        return {
+            'ok': False,
+            'mensagens': [str(erro_contrato)],
+            'total_eletivo': total_eletivo,
+            'total_internacao': total_internacao,
+            'total_concatenado': 0,
+            'codigo_erro': ERRO_CONCATENACAO,
+        }
     salvar_dataframe(df_concatenado, arquivo_saida)
     total_concatenado = len(df_concatenado)
 

@@ -163,6 +163,53 @@ class PreflightPipelineTests(unittest.TestCase):
         finally:
             self._limpar_pasta_tmp_teste(base)
 
+    def test_preflight_aceita_alias_legado_dat_atendimento_em_modo_compativel(self):
+        base = self._criar_pasta_tmp_teste()
+        try:
+            arq_status = base / 'status.csv'
+            arq_resposta = base / 'status_resposta.csv'
+            arq_dataset = base / 'dataset.csv'
+
+            df_status = pd.DataFrame(
+                [
+                    {
+                        'Data agendamento': '01/01/2026',
+                        'HSM': 'Pesquisa Complicacoes Cirurgicas',
+                        'Status': 'ENVIADA',
+                        'Respondido': 'NAO',
+                        'Contato': 'usuario_1',
+                        'Telefone': '11999999999',
+                    }
+                ]
+            )
+            df_resposta = pd.DataFrame(
+                [
+                    {
+                        'nom_contato': 'usuario_1',
+                        'dat_atendimento': '01/01/2026',
+                        'resposta': '',
+                    }
+                ]
+            )
+            df_dataset = _dataset_origem_minimo()
+
+            _salvar_csv(df_status, arq_status)
+            _salvar_csv(df_resposta, arq_resposta)
+            _salvar_csv(df_dataset, arq_dataset)
+
+            resultado = run_preflight_pipeline(
+                contexto='complicacao',
+                arquivo_status=str(arq_status),
+                arquivo_status_resposta=str(arq_resposta),
+                arquivo_dataset_origem=str(arq_dataset),
+                limiar_nat_data=30.0,
+                nome_logger='test_preflight_alias_data_ok',
+            )
+
+            self.assertTrue(resultado.get('ok'))
+        finally:
+            self._limpar_pasta_tmp_teste(base)
+
 
 if __name__ == '__main__':
     unittest.main()

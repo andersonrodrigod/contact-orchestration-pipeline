@@ -2,7 +2,12 @@ import os
 import unittest
 from unittest.mock import patch
 
-from src.config.governanca_config import resolver_limiar_nat_data
+from src.config.governanca_config import (
+    resolver_janela_corte_alias_resposta,
+    resolver_limiar_nat_data,
+    resolver_modo_estrito_data_atendimento,
+    resolver_modo_estrito_alias_resposta,
+)
 
 
 class GovernancaConfigTests(unittest.TestCase):
@@ -26,6 +31,29 @@ class GovernancaConfigTests(unittest.TestCase):
         )
         self.assertEqual(limiar, 30.0)
         self.assertEqual(origem, 'override_parametro_bloqueado')
+
+    @patch.dict(os.environ, {'MODO_ESTRITO_ALIAS_RESPOSTA': '1'}, clear=False)
+    def test_resolver_modo_estrito_alias_resposta_por_env(self):
+        modo, origem = resolver_modo_estrito_alias_resposta()
+        self.assertTrue(modo)
+        self.assertEqual(origem, 'env_ou_default')
+
+    def test_resolver_modo_estrito_alias_resposta_por_parametro(self):
+        modo, origem = resolver_modo_estrito_alias_resposta(False)
+        self.assertFalse(modo)
+        self.assertEqual(origem, 'parametro')
+
+    @patch.dict(os.environ, {'JANELA_CORTE_ALIAS_RESPOSTA_CICLOS': '5'}, clear=False)
+    def test_resolver_janela_corte_alias_resposta_por_env(self):
+        janela, origem = resolver_janela_corte_alias_resposta()
+        self.assertEqual(janela, 5)
+        self.assertEqual(origem, 'env')
+
+    @patch.dict(os.environ, {'MODO_ESTRITO_DATA_ATENDIMENTO': '1'}, clear=False)
+    def test_resolver_modo_estrito_data_atendimento_por_env(self):
+        modo, origem = resolver_modo_estrito_data_atendimento()
+        self.assertTrue(modo)
+        self.assertEqual(origem, 'env_ou_default')
 
 
 if __name__ == '__main__':
