@@ -1,9 +1,6 @@
-import re
-import unicodedata
-
 import pandas as pd
 
-from src.services.normalizacao_services import corrigir_texto_bugado
+from src.services.normalizacao_services import corrigir_texto_bugado, normalizar_chave_texto
 
 
 def normalizar_texto_serie(serie):
@@ -32,10 +29,5 @@ def limpar_coluna_texto(df, coluna):
 
 
 def simplificar_texto(valor):
-    texto = limpar_valor_texto(valor).lower()
-    texto = ''.join(
-        caractere for caractere in unicodedata.normalize('NFKD', texto)
-        if not unicodedata.combining(caractere)
-    )
-    texto = re.sub(r'\s+', ' ', texto).strip()
-    return texto
+    texto = limpar_valor_texto(valor)
+    return normalizar_chave_texto(texto)

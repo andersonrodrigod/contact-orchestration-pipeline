@@ -1,0 +1,19 @@
+{
+  "arquivo": "src/data/arquivo_limpo/status_complicacao.csv",
+  "linhas": 36782,
+  "status_normalizado": {
+    "lida": 16200,
+    "mensagem nao pode ser entregue": 8267,
+    "entregue": 6645,
+    "a meta decidiu nao entregar a mensagem": 4122,
+    "numero e parte de um experimento": 916,
+    "enviada": 602,
+    "usuario decidiu nao receber mkt messages": 30
+  },
+  "resposta_em_status_normalizado": {
+    "sem resposta": 24654,
+    "sim": 11051,
+    "nao": 894,
+    "resposta invalida ou automatica": 183
+  }
+}

@@ -1,43 +1,62 @@
 ﻿# README_AJUSTES_NORMALIZACAO
 
 ## Objetivo
-Consolidar os ajustes aplicados para reduzir falhas de encoding/acentuacao em comparacoes de texto (HSM, status e mensagens), e registrar o que ficou para continuacao.
+Padronizar o projeto para comparacoes textuais sem acento/til (chave canonica), reduzindo falhas por encoding e variacao de escrita, sem quebrar os fluxos atuais.
 
-## Ajustes aplicados
+## Diretriz central
+1. Regras internas de negocio/comparacao devem usar texto canonico sem acento/til.
+2. Exibicao final pode manter acento, mas nao deve dirigir regras de processamento.
 
-1. Refatoracao da normalizacao canonica em `src/services/normalizacao_services.py`
-- `_chave_canonica_texto`: gera chave simplificada para comparacao (minusculo, sem acento, apenas caracteres relevantes).
-- `_normalizar_fragmentos_quebrados_chave`: reconstrucao de fragmentos quebrados por encoding ruim (ex.: `n mero`, `usu rio`, `n o`, `complica es`).
-- `_normalizar_frases_canonicas`: mapeamento canonico deterministico para frases criticas e fallback controlado.
-- `corrigir_texto_bugado`: centraliza trocas legadas + tentativa de redecodificacao + normalizacao canonica.
+## Plano de execucao seguro
 
-2. Remocao de fallback ad-hoc no filtro de HSM em `src/services/integracao_service.py`
-- Mantido filtro por normalizacao de texto (`simplificar_texto`) sem heuristica ampla por `contains`.
+### Etapa 1 - Definir padrao oficial
+1. Estabelecer contrato de normalizacao textual para toda comparacao:
+   - limpar ruido
+   - minusculo
+   - sem acento/til
+   - espacos normalizados
+2. Documentar esse contrato e evitar comparacao com texto bruto.
 
-3. Testes adicionados
-- `tests/test_normalizacao_frases.py` cobrindo casos criticos:
-  - `Pesquisa Complica��es Cirurgicas`
-  - `N�mero � parte de um experimento`
-  - `Usu�rio decidiu não receber MKT messages`
-  - `N�o`
+### Etapa 2 - Centralizar normalizacao
+1. Manter uma unica funcao central para chave canonica em `normalizacao_services`/`texto_service`.
+2. Garantir que filtros e mapas dependam dessa camada unica.
+3. Evitar regras duplicadas espalhadas em modulos diferentes.
 
-## Validacao executada
-- `python -m unittest discover -s tests -p "test_*.py"`
-- Resultado: `OK (16 testes)`
+### Etapa 3 - Mapear pontos de aplicacao
+Aplicar a chave canonica, no minimo, em:
+1. Filtros de HSM na integracao.
+2. Mapeamento de `STATUS_COLUNAS`.
+3. Regras de `RESPOSTA` (sim/nao/sem resposta).
+4. Regras de orquestracao que dependem de texto.
 
-- Execucao real:
-  - `python main.py --modo complicacao`
-  - Resultado: `OK=True` (pipeline finalizado com sucesso)
+### Etapa 4 - Criar baseline antes da mudanca
+Gerar referencia numerica para comparacao em testes:
+1. Distribuicao de `Status` (bruto e normalizado).
+2. Distribuicao de `RESPOSTA` (bruto e normalizado).
+3. `total_status`, `com_match`, `sem_match`.
+4. Totais finais por `PROCESSO` e `ACAO`.
 
-## Pendencias para amanha
-1. Revisar e reduzir o dicionario de trocas fixas em `corrigir_texto_bugado` para manter apenas o necessario.
-2. Padronizar regra de normalizacao por dominio (HSM, Status, Resposta) para evitar divergencia futura.
-3. Adicionar observabilidade opcional de valores nao mapeados (log/contador) para facilitar manutencao.
-4. Decidir se a camada de exibicao deve preservar acentos em todos os campos ou somente nos campos visiveis ao usuario.
+Salvar baseline em arquivos dedicados (exemplo):
+- `tests/baseline/status_baseline.json`
+- `tests/baseline/status_resposta_baseline.json`
 
-## Observacao de seguranca
-- A estrategia atual privilegia robustez de comparacao sem alterar a estrutura do pipeline.
-- Qualquer nova refatoracao deve continuar validando:
-  - testes automatizados,
-  - modo `complicacao`,
-  - e filtros de HSM.
+### Etapa 5 - Implementar em blocos pequenos
+1. Bloco A: normalizacao central + testes unitarios.
+2. Bloco B: integracao com `dataset_metricas_service`.
+3. Bloco C: integracao com filtro de HSM e resposta.
+4. Bloco D: validacao de pipelines principais.
+
+### Etapa 6 - Testes obrigatorios de regressao
+1. Unitarios: casos de texto quebrado e variacoes de acento/til.
+2. Integracao: mapeamento de status/resposta.
+3. Smoke: modos principais (`complicacao`, `internacao_eletivo`).
+4. Regra de aceite: diferenca de metrica so e aceita com explicacao documentada.
+
+## Critérios de aceite
+1. Nenhum modo principal deve quebrar apos a migracao.
+2. Contagens chave devem manter consistencia com baseline (salvo mudanca esperada).
+3. Logs devem permitir rastrear valores nao mapeados.
+
+## Proxima acao recomendada
+1. Gerar baseline atual de `Status` e `RESPOSTA` antes de qualquer nova refatoracao.
+2. Iniciar Bloco A com testes automatizados primeiro.

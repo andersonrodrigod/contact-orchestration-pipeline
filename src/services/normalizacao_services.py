@@ -30,6 +30,18 @@ def _normalizar_fragmentos_quebrados_chave(chave):
     return saida
 
 
+def normalizar_chave_texto(valor):
+    if pd.isna(valor):
+        return ''
+    texto = str(valor).strip()
+    if texto == '':
+        return ''
+    texto = corrigir_texto_bugado(texto)
+    chave = _chave_canonica_texto(texto)
+    chave = _normalizar_fragmentos_quebrados_chave(chave)
+    return chave
+
+
 def _normalizar_frases_canonicas(texto):
     chave = _chave_canonica_texto(texto)
     chave = _normalizar_fragmentos_quebrados_chave(chave)
