@@ -11,8 +11,10 @@ from src.pipelines.join_status_resposta_pipeline import (
     run_unificar_status_resposta_complicacao_pipeline,
 )
 from src.services.analise_dados_fase1_service import gerar_analise_dados_fase1_csv
+from src.services.analise_dados_fase2_service import gerar_analise_dados_fase2_csv
 from src.services.dataset_service import criar_dataset_complicacao
 from src.services.ingestao_service import executar_ingestao_complicacao, executar_ingestao_somente_status
+from src.services.resumo_complicacao_service import gerar_resumo_complicacao_csv
 
 
 def run_complicacao_pipeline_enviar_status_com_resposta(
@@ -23,7 +25,7 @@ def run_complicacao_pipeline_enviar_status_com_resposta(
     saida_status=CONTEXTO_PIPELINE_COMPLICACAO.defaults['saida_status'],
     saida_status_resposta=CONTEXTO_PIPELINE_COMPLICACAO.defaults['saida_status_resposta'],
     saida_status_integrado=CONTEXTO_PIPELINE_COMPLICACAO.defaults['saida_status_integrado'],
-    raiz_analise_dados='src/data/analise_dados',
+    raiz_analise_dados='src/data/analise_dados/complicacao',
     nome_execucao_analise=None,
     executar_xlsx_adicional=False,
     logger=None,
@@ -90,7 +92,7 @@ def run_complicacao_pipeline_enviar_status_com_resposta(
         sem_match=resultado_integracao.get('sem_match', 0),
         raiz_analise=raiz_analise_dados,
         nome_execucao=nome_execucao_analise,
-        nome_processo='unificar_status_e_status_resposta',
+        nome_processo='uniao_status_resposta',
         respostas_canonicas=['Sim', 'Nao', 'Sem resposta'],
     )
     logger.info(
@@ -237,6 +239,8 @@ def run_complicacao_pipeline_gerar_status_dataset(
     saida_status_resposta=CONTEXTO_PIPELINE_COMPLICACAO.defaults['saida_status_resposta'],
     saida_status_integrado=CONTEXTO_PIPELINE_COMPLICACAO.defaults['saida_status_integrado'],
     saida_dataset_status=CONTEXTO_PIPELINE_COMPLICACAO.defaults['saida_dataset_status'],
+    raiz_analise_dados='src/data/analise_dados/complicacao',
+    nome_execucao_analise_fase2=None,
 ):
     logger = PipelineLogger(nome_pipeline=CONTEXTO_PIPELINE_COMPLICACAO.logger_status_com_resposta)
     resultado_status = run_complicacao_pipeline_enviar_status_com_resposta(
@@ -245,6 +249,7 @@ def run_complicacao_pipeline_gerar_status_dataset(
         saida_status=saida_status,
         saida_status_resposta=saida_status_resposta,
         saida_status_integrado=saida_status_integrado,
+        raiz_analise_dados=raiz_analise_dados,
         logger=logger,
     )
     if not resultado_status.get('ok'):
@@ -264,16 +269,52 @@ def run_complicacao_pipeline_gerar_status_dataset(
         logger.finalizar('FALHA')
         return resultado_dataset
 
+    resultado_resumo_complicacao = gerar_resumo_complicacao_csv(
+        arquivo_origem_complicacao=arquivo_dataset_origem_complicacao,
+        raiz_analise=raiz_analise_dados,
+    )
+    logger.info(
+        'ANALISE_DADOS',
+        'Resumo complicacao gerado em: '
+        f"{resultado_resumo_complicacao.get('pasta_saida', '')}",
+    )
+    for mensagem in resultado_resumo_complicacao.get('mensagens', []):
+        logger.warning('ANALISE_DADOS', mensagem)
+
+    resultado_analise_fase2 = gerar_analise_dados_fase2_csv(
+        arquivo_dataset_status=saida_dataset_status,
+        raiz_analise=raiz_analise_dados,
+        nome_execucao=nome_execucao_analise_fase2,
+        nome_processo='envio_status',
+    )
+    logger.info(
+        'ANALISE_DADOS',
+        f"CSVs da Fase 2 gerados em: {resultado_analise_fase2.get('pasta_saida', '')}",
+    )
+
     metricas_por_etapa = {
         **resultado_status.get('metricas_por_etapa', {}),
         'criacao_dataset_status': {
             'total_linhas': resultado_dataset.get('total_linhas', 0),
+        },
+        'resumo_complicacao': {
+            'pasta_analise': resultado_resumo_complicacao.get('pasta_saida', ''),
+            'arquivos_gerados': resultado_resumo_complicacao.get('arquivos_gerados', []),
+        },
+        'envio_status_metricas': {
+            'pasta_analise_dados_fase2': resultado_analise_fase2.get('pasta_saida', ''),
         },
     }
     resultado = ok_result(
         mensagens=(
             resultado_status.get('mensagens', [])
             + resultado_dataset.get('mensagens', [])
+            + resultado_resumo_complicacao.get('mensagens', [])
+            + [
+                'Resumo complicacao gerado em: '
+                f"{resultado_resumo_complicacao.get('pasta_saida', '')}",
+                f"Analise de dados Fase 2 gerada em: {resultado_analise_fase2.get('pasta_saida', '')}",
+            ]
         ),
         metricas={
             'total_status': resultado_status.get('total_status', 0),
@@ -296,6 +337,8 @@ def run_complicacao_pipeline_gerar_status_dataset(
         dados={
             'qualidade_data': resultado_status.get('qualidade_data', {}),
             'metricas_por_etapa': metricas_por_etapa,
+            'resumo_complicacao': resultado_resumo_complicacao,
+            'analise_dados_fase2': resultado_analise_fase2,
         },
     )
     logger.finalizar('SUCESSO')
@@ -310,6 +353,8 @@ def run_complicacao_pipeline_gerar_status_dataset_somente_status(
     saida_status=CONTEXTO_PIPELINE_COMPLICACAO.defaults['saida_status'],
     saida_status_integrado=CONTEXTO_PIPELINE_COMPLICACAO.defaults['saida_status_integrado'],
     saida_dataset_status=CONTEXTO_PIPELINE_COMPLICACAO.defaults['saida_dataset_status'],
+    raiz_analise_dados='src/data/analise_dados/complicacao',
+    nome_execucao_analise_fase2=None,
 ):
     logger = PipelineLogger(nome_pipeline=CONTEXTO_PIPELINE_COMPLICACAO.logger_status_somente_status)
     resultado_status = run_complicacao_pipeline_enviar_status_somente_status(
@@ -335,16 +380,52 @@ def run_complicacao_pipeline_gerar_status_dataset_somente_status(
         logger.finalizar('FALHA')
         return resultado_dataset
 
+    resultado_resumo_complicacao = gerar_resumo_complicacao_csv(
+        arquivo_origem_complicacao=arquivo_dataset_origem_complicacao,
+        raiz_analise=raiz_analise_dados,
+    )
+    logger.info(
+        'ANALISE_DADOS',
+        'Resumo complicacao gerado em: '
+        f"{resultado_resumo_complicacao.get('pasta_saida', '')}",
+    )
+    for mensagem in resultado_resumo_complicacao.get('mensagens', []):
+        logger.warning('ANALISE_DADOS', mensagem)
+
+    resultado_analise_fase2 = gerar_analise_dados_fase2_csv(
+        arquivo_dataset_status=saida_dataset_status,
+        raiz_analise=raiz_analise_dados,
+        nome_execucao=nome_execucao_analise_fase2,
+        nome_processo='envio_status',
+    )
+    logger.info(
+        'ANALISE_DADOS',
+        f"CSVs da Fase 2 gerados em: {resultado_analise_fase2.get('pasta_saida', '')}",
+    )
+
     metricas_por_etapa = {
         **resultado_status.get('metricas_por_etapa', {}),
         'criacao_dataset_status': {
             'total_linhas': resultado_dataset.get('total_linhas', 0),
+        },
+        'resumo_complicacao': {
+            'pasta_analise': resultado_resumo_complicacao.get('pasta_saida', ''),
+            'arquivos_gerados': resultado_resumo_complicacao.get('arquivos_gerados', []),
+        },
+        'envio_status_metricas': {
+            'pasta_analise_dados_fase2': resultado_analise_fase2.get('pasta_saida', ''),
         },
     }
     resultado = ok_result(
         mensagens=(
             resultado_status.get('mensagens', [])
             + resultado_dataset.get('mensagens', [])
+            + resultado_resumo_complicacao.get('mensagens', [])
+            + [
+                'Resumo complicacao gerado em: '
+                f"{resultado_resumo_complicacao.get('pasta_saida', '')}",
+                f"Analise de dados Fase 2 gerada em: {resultado_analise_fase2.get('pasta_saida', '')}",
+            ]
         ),
         metricas={
             'total_status': resultado_status.get('total_status', 0),
@@ -367,6 +448,8 @@ def run_complicacao_pipeline_gerar_status_dataset_somente_status(
         dados={
             'qualidade_data': resultado_status.get('qualidade_data', {}),
             'metricas_por_etapa': metricas_por_etapa,
+            'resumo_complicacao': resultado_resumo_complicacao,
+            'analise_dados_fase2': resultado_analise_fase2,
         },
     )
     logger.finalizar('SUCESSO')

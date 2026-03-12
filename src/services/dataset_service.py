@@ -587,9 +587,8 @@ def criar_dataset_complicacao(
             }
 
         etapa_atual = 'SEPARACAO_DUPLICADOS'
-        mask_duplicados = df.duplicated(subset=['COD USUARIO'], keep=False)
-        df_duplicados = df[mask_duplicados].copy()
-        df_sem_duplicados = df[~mask_duplicados].copy()
+        # Mantem todos os registros na aba usuarios (nao separar mais em usuarios_duplicados).
+        df_sem_duplicados = df.copy()
 
         etapa_atual = 'CARREGAR_STATUS_LOOKUP'
         resultado_status = _carregar_status_para_lookup(arquivo_status_integrado)
@@ -685,31 +684,14 @@ def criar_dataset_complicacao(
         df_usuarios_respondidos = resultado_respondidos['df_enriquecido']
 
         etapa_atual = 'ENRIQUECER_USUARIOS_DUPLICADOS'
-        df_usuarios_duplicados = _montar_df_final_complicacao(df_duplicados)
-        resultado_duplicados = _enriquecer_dataset_com_status(
-            df_usuarios_duplicados,
-            df_status_full,
-            df_status_por_contato,
-            df_status_por_nome_tel,
-            contagens_status_preparadas=contagens_status_preparadas,
-        )
-        if not resultado_duplicados['ok']:
-            return {
-                'ok': False,
-                'mensagens': resultado_duplicados['mensagens'],
-                'total_dataset': resultado_duplicados.get('total_dataset', len(df_duplicados)),
-                'total_match': resultado_duplicados.get('total_match', 0),
-                'total_sem_match': resultado_duplicados.get('total_sem_match', 0),
-                'codigo_erro': resultado_duplicados.get('codigo_erro', ERRO_CRIACAO_DATASET),
-            }
-        df_usuarios_duplicados = resultado_duplicados['df_enriquecido']
+        # Aba de duplicados foi descontinuada por regra de negocio.
+        df_usuarios_duplicados = pd.DataFrame(columns=COLUNAS_FINAIS_DATASET)
         df_usuarios_resolvidos = pd.DataFrame(columns=COLUNAS_FINAIS_DATASET)
 
         etapa_atual = 'PERSISTENCIA_XLSX'
         with pd.ExcelWriter(arquivo_saida_dataset, engine='openpyxl') as writer:
             df_usuarios.to_excel(writer, sheet_name='usuarios', index=False)
             df_usuarios_respondidos.to_excel(writer, sheet_name='usuarios_respondidos', index=False)
-            df_usuarios_duplicados.to_excel(writer, sheet_name='usuarios_duplicados', index=False)
             df_usuarios_resolvidos.to_excel(writer, sheet_name='usuarios_resolvidos', index=False)
 
         return {

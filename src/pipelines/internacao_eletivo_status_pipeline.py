@@ -10,8 +10,11 @@ from src.pipelines.join_status_resposta_pipeline import (
     run_status_somente_internacao_eletivo_pipeline,
     run_unificar_status_resposta_internacao_eletivo_pipeline,
 )
+from src.services.analise_dados_fase1_service import gerar_analise_dados_fase1_csv
+from src.services.analise_dados_fase2_service import gerar_analise_dados_fase2_csv
 from src.services.dataset_service import criar_dataset_complicacao
 from src.services.ingestao_service import executar_ingestao_somente_status, executar_ingestao_unificar
+from src.services.resumo_internacao_service import gerar_resumo_internacao_csv
 
 
 def run_internacao_eletivo_pipeline_enviar_status_com_resposta(
@@ -28,6 +31,8 @@ def run_internacao_eletivo_pipeline_enviar_status_com_resposta(
     saida_status=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults['saida_status'],
     saida_status_resposta=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults['saida_status_resposta'],
     saida_status_integrado=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults['saida_status_integrado'],
+    raiz_analise_dados='src/data/analise_dados/internacao',
+    nome_execucao_analise=None,
     executar_xlsx_adicional=False,
     logger=None,
 ):
@@ -89,6 +94,22 @@ def run_internacao_eletivo_pipeline_enviar_status_com_resposta(
     elif executar_xlsx_adicional:
         logger.info('MODO_XLSX', 'Arquivos limpos XLSX nao encontrados para integracao adicional.')
 
+    resultado_analise_fase1 = gerar_analise_dados_fase1_csv(
+        arquivo_status=saida_status,
+        arquivo_status_resposta=saida_status_resposta,
+        arquivo_status_integrado=saida_status_integrado,
+        com_match=resultado_integracao.get('com_match', 0),
+        sem_match=resultado_integracao.get('sem_match', 0),
+        raiz_analise=raiz_analise_dados,
+        nome_execucao=nome_execucao_analise,
+        nome_processo='uniao_status_resposta',
+        respostas_canonicas=['OK', 'Nao tenho interesse', 'Sem resposta'],
+    )
+    logger.info(
+        'ANALISE_DADOS',
+        f"CSVs da Fase 1 (internacao) gerados em: {resultado_analise_fase1.get('pasta_saida', '')}",
+    )
+
     metricas_por_etapa = {
         **resultado_ingestao.get('metricas_por_etapa', {}),
         'integracao_status_resposta': {
@@ -101,10 +122,14 @@ def run_internacao_eletivo_pipeline_enviar_status_com_resposta(
             'descartados_resposta_data_invalida': resultado_integracao.get(
                 'descartados_resposta_data_invalida', 0
             ),
+            'pasta_analise_dados_fase1': resultado_analise_fase1.get('pasta_saida', ''),
         },
     }
     resultado = ok_result(
-        mensagens=resultado_integracao.get('mensagens', []),
+        mensagens=resultado_integracao.get('mensagens', [])
+        + [
+            f"Analise de dados Fase 1 gerada em: {resultado_analise_fase1.get('pasta_saida', '')}",
+        ],
         metricas={
             'total_status': resultado_integracao.get('total_status', 0),
             'com_match': resultado_integracao.get('com_match', 0),
@@ -121,10 +146,14 @@ def run_internacao_eletivo_pipeline_enviar_status_com_resposta(
             'pct_nat_dt_atendimento': resultado_ingestao.get('pct_nat_dt_atendimento', 0.0),
             'limiar_nat_data_em_uso': resultado_ingestao.get('limiar_nat_data_em_uso'),
         },
-        arquivos={'arquivo_status_integrado': resultado_integracao.get('arquivo_saida')},
+        arquivos={
+            'arquivo_status_integrado': resultado_integracao.get('arquivo_saida'),
+            'pasta_analise_dados_fase1': resultado_analise_fase1.get('pasta_saida', ''),
+        },
         dados={
             'qualidade_data': resultado_ingestao.get('qualidade_data', {}),
             'metricas_por_etapa': metricas_por_etapa,
+            'analise_dados_fase1': resultado_analise_fase1,
         },
     )
     if not logger_externo:
@@ -226,6 +255,9 @@ def run_internacao_eletivo_pipeline_gerar_status_dataset(
     saida_status_resposta=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults['saida_status_resposta'],
     saida_status_integrado=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults['saida_status_integrado'],
     saida_dataset_status=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults['saida_dataset_status'],
+    raiz_analise_dados='src/data/analise_dados/internacao',
+    nome_execucao_analise_fase1=None,
+    nome_execucao_analise_fase2=None,
 ):
     logger = PipelineLogger(
         nome_pipeline=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.logger_status_com_resposta
@@ -238,6 +270,8 @@ def run_internacao_eletivo_pipeline_gerar_status_dataset(
         saida_status=saida_status,
         saida_status_resposta=saida_status_resposta,
         saida_status_integrado=saida_status_integrado,
+        raiz_analise_dados=raiz_analise_dados,
+        nome_execucao_analise=nome_execucao_analise_fase1,
         logger=logger,
     )
     if not resultado_status.get('ok'):
@@ -257,16 +291,55 @@ def run_internacao_eletivo_pipeline_gerar_status_dataset(
         logger.finalizar('FALHA')
         return resultado_dataset
 
+    resultado_resumo_internacao = gerar_resumo_internacao_csv(
+        arquivo_origem_internacao=arquivo_dataset_origem_internacao,
+        raiz_analise=raiz_analise_dados,
+    )
+    logger.info(
+        'ANALISE_DADOS',
+        'Resumo internacao gerado em: '
+        f"{resultado_resumo_internacao.get('pasta_saida', '')}",
+    )
+    for mensagem in resultado_resumo_internacao.get('mensagens', []):
+        logger.warning('ANALISE_DADOS', mensagem)
+
+    resultado_analise_fase2 = gerar_analise_dados_fase2_csv(
+        arquivo_dataset_status=saida_dataset_status,
+        raiz_analise=raiz_analise_dados,
+        nome_execucao=nome_execucao_analise_fase2,
+        nome_processo='status_enviado',
+    )
+    logger.info(
+        'ANALISE_DADOS',
+        f"CSVs da Fase 2 (internacao) gerados em: {resultado_analise_fase2.get('pasta_saida', '')}",
+    )
+    for mensagem in resultado_analise_fase2.get('mensagens', []):
+        logger.warning('ANALISE_DADOS', mensagem)
+
     metricas_por_etapa = {
         **resultado_status.get('metricas_por_etapa', {}),
         'criacao_dataset_status': {
             'total_linhas': resultado_dataset.get('total_linhas', 0),
+        },
+        'resumo_internacao': {
+            'pasta_analise': resultado_resumo_internacao.get('pasta_saida', ''),
+            'arquivos_gerados': resultado_resumo_internacao.get('arquivos_gerados', []),
+        },
+        'envio_status_metricas': {
+            'pasta_analise_dados_fase2': resultado_analise_fase2.get('pasta_saida', ''),
         },
     }
     resultado = ok_result(
         mensagens=(
             resultado_status.get('mensagens', [])
             + resultado_dataset.get('mensagens', [])
+            + resultado_resumo_internacao.get('mensagens', [])
+            + resultado_analise_fase2.get('mensagens', [])
+            + [
+                'Resumo internacao gerado em: '
+                f"{resultado_resumo_internacao.get('pasta_saida', '')}",
+                f"Analise de dados Fase 2 gerada em: {resultado_analise_fase2.get('pasta_saida', '')}",
+            ]
         ),
         metricas={
             'total_status': resultado_status.get('total_status', 0),
@@ -289,6 +362,8 @@ def run_internacao_eletivo_pipeline_gerar_status_dataset(
         dados={
             'qualidade_data': resultado_status.get('qualidade_data', {}),
             'metricas_por_etapa': metricas_por_etapa,
+            'resumo_internacao': resultado_resumo_internacao,
+            'analise_dados_fase2': resultado_analise_fase2,
         },
     )
     logger.finalizar('SUCESSO')
@@ -303,6 +378,8 @@ def run_internacao_eletivo_pipeline_gerar_status_dataset_somente_status(
     saida_status=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults['saida_status'],
     saida_status_integrado=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults['saida_status_integrado'],
     saida_dataset_status=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults['saida_dataset_status'],
+    raiz_analise_dados='src/data/analise_dados/internacao',
+    nome_execucao_analise_fase2=None,
 ):
     logger = PipelineLogger(
         nome_pipeline=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.logger_status_somente_status
@@ -330,16 +407,55 @@ def run_internacao_eletivo_pipeline_gerar_status_dataset_somente_status(
         logger.finalizar('FALHA')
         return resultado_dataset
 
+    resultado_resumo_internacao = gerar_resumo_internacao_csv(
+        arquivo_origem_internacao=arquivo_dataset_origem_internacao,
+        raiz_analise=raiz_analise_dados,
+    )
+    logger.info(
+        'ANALISE_DADOS',
+        'Resumo internacao gerado em: '
+        f"{resultado_resumo_internacao.get('pasta_saida', '')}",
+    )
+    for mensagem in resultado_resumo_internacao.get('mensagens', []):
+        logger.warning('ANALISE_DADOS', mensagem)
+
+    resultado_analise_fase2 = gerar_analise_dados_fase2_csv(
+        arquivo_dataset_status=saida_dataset_status,
+        raiz_analise=raiz_analise_dados,
+        nome_execucao=nome_execucao_analise_fase2,
+        nome_processo='status_enviado',
+    )
+    logger.info(
+        'ANALISE_DADOS',
+        f"CSVs da Fase 2 (internacao) gerados em: {resultado_analise_fase2.get('pasta_saida', '')}",
+    )
+    for mensagem in resultado_analise_fase2.get('mensagens', []):
+        logger.warning('ANALISE_DADOS', mensagem)
+
     metricas_por_etapa = {
         **resultado_status.get('metricas_por_etapa', {}),
         'criacao_dataset_status': {
             'total_linhas': resultado_dataset.get('total_linhas', 0),
+        },
+        'resumo_internacao': {
+            'pasta_analise': resultado_resumo_internacao.get('pasta_saida', ''),
+            'arquivos_gerados': resultado_resumo_internacao.get('arquivos_gerados', []),
+        },
+        'envio_status_metricas': {
+            'pasta_analise_dados_fase2': resultado_analise_fase2.get('pasta_saida', ''),
         },
     }
     resultado = ok_result(
         mensagens=(
             resultado_status.get('mensagens', [])
             + resultado_dataset.get('mensagens', [])
+            + resultado_resumo_internacao.get('mensagens', [])
+            + resultado_analise_fase2.get('mensagens', [])
+            + [
+                'Resumo internacao gerado em: '
+                f"{resultado_resumo_internacao.get('pasta_saida', '')}",
+                f"Analise de dados Fase 2 gerada em: {resultado_analise_fase2.get('pasta_saida', '')}",
+            ]
         ),
         metricas={
             'total_status': resultado_status.get('total_status', 0),
@@ -362,6 +478,8 @@ def run_internacao_eletivo_pipeline_gerar_status_dataset_somente_status(
         dados={
             'qualidade_data': resultado_status.get('qualidade_data', {}),
             'metricas_por_etapa': metricas_por_etapa,
+            'resumo_internacao': resultado_resumo_internacao,
+            'analise_dados_fase2': resultado_analise_fase2,
         },
     )
     logger.finalizar('SUCESSO')

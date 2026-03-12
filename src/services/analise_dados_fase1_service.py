@@ -8,11 +8,46 @@ from src.utils.arquivos import ler_arquivo_csv, salvar_dataframe
 
 RESPOSTAS_CANONICAS_PADRAO = ['Sim', 'Nao', 'Sem resposta', 'Nao tenho interesse']
 MAPA_RESPOSTAS = {
+    'ok': 'OK',
     'sim': 'Sim',
     'nao': 'Nao',
     'sem resposta': 'Sem resposta',
     'nao tenho interesse': 'Nao tenho interesse',
 }
+MESES_PT_BR = {
+    '01': 'JANEIRO',
+    '02': 'FEVEREIRO',
+    '03': 'MARCO',
+    '04': 'ABRIL',
+    '05': 'MAIO',
+    '06': 'JUNHO',
+    '07': 'JULHO',
+    '08': 'AGOSTO',
+    '09': 'SETEMBRO',
+    '10': 'OUTUBRO',
+    '11': 'NOVEMBRO',
+    '12': 'DEZEMBRO',
+}
+
+
+def _to_int_if_whole(value):
+    try:
+        numero = float(value)
+    except (TypeError, ValueError):
+        return value
+    if pd.isna(numero):
+        return value
+    if numero.is_integer():
+        return int(numero)
+    return numero
+
+
+def _normalizar_df_numerico(df):
+    df_out = df.copy()
+    for coluna in df_out.columns:
+        if pd.api.types.is_numeric_dtype(df_out[coluna]):
+            df_out[coluna] = df_out[coluna].apply(_to_int_if_whole)
+    return df_out
 
 
 def _sanitizar_nome_processo(nome_processo):
@@ -27,6 +62,13 @@ def _resolver_nome_execucao(nome_execucao=None, nome_processo='execucao'):
         return str(nome_execucao).strip()
     prefixo = _sanitizar_nome_processo(nome_processo)
     return f"{prefixo}_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"
+
+
+def _sufixo_dia_mes():
+    agora = datetime.now()
+    dia = agora.strftime('%d')
+    mes = MESES_PT_BR.get(agora.strftime('%m'), agora.strftime('%m'))
+    return f'{dia}_{mes}'
 
 
 def _normalizar_dt_envio(df):
@@ -65,6 +107,7 @@ def _salvar_tabelas_metricas(
     total_lida_por_dt,
     contagem_resposta_lida,
     contagem_resposta_lida_por_dt,
+    sufixo_arquivo,
 ):
     salvar_dataframe(
         pd.DataFrame(
@@ -76,18 +119,24 @@ def _salvar_tabelas_metricas(
                 {'metrica': 'total_status_lida', 'valor': int(total_lida)},
             ]
         ),
-        pasta_saida / 'fase1_resumo_totais.csv',
+        pasta_saida / f'RESUMO_{sufixo_arquivo}.csv',
     )
-    salvar_dataframe(contagem_status, pasta_saida / 'fase1_contagem_status.csv')
-    salvar_dataframe(contagem_status_por_dt, pasta_saida / 'fase1_contagem_status_por_dt_envio.csv')
+    salvar_dataframe(_normalizar_df_numerico(contagem_status), pasta_saida / f'STATUS_{sufixo_arquivo}.csv')
     salvar_dataframe(
-        total_lida_por_dt.rename(columns={'total': 'total_status_lida'}),
-        pasta_saida / 'fase1_total_status_lida_por_dt_envio.csv',
+        _normalizar_df_numerico(contagem_status_por_dt),
+        pasta_saida / f'STATUS_DATA_{sufixo_arquivo}.csv',
     )
-    salvar_dataframe(contagem_resposta_lida, pasta_saida / 'fase1_contagem_resposta_lida.csv')
     salvar_dataframe(
-        contagem_resposta_lida_por_dt,
-        pasta_saida / 'fase1_contagem_resposta_lida_por_dt_envio.csv',
+        _normalizar_df_numerico(total_lida_por_dt.rename(columns={'total': 'total_status_lida'})),
+        pasta_saida / f'LIDA_DATA_{sufixo_arquivo}.csv',
+    )
+    salvar_dataframe(
+        _normalizar_df_numerico(contagem_resposta_lida),
+        pasta_saida / f'RESPOSTA_LIDA_{sufixo_arquivo}.csv',
+    )
+    salvar_dataframe(
+        _normalizar_df_numerico(contagem_resposta_lida_por_dt),
+        pasta_saida / f'RESPOSTA_LIDA_DATA_{sufixo_arquivo}.csv',
     )
 
 
@@ -99,15 +148,14 @@ def gerar_analise_dados_fase1_csv(
     sem_match,
     raiz_analise='src/data/analise_dados',
     nome_execucao=None,
-    nome_processo='unificar_status_e_status_resposta',
+    nome_processo='uniao_status_resposta',
     respostas_canonicas=None,
 ):
-    nome_execucao = _resolver_nome_execucao(
-        nome_execucao=nome_execucao,
-        nome_processo=nome_processo,
-    )
+    # Pasta fixa por processo (sem timestamp); data vai no nome dos arquivos.
+    nome_execucao = (nome_execucao or _sanitizar_nome_processo(nome_processo)).strip()
     if respostas_canonicas is None:
         respostas_canonicas = list(RESPOSTAS_CANONICAS_PADRAO)
+    sufixo_arquivo = _sufixo_dia_mes()
 
     pasta_saida = Path(raiz_analise) / nome_execucao
     pasta_saida.mkdir(parents=True, exist_ok=True)
@@ -186,6 +234,7 @@ def gerar_analise_dados_fase1_csv(
         total_lida_por_dt=total_lida_por_dt,
         contagem_resposta_lida=contagem_resposta_lida,
         contagem_resposta_lida_por_dt=contagem_resposta_lida_por_dt,
+        sufixo_arquivo=sufixo_arquivo,
     )
 
     return {
@@ -193,11 +242,11 @@ def gerar_analise_dados_fase1_csv(
         'nome_execucao': nome_execucao,
         'pasta_saida': str(pasta_saida),
         'arquivos_gerados': [
-            str(pasta_saida / 'fase1_resumo_totais.csv'),
-            str(pasta_saida / 'fase1_contagem_status.csv'),
-            str(pasta_saida / 'fase1_contagem_status_por_dt_envio.csv'),
-            str(pasta_saida / 'fase1_total_status_lida_por_dt_envio.csv'),
-            str(pasta_saida / 'fase1_contagem_resposta_lida.csv'),
-            str(pasta_saida / 'fase1_contagem_resposta_lida_por_dt_envio.csv'),
+            str(pasta_saida / f'RESUMO_{sufixo_arquivo}.csv'),
+            str(pasta_saida / f'STATUS_{sufixo_arquivo}.csv'),
+            str(pasta_saida / f'STATUS_DATA_{sufixo_arquivo}.csv'),
+            str(pasta_saida / f'LIDA_DATA_{sufixo_arquivo}.csv'),
+            str(pasta_saida / f'RESPOSTA_LIDA_{sufixo_arquivo}.csv'),
+            str(pasta_saida / f'RESPOSTA_LIDA_DATA_{sufixo_arquivo}.csv'),
         ],
     }

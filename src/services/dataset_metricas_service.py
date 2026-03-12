@@ -40,7 +40,7 @@ def _normalizar_status_para_mapa(valor_status):
 
 def _normalizar_resposta_lida(valor_resposta):
     texto = simplificar_texto(valor_resposta)
-    if texto in {'sim', 's'}:
+    if texto in {'sim', 's', 'ok'}:
         return 'SIM'
     if texto in {'nao', 'n'}:
         return 'NAO'

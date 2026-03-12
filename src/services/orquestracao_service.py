@@ -13,7 +13,6 @@ PROCESSO_RESOLVIDO = 'RESOLVIDO'
 ABAS_OBRIGATORIAS_FINALIZACAO = [
     'usuarios',
     'usuarios_respondidos',
-    'usuarios_duplicados',
     'usuarios_resolvidos',
 ]
 

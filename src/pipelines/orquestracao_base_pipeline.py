@@ -1,7 +1,20 @@
 from core.logger import PipelineLogger
 from core.error_codes import ERRO_ORQUESTRACAO, ERRO_VALIDACAO_ARQUIVOS
+from src.services.analise_dados_fase3_orquestracao_service import (
+    gerar_analise_dados_fase3_orquestracao,
+)
 from src.services.orquestracao_service import gerar_dataset_final
 from src.utils.arquivos import validar_arquivos_existem
+
+
+def _resolver_raiz_analise(nome_logger):
+    base = 'src/data/analise_dados'
+    logger_norm = str(nome_logger or '').lower()
+    if 'complicacao' in logger_norm:
+        return f'{base}/complicacao'
+    if 'internacao' in logger_norm or 'eletivo' in logger_norm:
+        return f'{base}/internacao'
+    return base
 
 
 def executar_orquestracao_pipeline(arquivo_dataset_entrada, arquivo_dataset_saida, nome_logger):
@@ -27,13 +40,31 @@ def executar_orquestracao_pipeline(arquivo_dataset_entrada, arquivo_dataset_said
             arquivo_dataset_saida=arquivo_dataset_saida,
         )
         if resultado.get('ok'):
+            resultado_analise_fase3 = gerar_analise_dados_fase3_orquestracao(
+                arquivo_dataset_orquestrado=arquivo_dataset_saida,
+                raiz_analise=_resolver_raiz_analise(nome_logger),
+                nome_processo='orquestracao',
+                pipeline_nome=nome_logger,
+            )
+            for mensagem in resultado_analise_fase3.get('mensagens', []):
+                logger.warning('ANALISE_DADOS', mensagem)
             resultado['metricas_por_etapa'] = {
                 'orquestracao': {
                     'total_usuarios': resultado.get('total_usuarios', 0),
                     'total_usuarios_resolvidos': resultado.get('total_usuarios_resolvidos', 0),
                     'total_disparo': resultado.get('total_disparo', 0),
+                    'pasta_analise_dados_fase3': resultado_analise_fase3.get('pasta_saida', ''),
                 }
             }
+            resultado['dados'] = resultado.get('dados', {})
+            resultado['dados']['analise_dados_fase3'] = resultado_analise_fase3
+            resultado['mensagens'] = (
+                resultado.get('mensagens', [])
+                + resultado_analise_fase3.get('mensagens', [])
+                + [
+                    f"Analise de dados Fase 3 gerada em: {resultado_analise_fase3.get('pasta_saida', '')}",
+                ]
+            )
         elif not resultado.get('codigo_erro'):
             resultado['codigo_erro'] = ERRO_ORQUESTRACAO
         logger.info('RESULTADO', f"ok={resultado.get('ok', False)}")
