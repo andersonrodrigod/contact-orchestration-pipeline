@@ -503,6 +503,52 @@ def concatenar_status_complicacao_internacao_eletivo(
     }
 
 
+def concatenar_arquivos_livre(
+    arquivo_a,
+    arquivo_b,
+    arquivo_saida,
+):
+    """Concatena dois arquivos usando uniao de colunas, sem validar schema minimo."""
+    df_a = ler_arquivo_csv(arquivo_a)
+    df_b = ler_arquivo_csv(arquivo_b)
+
+    total_a = len(df_a)
+    total_b = len(df_b)
+
+    colunas_a = set(df_a.columns)
+    colunas_b = set(df_b.columns)
+    colunas_unificadas = sorted(colunas_a.union(colunas_b))
+    colunas_comuns = sorted(colunas_a.intersection(colunas_b))
+    colunas_apenas_a = sorted(colunas_a - colunas_b)
+    colunas_apenas_b = sorted(colunas_b - colunas_a)
+
+    df_a = df_a.reindex(columns=colunas_unificadas, fill_value='')
+    df_b = df_b.reindex(columns=colunas_unificadas, fill_value='')
+    df_concatenado = pd.concat([df_a, df_b], ignore_index=True)
+
+    salvar_dataframe(df_concatenado, arquivo_saida)
+
+    mensagens = [
+        'Concatenacao livre executada com sucesso.',
+        f'Colunas em comum: {len(colunas_comuns)}.',
+        f'Colunas apenas no arquivo A: {len(colunas_apenas_a)}.',
+        f'Colunas apenas no arquivo B: {len(colunas_apenas_b)}.',
+    ]
+
+    return {
+        'ok': True,
+        'mensagens': mensagens,
+        'total_arquivo_a': total_a,
+        'total_arquivo_b': total_b,
+        'total_concatenado': len(df_concatenado),
+        'total_colunas': len(colunas_unificadas),
+        'colunas_comuns': colunas_comuns,
+        'colunas_apenas_a': colunas_apenas_a,
+        'colunas_apenas_b': colunas_apenas_b,
+        'arquivo_saida': arquivo_saida,
+    }
+
+
 def _montar_df_final_complicacao(df_base):
     df_final = pd.DataFrame(index=df_base.index)
 
