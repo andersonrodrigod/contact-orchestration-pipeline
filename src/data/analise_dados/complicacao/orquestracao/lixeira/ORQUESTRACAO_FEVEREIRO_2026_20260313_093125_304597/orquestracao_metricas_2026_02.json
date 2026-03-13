@@ -1,0 +1,220 @@
+{
+  "metadata": {
+    "pipeline": "orquestracao_complicacao",
+    "versao_metricas": "1.0.0",
+    "competencia": "2026-02"
+  },
+  "orquestracao_por_dt_envio": {
+    "2026-03-02": {
+      "processo": {
+        "RESOLVIDO": 28,
+        "DISPARAR_NOVAMENTE": 8,
+        "SEGUNDO_ENVIO": 6,
+        "ENCERRAR_CONTATO_LIDO_SIM": 1,
+        "MUDAR_CONTATO_LIDO_NAO": 1
+      },
+      "status_chave": {
+        "OK_PRINCIPAL": 15,
+        "OK_FALLBACK": 1
+      },
+      "classificacao_acao": {
+        "EM_ANDAMENTO": 15,
+        "ENCERRADO": 1
+      },
+      "hash_conteudo": "9bcd5a8cc9b166b92316bb57b723bbfc9961927d7b1889fc1d4ae7a59167c5d8"
+    },
+    "2026-03-03": {
+      "processo": {
+        "RESOLVIDO": 201,
+        "DISPARAR_NOVAMENTE": 9,
+        "ENCERRAR_CONTATO_LIDO_SIM": 6,
+        "SEGUNDO_ENVIO": 2
+      },
+      "status_chave": {
+        "OK_PRINCIPAL": 17
+      },
+      "classificacao_acao": {
+        "EM_ANDAMENTO": 11,
+        "ENCERRADO": 6
+      },
+      "hash_conteudo": "205a794795e5dad97af5effc9586a518c74aaaf41b38466112fd94a929bdfa65"
+    },
+    "2026-03-04": {
+      "processo": {
+        "RESOLVIDO": 196,
+        "ENCERRAR_CONTATO_LIDO_SIM": 11,
+        "DISPARAR_NOVAMENTE": 5,
+        "SEGUNDO_ENVIO": 5
+      },
+      "status_chave": {
+        "OK_PRINCIPAL": 18,
+        "OK_FALLBACK": 3
+      },
+      "classificacao_acao": {
+        "ENCERRADO": 11,
+        "EM_ANDAMENTO": 10
+      },
+      "hash_conteudo": "7bd4e6e0ab0f8ea1dd34fa7a718048fa1c6a7feac29c0ee40169107521af6a6e"
+    },
+    "2026-03-05": {
+      "processo": {
+        "RESOLVIDO": 313,
+        "MUDAR_CONTATO_LIDO_SEM_RESPOSTA": 19,
+        "DISPARAR_NOVAMENTE": 7,
+        "ENCERRAR_CONTATO_LIDO_SIM": 7,
+        "SEGUNDO_ENVIO": 6,
+        "MUDAR_CONTATO_LIDO_NAO": 3,
+        "MUDAR_CONTATO_DISPAROS_EXCEDENTE": 1
+      },
+      "status_chave": {
+        "OK_PRINCIPAL": 43
+      },
+      "classificacao_acao": {
+        "EM_ANDAMENTO": 36,
+        "ENCERRADO": 7
+      },
+      "hash_conteudo": "dcd586ab99b1e373fddeb69191c02abbe68297c966b086b6a273b85773e8bd80"
+    },
+    "2026-03-06": {
+      "processo": {
+        "RESOLVIDO": 216,
+        "MUDAR_CONTATO_LIDO_SEM_RESPOSTA": 19,
+        "ENCERRAR_CONTATO_LIDO_SIM": 11,
+        "DISPARAR_NOVAMENTE": 10,
+        "MUDAR_CONTATO_MENSAGEM_NAO_ENTREGUE": 8,
+        "MUDAR_CONTATO_ENTREGUE": 5,
+        "MUDAR_CONTATO_LIDO_NAO": 3,
+        "SEGUNDO_ENVIO": 2
+      },
+      "status_chave": {
+        "OK_PRINCIPAL": 54,
+        "OK_FALLBACK": 4
+      },
+      "classificacao_acao": {
+        "EM_ANDAMENTO": 47,
+        "ENCERRADO": 11
+      },
+      "hash_conteudo": "ffe6bea2b98b9c0e9b997a2db2278d59ddb9d3069d4877b536612ade5098228c"
+    },
+    "2026-03-09": {
+      "processo": {
+        "RESOLVIDO": 460,
+        "ENCERRAR_CONTATO_LIDO_SIM": 18,
+        "DISPARAR_NOVAMENTE": 9,
+        "SEGUNDO_ENVIO": 4,
+        "MUDAR_CONTATO_LIDO_NAO": 2
+      },
+      "status_chave": {
+        "OK_PRINCIPAL": 31,
+        "OK_FALLBACK": 2
+      },
+      "classificacao_acao": {
+        "ENCERRADO": 18,
+        "EM_ANDAMENTO": 15
+      },
+      "hash_conteudo": "065f59023bb9a3aff326c8830203ae0106f97d06c89cbe6d8596c455083f17c9"
+    },
+    "2026-03-10": {
+      "processo": {
+        "RESOLVIDO": 364,
+        "MUDAR_CONTATO_LIDO_SEM_RESPOSTA": 25,
+        "MUDAR_CONTATO_MENSAGEM_NAO_ENTREGUE": 11,
+        "ENCERRAR_CONTATO_LIDO_SIM": 8,
+        "MUDAR_CONTATO_ENTREGUE": 8,
+        "MUDAR_CONTATO_LIDO_NAO": 8,
+        "MUDAR_CONTATO_EXPERIMENTO": 7,
+        "DISPARAR_NOVAMENTE": 6,
+        "SEGUNDO_ENVIO": 5,
+        "MUDAR_CONTATO_NAO_ENTREGUE_META": 3
+      },
+      "status_chave": {
+        "OK_PRINCIPAL": 72,
+        "OK_FALLBACK": 9
+      },
+      "classificacao_acao": {
+        "EM_ANDAMENTO": 73,
+        "ENCERRADO": 8
+      },
+      "hash_conteudo": "aad3bc905d2b1fae16eea702d598bdd9c4b1a41dd60298debd4ef9566ed3a12e"
+    },
+    "2026-03-11": {
+      "processo": {
+        "DISPARAR_NOVAMENTE": 380,
+        "RESOLVIDO": 208,
+        "MUDAR_CONTATO_LIDO_SEM_RESPOSTA": 143,
+        "MUDAR_CONTATO_MENSAGEM_NAO_ENTREGUE": 124,
+        "SEGUNDO_ENVIO": 87,
+        "MUDAR_CONTATO_ENTREGUE": 38,
+        "MUDAR_CONTATO_LIDO_NAO": 34,
+        "MUDAR_CONTATO_EXPERIMENTO": 17,
+        "MUDAR_CONTATO_NAO_ENTREGUE_META": 17,
+        "ENCERRAR_CONTATO_LIDO_SIM": 13,
+        "MUDAR_CONTATO_DISPAROS_EXCEDENTE": 11,
+        "MUDAR_CONTATO_ENVIADO": 1
+      },
+      "status_chave": {
+        "OK_PRINCIPAL": 855,
+        "OK_FALLBACK": 10
+      },
+      "classificacao_acao": {
+        "EM_ANDAMENTO": 852,
+        "ENCERRADO": 13
+      },
+      "hash_conteudo": "6ce102f21c1203b0f86b7431da1971220a8d874ed4b2874bfcb46650d9d8063a"
+    },
+    "2026-03-12": {
+      "processo": {
+        "RESOLVIDO": 217,
+        "DISPARAR_NOVAMENTE": 158,
+        "SEGUNDO_ENVIO": 66,
+        "ENCERRAR_CONTATO_LIDO_SIM": 9,
+        "MUDAR_CONTATO_LIDO_NAO": 7,
+        "MUDAR_CONTATO_MENSAGEM_NAO_ENTREGUE": 3,
+        "MUDAR_CONTATO_LIDO_SEM_RESPOSTA": 1
+      },
+      "status_chave": {
+        "OK_PRINCIPAL": 242,
+        "OK_FALLBACK": 2
+      },
+      "classificacao_acao": {
+        "EM_ANDAMENTO": 235,
+        "ENCERRADO": 9
+      },
+      "hash_conteudo": "ca04c5147ef9663ed73da463f9befb8cbcd714c8cf1bbd3be2208ab35c3a3427"
+    },
+    "2026-03-13": {
+      "processo": {
+        "DISPARAR_NOVAMENTE": 315,
+        "RESOLVIDO": 36,
+        "SEGUNDO_ENVIO": 17,
+        "MUDAR_CONTATO_MENSAGEM_NAO_ENTREGUE": 4,
+        "ENCERRAR_CONTATO_LIDO_SIM": 3,
+        "MUDAR_CONTATO_LIDO_NAO": 3,
+        "MUDAR_CONTATO_NAO_ENTREGUE_META": 2,
+        "MUDAR_CONTATO_ENVIADO": 1,
+        "MUDAR_CONTATO_OPT_OUT": 1
+      },
+      "status_chave": {
+        "OK_PRINCIPAL": 346
+      },
+      "classificacao_acao": {
+        "EM_ANDAMENTO": 343,
+        "ENCERRADO": 3
+      },
+      "hash_conteudo": "abf3a6ef894eff46ddff9327c8243c9236c32337e6aee181d9a639afc8beb975"
+    },
+    "SEM_DATA": {
+      "processo": {
+        "PROGRAMADO": 6466,
+        "RESOLVIDO": 32
+      },
+      "status_chave": {
+        "SEM_MATCH": 6466
+      },
+      "classificacao_acao": {
+        "PROGRAMADO": 6466
+      },
+      "hash_conteudo": "a12de4205852eb8b0dfd35b923103df528c6f61feae4c5e25d1fcb88c27de68d"
+    }
+  }
+}
