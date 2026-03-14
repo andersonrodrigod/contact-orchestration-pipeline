@@ -768,3 +768,195 @@ def criar_dataset_complicacao(
             'codigo_erro': ERRO_CRIACAO_DATASET,
         }
 
+
+def criar_dataset_base_complicacao(
+    arquivo_complicacao,
+    arquivo_saida_dataset,
+    contexto='dataset_base',
+):
+    """Cria dataset base sem integrar status/resposta."""
+    etapa_atual = 'INICIO'
+    try:
+        etapa_atual = 'LEITURA_ARQUIVO_COMPLICACAO'
+        df = ler_arquivo_csv(arquivo_complicacao)
+        df.columns = [str(col).strip() for col in df.columns]
+
+        etapa_atual = 'VALIDACAO_COLUNAS_ORIGEM'
+        validacao_colunas = validar_colunas_origem_dataset_complicacao(df.columns, contexto=contexto)
+        if not validacao_colunas['ok']:
+            return {
+                'ok': False,
+                'mensagens': validacao_colunas['mensagens'],
+                'colunas_arquivo': list(df.columns),
+                'colunas_faltando': validacao_colunas['colunas_faltando'],
+                'colunas_duplicadas': validacao_colunas.get('colunas_duplicadas', []),
+                'colunas_mascaradas_duplicadas': validacao_colunas.get(
+                    'colunas_mascaradas_duplicadas', []
+                ),
+                'codigo_erro': ERRO_CRIACAO_DATASET,
+            }
+
+        etapa_atual = 'MONTAGEM_ABAS_BASE'
+        df_sem_duplicados = df.copy()
+        df_usuarios = _montar_df_final_complicacao(df_sem_duplicados)
+
+        if 'P1' in df_sem_duplicados.columns:
+            p1_preenchido = _normalizar_texto_serie(df_sem_duplicados['P1']) != ''
+            if 'STATUS' in df_sem_duplicados.columns:
+                status_respondidos = {'obito', 'nao quis'}
+                status_norm = df_sem_duplicados['STATUS'].apply(_simplificar_texto)
+                mask_respondidos = p1_preenchido | status_norm.isin(status_respondidos)
+            else:
+                mask_respondidos = p1_preenchido
+            df_resp_base = df_sem_duplicados[mask_respondidos]
+        elif 'STATUS' in df_sem_duplicados.columns:
+            status_respondidos = {'obito', 'nao quis'}
+            status_norm = df_sem_duplicados['STATUS'].apply(_simplificar_texto)
+            df_resp_base = df_sem_duplicados[status_norm.isin(status_respondidos)]
+        else:
+            df_resp_base = df_sem_duplicados.iloc[0:0]
+
+        df_usuarios_respondidos = _montar_df_final_complicacao(df_resp_base)
+        df_usuarios_resolvidos = pd.DataFrame(columns=COLUNAS_FINAIS_DATASET)
+
+        etapa_atual = 'PERSISTENCIA_XLSX'
+        with pd.ExcelWriter(arquivo_saida_dataset, engine='openpyxl') as writer:
+            df_usuarios.to_excel(writer, sheet_name='usuarios', index=False)
+            df_usuarios_respondidos.to_excel(writer, sheet_name='usuarios_respondidos', index=False)
+            df_usuarios_resolvidos.to_excel(writer, sheet_name='usuarios_resolvidos', index=False)
+
+        return {
+            'ok': True,
+            'arquivo_saida': arquivo_saida_dataset,
+            'total_linhas': len(df_usuarios),
+            'mensagens': validacao_colunas['mensagens'] + [f'Dataset base de {contexto} criado com sucesso.'],
+            'colunas_arquivo': list(df.columns),
+            'colunas_faltando': [],
+        }
+    except Exception as erro:
+        return {
+            'ok': False,
+            'mensagens': [
+                (
+                    f'Erro inesperado na criacao do dataset base (etapa={etapa_atual}): '
+                    f'{type(erro).__name__}: {erro}'
+                )
+            ],
+            'codigo_erro': ERRO_CRIACAO_DATASET,
+        }
+
+
+def aplicar_status_integrado_em_dataset(
+    arquivo_dataset_base,
+    arquivo_status_integrado,
+    arquivo_saida_dataset,
+    contexto='dataset_com_status',
+):
+    """Aplica status integrado em dataset base previamente criado."""
+    etapa_atual = 'INICIO'
+    try:
+        etapa_atual = 'LEITURA_DATASET_BASE'
+        if str(arquivo_dataset_base).lower().endswith(('.xlsx', '.xls')):
+            abas = pd.read_excel(arquivo_dataset_base, sheet_name=None, dtype=str)
+            df_usuarios = abas.get('usuarios', pd.DataFrame()).fillna('')
+            df_usuarios_respondidos = abas.get('usuarios_respondidos', pd.DataFrame()).fillna('')
+            df_usuarios_resolvidos = abas.get('usuarios_resolvidos', pd.DataFrame()).fillna('')
+        else:
+            df_usuarios = ler_arquivo_csv(arquivo_dataset_base)
+            df_usuarios_respondidos = pd.DataFrame(columns=COLUNAS_FINAIS_DATASET)
+            df_usuarios_resolvidos = pd.DataFrame(columns=COLUNAS_FINAIS_DATASET)
+
+        etapa_atual = 'CARREGAR_STATUS_LOOKUP'
+        resultado_status = _carregar_status_para_lookup(arquivo_status_integrado)
+        if not resultado_status['ok']:
+            return {
+                'ok': False,
+                'mensagens': resultado_status['mensagens'],
+                'codigo_erro': resultado_status.get('codigo_erro', ERRO_CRIACAO_DATASET),
+            }
+        df_status_por_contato = resultado_status['df_status_por_contato']
+        df_status_por_nome_tel = resultado_status['df_status_por_nome_tel']
+        df_status_full = resultado_status['df_status_full']
+
+        resultado_contagens_preparadas = preparar_contagens_status(df_status_full)
+        if not resultado_contagens_preparadas['ok']:
+            return {
+                'ok': False,
+                'mensagens': resultado_contagens_preparadas['mensagens'],
+                'codigo_erro': ERRO_CRIACAO_DATASET,
+            }
+        contagens_status_preparadas = resultado_contagens_preparadas
+
+        etapa_atual = 'ENRIQUECER_ABA_USUARIOS'
+        resultado_usuarios = _enriquecer_dataset_com_status(
+            df_usuarios,
+            df_status_full,
+            df_status_por_contato,
+            df_status_por_nome_tel,
+            contagens_status_preparadas=contagens_status_preparadas,
+        )
+        if not resultado_usuarios['ok']:
+            return {
+                'ok': False,
+                'mensagens': resultado_usuarios['mensagens'],
+                'total_dataset': resultado_usuarios.get('total_dataset', 0),
+                'total_match': resultado_usuarios.get('total_match', 0),
+                'total_sem_match': resultado_usuarios.get('total_sem_match', 0),
+                'codigo_erro': resultado_usuarios.get('codigo_erro', ERRO_CRIACAO_DATASET),
+            }
+        df_usuarios_out = resultado_usuarios['df_enriquecido']
+
+        etapa_atual = 'ENRIQUECER_ABAS_SECUNDARIAS'
+        if len(df_usuarios_respondidos) > 0:
+            resultado_respondidos = _enriquecer_dataset_com_status(
+                df_usuarios_respondidos,
+                df_status_full,
+                df_status_por_contato,
+                df_status_por_nome_tel,
+                contagens_status_preparadas=contagens_status_preparadas,
+            )
+            if resultado_respondidos['ok']:
+                df_usuarios_respondidos = resultado_respondidos['df_enriquecido']
+        if len(df_usuarios_resolvidos) > 0:
+            resultado_resolvidos = _enriquecer_dataset_com_status(
+                df_usuarios_resolvidos,
+                df_status_full,
+                df_status_por_contato,
+                df_status_por_nome_tel,
+                contagens_status_preparadas=contagens_status_preparadas,
+            )
+            if resultado_resolvidos['ok']:
+                df_usuarios_resolvidos = resultado_resolvidos['df_enriquecido']
+
+        etapa_atual = 'PERSISTENCIA_XLSX'
+        with pd.ExcelWriter(arquivo_saida_dataset, engine='openpyxl') as writer:
+            df_usuarios_out.to_excel(writer, sheet_name='usuarios', index=False)
+            df_usuarios_respondidos.to_excel(writer, sheet_name='usuarios_respondidos', index=False)
+            df_usuarios_resolvidos.to_excel(writer, sheet_name='usuarios_resolvidos', index=False)
+
+        return {
+            'ok': True,
+            'arquivo_saida': arquivo_saida_dataset,
+            'total_linhas': len(df_usuarios_out),
+            'total_dataset': resultado_usuarios['total_dataset'],
+            'total_match': resultado_usuarios['total_match'],
+            'total_sem_match': resultado_usuarios['total_sem_match'],
+            'qtd_identificacao': resultado_usuarios['qtd_identificacao'],
+            'pct_identificacao': resultado_usuarios['pct_identificacao'],
+            'qtd_resposta': resultado_usuarios['qtd_resposta'],
+            'pct_resposta': resultado_usuarios['pct_resposta'],
+            'distribuicao_status': resultado_usuarios['distribuicao_status'],
+            'mensagens': [f'Status integrado aplicado no {contexto} com sucesso.'],
+        }
+    except Exception as erro:
+        return {
+            'ok': False,
+            'mensagens': [
+                (
+                    f'Erro inesperado ao aplicar status no dataset (etapa={etapa_atual}): '
+                    f'{type(erro).__name__}: {erro}'
+                )
+            ],
+            'codigo_erro': ERRO_CRIACAO_DATASET,
+        }
+

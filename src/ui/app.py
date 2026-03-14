@@ -1,26 +1,37 @@
 ﻿from __future__ import annotations
 
 from pathlib import Path
+import threading
 from tkinter import filedialog
 from typing import Callable
 
 from src.ui.controllers.ambos_controller import AmbosController
 from src.ui.controllers.concatenar_controller import ConcatenarController
 from src.ui.controllers.complicacao_controller import ComplicacaoController
+from src.ui.controllers.fluxo_partes_controller import FluxoPartesController
+from src.ui.controllers.ingestao_controller import IngestaoController
 from src.ui.controllers.internacao_controller import InternacaoController
+from src.ui.controllers.uniao_status_controller import UniaoStatusController
 from src.pipelines.concatenar_livre_pipeline import run_unificar_arquivos_livre_pipeline
 from src.pipelines.concatenar_status_pipeline import run_unificar_status_pipeline
 from src.pipelines.concatenar_status_respostas_pipeline import (
     run_unificar_status_respostas_pipeline,
+)
+from src.pipelines.join_status_resposta_pipeline import (
+    run_unificar_status_resposta_complicacao_pipeline,
+    run_unificar_status_resposta_internacao_eletivo_pipeline,
 )
 from src.ui.services.pipeline_runner import PipelineRunner
 from src.ui.state import UIStyle, UIRuntimeState
 from src.ui.views.ambos_view import AmbosView
 from src.ui.views.concatenar_view import ConcatenarView
 from src.ui.views.complicacao_view import ComplicacaoView
+from src.ui.views.fluxo_partes_view import FluxoPartesView
+from src.ui.views.ingestao_view import IngestaoView
 from src.ui.views.internacao_view import InternacaoView
 from src.ui.views.menu_view import MenuView
 from src.ui.views.progress_modal import ProgressModal
+from src.ui.views.uniao_status_view import UniaoStatusView
 
 try:
     import customtkinter as ctk
@@ -50,7 +61,10 @@ class App(ctk.CTk):
         self.ambos_controller = AmbosController()
         self.concatenar_controller = ConcatenarController()
         self.complicacao_controller = ComplicacaoController()
+        self.fluxo_partes_controller = FluxoPartesController()
+        self.ingestao_controller = IngestaoController()
         self.internacao_controller = InternacaoController()
+        self.uniao_status_controller = UniaoStatusController()
         self.pipeline_runner = PipelineRunner()
 
         self._icon_refs: list[ctk.CTkImage] = []
@@ -60,7 +74,10 @@ class App(ctk.CTk):
         self.ambos_view: AmbosView | None = None
         self.concatenar_view: ConcatenarView | None = None
         self.complicacao_view: ComplicacaoView | None = None
+        self.fluxo_partes_view: FluxoPartesView | None = None
+        self.ingestao_view: IngestaoView | None = None
         self.internacao_view: InternacaoView | None = None
+        self.uniao_status_view: UniaoStatusView | None = None
         self.progress_modal: ProgressModal | None = None
 
         self._etl_cancelled = False
@@ -182,15 +199,13 @@ class App(ctk.CTk):
             return
         labels = self.concatenar_view.get_file_labels(mode)
         if key == "arquivo_saida":
-            path = filedialog.asksaveasfilename(
-                title=f"Salvar arquivo - {labels.get(key, key)}",
-                defaultextension=".csv",
-                filetypes=[
-                    ("CSV", "*.csv"),
-                    ("Excel", "*.xlsx"),
-                    ("Todos os arquivos", "*.*"),
-                ],
+            selected_dir = filedialog.askdirectory(
+                title=f"Selecionar pasta - {labels.get(key, key)}"
             )
+            if selected_dir:
+                path = str(Path(selected_dir) / self._default_output_filename_concatenar(mode))
+            else:
+                path = ""
         else:
             path = filedialog.askopenfilename(
                 title=f"Selecionar arquivo - {labels.get(key, key)}",
@@ -205,6 +220,14 @@ class App(ctk.CTk):
         if path:
             self.concatenar_view.set_file_value(mode, key, path)
             self.concatenar_view.clear_status_message(mode)
+
+    @staticmethod
+    def _default_output_filename_concatenar(mode: str) -> str:
+        if mode == "status":
+            return "status_complicacao_internacao_eletivo.csv"
+        if mode == "status_resposta":
+            return "status_resposta_eletivo_internacao.csv"
+        return "concatenacao_livre.csv"
 
     def _clear_file_concatenar(self, mode: str, key: str) -> None:
         if self.concatenar_view is None:
@@ -278,6 +301,274 @@ class App(ctk.CTk):
         if suffix == ".csv":
             return str(path.with_name(f"{path.stem}_normalizado.csv"))
         return str(path.with_name(f"{path.name}_normalizado.csv"))
+
+    def _get_fluxo_partes_specs(self) -> dict[str, dict[str, dict]]:
+        return self.fluxo_partes_controller.get_specs()
+
+    def _select_file_fluxo_partes(self, context: str, action: str, key: str) -> None:
+        if self.fluxo_partes_view is None:
+            return
+        labels = self.fluxo_partes_view.get_file_labels(context, action)
+        if key.startswith("saida_") or key.startswith("arquivo_saida"):
+            selected_dir = filedialog.askdirectory(
+                title=f"Selecionar pasta - {labels.get(key, key)}"
+            )
+            if selected_dir:
+                filename = self.fluxo_partes_controller.default_output_filename(context, action, key)
+                path = str(Path(selected_dir) / filename)
+            else:
+                path = ""
+        else:
+            path = filedialog.askopenfilename(
+                title=f"Selecionar arquivo - {labels.get(key, key)}",
+                filetypes=[
+                    ("CSV e Excel", "*.csv;*.xlsx;*.xls"),
+                    ("CSV", "*.csv"),
+                    ("Excel", "*.xlsx;*.xls"),
+                    ("Todos os arquivos", "*.*"),
+                ],
+            )
+        if path:
+            self.fluxo_partes_view.set_file_value(context, action, key, path)
+            self.fluxo_partes_view.clear_status_message(context, action)
+
+    def _clear_file_fluxo_partes(self, context: str, action: str, key: str) -> None:
+        if self.fluxo_partes_view is None:
+            return
+        self.fluxo_partes_view.clear_file_value(context, action, key)
+        self.fluxo_partes_view.clear_status_message(context, action)
+
+    def _start_fluxo_partes_execution(self, context: str, action: str) -> None:
+        if self.fluxo_partes_view is None:
+            return
+
+        specs = self._get_fluxo_partes_specs()
+        action_spec = specs.get(context, {}).get(action)
+        if action_spec is None:
+            self.fluxo_partes_view.set_status_message(context, action, "Acao desconhecida.", "#FFB1B1")
+            return
+
+        file_values = self.fluxo_partes_view.get_file_values(context, action)
+        file_labels = self.fluxo_partes_view.get_file_labels(context, action)
+        erro_validacao = self.fluxo_partes_controller.resolve_execution_request(
+            file_values=file_values,
+            file_labels=file_labels,
+        )
+        if erro_validacao:
+            self.fluxo_partes_view.set_status_message(
+                context,
+                action,
+                erro_validacao,
+                "#FFB1B1",
+            )
+            return
+
+        self.fluxo_partes_view.set_status_message(
+            context,
+            action,
+            f"Executando: {action_spec['title']}...",
+            "#A7C8FF",
+        )
+        threading.Thread(
+            target=self._run_fluxo_partes_worker,
+            args=(context, action, action_spec["title"], action_spec["run"], file_values),
+            daemon=True,
+        ).start()
+
+    def _run_fluxo_partes_worker(
+        self,
+        context: str,
+        action: str,
+        action_title: str,
+        runner: Callable[..., dict],
+        kwargs: dict[str, str],
+    ) -> None:
+        try:
+            result = runner(**kwargs)
+            if not isinstance(result, dict):
+                result = {"ok": False, "mensagens": [f"Retorno invalido: {type(result).__name__}"]}
+        except Exception as erro:
+            message = f"Falha em {action_title}: {type(erro).__name__}: {erro}"
+            self.after(0, lambda: self._set_fluxo_partes_status(context, action, message, "#FFB1B1"))
+            return
+
+        ok = bool(result.get("ok", False))
+        mensagens = result.get("mensagens", [])
+        detalhe = mensagens[0] if mensagens else ("Concluido com sucesso." if ok else "Falha na execucao.")
+        color = "#AEE3B8" if ok else "#FFB1B1"
+        self.after(
+            0,
+            lambda: self._set_fluxo_partes_status(context, action, f"{action_title}: {detalhe}", color),
+        )
+
+    def _set_fluxo_partes_status(self, context: str, action: str, text: str, color: str) -> None:
+        if self.fluxo_partes_view is not None:
+            self.fluxo_partes_view.set_status_message(context, action, text, color)
+
+    def _select_file_ingestao(self, mode: str, key: str) -> None:
+        if self.ingestao_view is None:
+            return
+        labels = self.ingestao_view.get_file_labels(mode)
+        if key.startswith("saida_"):
+            selected_dir = filedialog.askdirectory(
+                title=f"Selecionar pasta - {labels.get(key, key)}"
+            )
+            if selected_dir:
+                filename = self.ingestao_controller.default_output_filename(mode, key)
+                path = str(Path(selected_dir) / filename)
+            else:
+                path = ""
+        else:
+            path = filedialog.askopenfilename(
+                title=f"Selecionar arquivo - {labels.get(key, key)}",
+                filetypes=[
+                    ("CSV e Excel", "*.csv;*.xlsx;*.xls"),
+                    ("CSV", "*.csv"),
+                    ("Excel", "*.xlsx;*.xls"),
+                    ("Todos os arquivos", "*.*"),
+                ],
+            )
+        if path:
+            self.ingestao_view.set_file_value(mode, key, path)
+            self.ingestao_view.clear_status_message(mode)
+
+    def _clear_file_ingestao(self, mode: str, key: str) -> None:
+        if self.ingestao_view is None:
+            return
+        self.ingestao_view.clear_file_value(mode, key)
+        self.ingestao_view.clear_status_message(mode)
+
+    def _start_ingestao_execution(self, mode: str) -> None:
+        if self.ingestao_view is None:
+            return
+        file_values = self.ingestao_view.get_file_values(mode)
+        file_labels = self.ingestao_view.get_file_labels(mode)
+        plan, erro_validacao = self.ingestao_controller.resolve_execution_plan(
+            mode=mode,
+            file_values=file_values,
+            file_labels=file_labels,
+        )
+        if erro_validacao:
+            self.ingestao_view.set_status_message(
+                mode,
+                erro_validacao,
+                "#FFB1B1",
+            )
+            return
+
+        self.ingestao_view.set_status_message(mode, "Executando ingestao...", "#A7C8FF")
+        threading.Thread(
+            target=self._run_ingestao_worker,
+            args=(mode, plan, file_values),
+            daemon=True,
+        ).start()
+
+    def _run_ingestao_worker(self, mode: str, plan: dict[str, str], file_values: dict[str, str]) -> None:
+        try:
+            result = self.ingestao_controller.run(plan, file_values)
+            if not isinstance(result, dict):
+                result = {"ok": False, "mensagens": [f"Retorno invalido: {type(result).__name__}"]}
+        except Exception as erro:
+            self.after(
+                0,
+                lambda: self._set_ingestao_status(
+                    mode,
+                    f"Falha na ingestao: {type(erro).__name__}: {erro}",
+                    "#FFB1B1",
+                ),
+            )
+            return
+
+        ok = bool(result.get("ok", False))
+        mensagens = result.get("mensagens", [])
+        detalhe = mensagens[0] if mensagens else ("Concluido com sucesso." if ok else "Falha na execucao.")
+        self.after(0, lambda: self._set_ingestao_status(mode, detalhe, "#AEE3B8" if ok else "#FFB1B1"))
+
+    def _set_ingestao_status(self, mode: str, text: str, color: str) -> None:
+        if self.ingestao_view is not None:
+            self.ingestao_view.set_status_message(mode, text, color)
+
+    def _select_file_uniao_status(self, mode: str, key: str) -> None:
+        if self.uniao_status_view is None:
+            return
+        labels = self.uniao_status_view.get_file_labels(mode)
+        if key == "arquivo_saida":
+            selected_dir = filedialog.askdirectory(
+                title=f"Selecionar pasta - {labels.get(key, key)}"
+            )
+            if selected_dir:
+                filename = "status_internacao_eletivo.csv" if mode == "internacao" else "status_complicacao.csv"
+                path = str(Path(selected_dir) / filename)
+            else:
+                path = ""
+        else:
+            path = filedialog.askopenfilename(
+                title=f"Selecionar arquivo - {labels.get(key, key)}",
+                filetypes=[
+                    ("CSV e Excel", "*.csv;*.xlsx;*.xls"),
+                    ("CSV", "*.csv"),
+                    ("Excel", "*.xlsx;*.xls"),
+                    ("Todos os arquivos", "*.*"),
+                ],
+            )
+
+        if path:
+            self.uniao_status_view.set_file_value(mode, key, path)
+            self.uniao_status_view.clear_status_message(mode)
+
+    def _clear_file_uniao_status(self, mode: str, key: str) -> None:
+        if self.uniao_status_view is None:
+            return
+        self.uniao_status_view.clear_file_value(mode, key)
+        self.uniao_status_view.clear_status_message(mode)
+
+    def _start_uniao_status_execution(self, mode: str) -> None:
+        if self.uniao_status_view is None:
+            return
+
+        file_values = self.uniao_status_view.get_file_values(mode)
+        file_labels = self.uniao_status_view.get_file_labels(mode)
+        _, erro_validacao = self.uniao_status_controller.resolve_execution_request(
+            mode=mode,
+            file_values=file_values,
+            file_labels=file_labels,
+        )
+        if erro_validacao:
+            self.uniao_status_view.set_status_message(mode, erro_validacao, "#FFB1B1")
+            return
+
+        try:
+            if mode == "complicacao":
+                resultado = run_unificar_status_resposta_complicacao_pipeline(
+                    arquivo_status=file_values["arquivo_status"],
+                    arquivo_status_resposta=file_values["arquivo_flow_resposta"],
+                    arquivo_saida=file_values["arquivo_saida"],
+                )
+            else:
+                resultado = run_unificar_status_resposta_internacao_eletivo_pipeline(
+                    arquivo_status=file_values["arquivo_status"],
+                    arquivo_status_resposta=file_values["arquivo_flow_resposta"],
+                    arquivo_saida=file_values["arquivo_saida"],
+                )
+        except Exception as erro:
+            self.uniao_status_view.set_status_message(
+                mode,
+                f"Falha na uniao: {type(erro).__name__}: {erro}",
+                "#FFB1B1",
+            )
+            return
+
+        if resultado.get("ok", False):
+            self.uniao_status_view.set_status_message(
+                mode,
+                "Uniao concluida com sucesso.",
+                "#AEE3B8",
+            )
+            return
+
+        mensagens = resultado.get("mensagens", [])
+        mensagem = mensagens[0] if mensagens else "Falha na uniao."
+        self.uniao_status_view.set_status_message(mode, mensagem, "#FFB1B1")
 
     def _select_file(self, key: str) -> None:
         if self.ambos_view is None:
@@ -640,14 +931,27 @@ class App(ctk.CTk):
         return tinted
 
     def _create_frame_fluxo_partes(self) -> None:
-        frame = ctk.CTkFrame(self.container, fg_color="transparent")
-        self.frames["frame_fluxo_partes"] = frame
-        self._build_base_content(frame, "frame_fluxo_partes")
+        self.fluxo_partes_view = FluxoPartesView(
+            parent=self.container,
+            style=self.style,
+            specs=self._get_fluxo_partes_specs(),
+            on_back=lambda: self.show_frame("menu_frame"),
+            on_select_file=self._select_file_fluxo_partes,
+            on_clear_file=self._clear_file_fluxo_partes,
+            on_execute=self._start_fluxo_partes_execution,
+        )
+        self.frames["frame_fluxo_partes"] = self.fluxo_partes_view
 
     def _create_frame_juntar_status(self) -> None:
-        frame = ctk.CTkFrame(self.container, fg_color="transparent")
-        self.frames["frame_juntar_status"] = frame
-        self._build_base_content(frame, "frame_juntar_status")
+        self.uniao_status_view = UniaoStatusView(
+            parent=self.container,
+            style=self.style,
+            on_back=lambda: self.show_frame("menu_frame"),
+            on_select_file=self._select_file_uniao_status,
+            on_clear_file=self._clear_file_uniao_status,
+            on_execute=self._start_uniao_status_execution,
+        )
+        self.frames["frame_juntar_status"] = self.uniao_status_view
 
     def _create_frame_concatenar(self) -> None:
         self.concatenar_view = ConcatenarView(
@@ -661,9 +965,15 @@ class App(ctk.CTk):
         self.frames["frame_concatenar"] = self.concatenar_view
 
     def _create_frame_limpeza_dados(self) -> None:
-        frame = ctk.CTkFrame(self.container, fg_color="transparent")
-        self.frames["frame_limpeza_dados"] = frame
-        self._build_base_content(frame, "frame_limpeza_dados")
+        self.ingestao_view = IngestaoView(
+            parent=self.container,
+            style=self.style,
+            on_back=lambda: self.show_frame("menu_frame"),
+            on_select_file=self._select_file_ingestao,
+            on_clear_file=self._clear_file_ingestao,
+            on_execute=self._start_ingestao_execution,
+        )
+        self.frames["frame_limpeza_dados"] = self.ingestao_view
 
     def _create_frame_utilitario(self) -> None:
         frame = ctk.CTkFrame(self.container, fg_color="transparent")
