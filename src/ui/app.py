@@ -12,10 +12,22 @@ from src.ui.controllers.fluxo_partes_controller import FluxoPartesController
 from src.ui.controllers.ingestao_controller import IngestaoController
 from src.ui.controllers.internacao_controller import InternacaoController
 from src.ui.controllers.uniao_status_controller import UniaoStatusController
+from src.pipelines.complicacao_orquestracao_pipeline import run_complicacao_pipeline_orquestrar
+from src.pipelines.complicacao_status_pipeline import (
+    run_complicacao_pipeline_gerar_status_dataset,
+    run_complicacao_pipeline_gerar_status_dataset_somente_status,
+)
 from src.pipelines.concatenar_livre_pipeline import run_unificar_arquivos_livre_pipeline
 from src.pipelines.concatenar_status_pipeline import run_unificar_status_pipeline
 from src.pipelines.concatenar_status_respostas_pipeline import (
     run_unificar_status_respostas_pipeline,
+)
+from src.pipelines.internacao_eletivo_orquestracao_pipeline import (
+    run_internacao_eletivo_pipeline_orquestrar,
+)
+from src.pipelines.internacao_eletivo_status_pipeline import (
+    run_internacao_eletivo_pipeline_gerar_status_dataset,
+    run_internacao_eletivo_pipeline_gerar_status_dataset_somente_status,
 )
 from src.pipelines.join_status_resposta_pipeline import (
     run_unificar_status_resposta_complicacao_pipeline,
@@ -85,6 +97,8 @@ class App(ctk.CTk):
         self._warning_modal: ctk.CTkToplevel | None = None
         self._etl_steps: list[str] = []
         self._current_execution_context: str = "ambos"
+        self._progress_current_step: int = 0
+        self._current_concatenar_mode: str = "status"
 
         self._build_ui()
 
@@ -198,12 +212,17 @@ class App(ctk.CTk):
         if self.concatenar_view is None:
             return
         labels = self.concatenar_view.get_file_labels(mode)
+        file_values = self.concatenar_view.get_file_values(mode)
         if key == "arquivo_saida":
             selected_dir = filedialog.askdirectory(
                 title=f"Selecionar pasta - {labels.get(key, key)}"
             )
             if selected_dir:
-                path = str(Path(selected_dir) / self._default_output_filename_concatenar(mode))
+                default_name = self._default_output_filename_concatenar(
+                    mode=mode,
+                    file_values=file_values,
+                )
+                path = str(Path(selected_dir) / default_name)
             else:
                 path = ""
         else:
@@ -222,12 +241,28 @@ class App(ctk.CTk):
             self.concatenar_view.clear_status_message(mode)
 
     @staticmethod
-    def _default_output_filename_concatenar(mode: str) -> str:
+    def _default_output_filename_concatenar(
+        mode: str,
+        file_values: dict[str, str] | None = None,
+    ) -> str:
+        ext = ".csv"
+        if file_values:
+            keys_by_mode = {
+                "status": ["status_complicacao", "status_internacao_eletivo"],
+                "status_resposta": ["resposta_eletivo", "resposta_internacao"],
+                "livre": ["arquivo_a", "arquivo_b"],
+            }
+            for key in keys_by_mode.get(mode, []):
+                v = (file_values.get(key) or "").strip().lower()
+                if v.endswith(".xlsx") or v.endswith(".xls"):
+                    ext = ".xlsx"
+                    break
+
         if mode == "status":
-            return "status_complicacao_internacao_eletivo.csv"
+            return f"status_complicacao_internacao_eletivo{ext}"
         if mode == "status_resposta":
-            return "status_resposta_eletivo_internacao.csv"
-        return "concatenacao_livre.csv"
+            return f"status_resposta_eletivo_internacao{ext}"
+        return f"concatenacao_livre{ext}"
 
     def _clear_file_concatenar(self, mode: str, key: str) -> None:
         if self.concatenar_view is None:
@@ -249,16 +284,30 @@ class App(ctk.CTk):
         if erro_validacao:
             self.concatenar_view.set_status_message(mode, erro_validacao, "#FFB1B1")
             return
+        self._current_execution_context = "concatenar"
+        self._current_concatenar_mode = mode
+        self.concatenar_view.set_status_message(mode, "Executando concatenação...", "#A7C8FF")
+        self._etl_steps = [
+            "Preparando concatenação...",
+            "Executando concatenação...",
+            "Finalizando concatenação...",
+        ]
+        self._open_progress_modal_manual()
+        threading.Thread(
+            target=self._run_concatenar_worker,
+            args=(mode, file_values),
+            daemon=True,
+        ).start()
 
+    def _run_concatenar_worker(self, mode: str, file_values: dict[str, str]) -> None:
         try:
+            self._publish_real_progress(1, "Executando concatenação...")
             if mode == "status":
                 arquivo_saida = file_values["arquivo_saida"]
-                saida_norm = self._build_normalized_output_path(arquivo_saida)
                 resultado = run_unificar_status_pipeline(
                     arquivo_status_complicacao=file_values["status_complicacao"],
                     arquivo_status_internacao_eletivo=file_values["status_internacao_eletivo"],
                     arquivo_saida=arquivo_saida,
-                    arquivo_saida_normalizado=saida_norm,
                 )
             elif mode == "status_resposta":
                 resultado = run_unificar_status_respostas_pipeline(
@@ -273,34 +322,28 @@ class App(ctk.CTk):
                     arquivo_saida=file_values["arquivo_saida"],
                 )
         except Exception as erro:
-            self.concatenar_view.set_status_message(
-                mode,
-                f"Falha na concatenação: {type(erro).__name__}: {erro}",
-                "#FFB1B1",
+            self.after(
+                0,
+                lambda: self._finalize_real_progress(
+                    False,
+                    f"Falha na concatenação: {type(erro).__name__}: {erro}",
+                ),
             )
             return
 
         if resultado.get("ok", False):
-            self.concatenar_view.set_status_message(
-                mode,
-                "Concatenação concluída com sucesso.",
-                "#AEE3B8",
+            mensagem = self._result_message(
+                resultado,
+                ok_default="Concatenação concluída com sucesso.",
             )
+            self.after(0, lambda: self._finalize_real_progress(True, mensagem))
             return
 
-        mensagens = resultado.get("mensagens", [])
-        mensagem = mensagens[0] if mensagens else "Falha na concatenação."
-        self.concatenar_view.set_status_message(mode, mensagem, "#FFB1B1")
-
-    @staticmethod
-    def _build_normalized_output_path(arquivo_saida: str) -> str:
-        path = Path(arquivo_saida)
-        suffix = path.suffix.lower()
-        if suffix in {".xlsx", ".xls"}:
-            return str(path.with_name(f"{path.stem}_normalizado{suffix}"))
-        if suffix == ".csv":
-            return str(path.with_name(f"{path.stem}_normalizado.csv"))
-        return str(path.with_name(f"{path.name}_normalizado.csv"))
+        mensagem = self._result_message(
+            resultado,
+            fail_default="Falha na concatenação.",
+        )
+        self.after(0, lambda: self._finalize_real_progress(False, mensagem))
 
     def _get_fluxo_partes_specs(self) -> dict[str, dict[str, dict]]:
         return self.fluxo_partes_controller.get_specs()
@@ -393,8 +436,11 @@ class App(ctk.CTk):
             return
 
         ok = bool(result.get("ok", False))
-        mensagens = result.get("mensagens", [])
-        detalhe = mensagens[0] if mensagens else ("Concluido com sucesso." if ok else "Falha na execucao.")
+        detalhe = self._result_message(
+            result,
+            ok_default="Concluído com sucesso.",
+            fail_default="Falha na execução.",
+        )
         color = "#AEE3B8" if ok else "#FFB1B1"
         self.after(
             0,
@@ -480,8 +526,11 @@ class App(ctk.CTk):
             return
 
         ok = bool(result.get("ok", False))
-        mensagens = result.get("mensagens", [])
-        detalhe = mensagens[0] if mensagens else ("Concluido com sucesso." if ok else "Falha na execucao.")
+        detalhe = self._result_message(
+            result,
+            ok_default="Concluído com sucesso.",
+            fail_default="Falha na execução.",
+        )
         self.after(0, lambda: self._set_ingestao_status(mode, detalhe, "#AEE3B8" if ok else "#FFB1B1"))
 
     def _set_ingestao_status(self, mode: str, text: str, color: str) -> None:
@@ -559,15 +608,17 @@ class App(ctk.CTk):
             return
 
         if resultado.get("ok", False):
-            self.uniao_status_view.set_status_message(
-                mode,
-                "Uniao concluida com sucesso.",
-                "#AEE3B8",
+            mensagem = self._result_message(
+                resultado,
+                ok_default="União concluída com sucesso.",
             )
+            self.uniao_status_view.set_status_message(mode, mensagem, "#AEE3B8")
             return
 
-        mensagens = resultado.get("mensagens", [])
-        mensagem = mensagens[0] if mensagens else "Falha na uniao."
+        mensagem = self._result_message(
+            resultado,
+            fail_default="Falha na união.",
+        )
         self.uniao_status_view.set_status_message(mode, mensagem, "#FFB1B1")
 
     def _select_file(self, key: str) -> None:
@@ -664,7 +715,6 @@ class App(ctk.CTk):
             return
 
         self.ui_state.current_execution_plan = plano_execucao
-        self._etl_steps = self.pipeline_runner.build_etl_steps(plano_execucao)
         self._current_execution_context = "ambos"
 
         self.ambos_view.set_status_message(
@@ -675,8 +725,271 @@ class App(ctk.CTk):
             ),
             "#A7C8FF",
         )
+        self.ambos_view.set_status_message("Executando modo Ambos...", "#A7C8FF")
+        self._etl_steps = self._build_real_ambos_steps()
+        self._open_progress_modal_manual()
+        threading.Thread(
+            target=self._run_ambos_worker,
+            args=(file_values, plano_execucao),
+            daemon=True,
+        ).start()
 
-        self._open_progress_modal()
+    @staticmethod
+    def _normalized_messages(result: dict) -> list[str]:
+        if not isinstance(result, dict):
+            return []
+        msgs = result.get("mensagens", [])
+        if isinstance(msgs, str):
+            msgs = [msgs]
+        if not isinstance(msgs, list):
+            msgs = []
+        generic_markers = (
+            "modo complicacao selecionado",
+            "modo internação selecionado",
+            "modo internacao selecionado",
+            "modo internacao_eletivo selecionado",
+            "modo ambos selecionado",
+            "modo complicacao iniciado",
+            "modo internacao iniciado",
+            "modo internacao_eletivo iniciado",
+            "modo ambos iniciado",
+        )
+        filtered: list[str] = []
+        for msg in msgs:
+            s = str(msg).strip()
+            if not s:
+                continue
+            low = s.lower()
+            if any(marker in low for marker in generic_markers):
+                continue
+            filtered.append(s)
+
+        nested = result.get("resultados", {})
+        if isinstance(nested, dict):
+            for sub in nested.values():
+                filtered.extend(App._normalized_messages(sub))
+
+        # Remove duplicadas preservando ordem.
+        unique: list[str] = []
+        for msg in filtered:
+            if msg not in unique:
+                unique.append(msg)
+        return unique
+
+    @staticmethod
+    def _first_message(result: dict) -> str:
+        lines = App._normalized_messages(result)
+        return lines[0] if lines else "Falha na execução."
+
+    @staticmethod
+    def _result_message(
+        result: dict,
+        *,
+        ok_default: str = "Concluído com sucesso.",
+        fail_default: str = "Falha na execução.",
+        max_error_lines: int = 6,
+    ) -> str:
+        if not isinstance(result, dict):
+            return fail_default
+        lines = App._normalized_messages(result)
+        ok = bool(result.get("ok", False))
+        if not lines:
+            return ok_default if ok else fail_default
+        if ok:
+            return lines[0]
+        if len(lines) > max_error_lines:
+            lines = lines[:max_error_lines] + ["..."]
+        return "\n".join(lines)
+
+    def _run_ambos_worker(
+        self,
+        file_values: dict[str, str],
+        plano_execucao: dict[str, str],
+    ) -> None:
+        try:
+            if self._etl_cancelled:
+                return
+            output_dir = Path(file_values["output_dir"])
+            output_dir.mkdir(parents=True, exist_ok=True)
+
+            comp_saida_status = str(output_dir / "status_complicacao_limpo.csv")
+            comp_saida_resposta = str(output_dir / "status_resposta_complicacao_limpo.csv")
+            comp_saida_integrado = str(output_dir / "status_complicacao.csv")
+            comp_saida_dataset_status = str(output_dir / "complicacao_status.xlsx")
+            comp_saida_final = str(output_dir / "complicacao_final.xlsx")
+
+            int_saida_status = str(output_dir / "status_internacao_eletivo_limpo.csv")
+            int_saida_resposta_unificado = str(output_dir / "status_resposta_eletivo_internacao.csv")
+            int_saida_resposta = str(output_dir / "status_resposta_eletivo_internacao_limpo.csv")
+            int_saida_integrado = str(output_dir / "status_internacao_eletivo.csv")
+            int_saida_dataset_status = str(output_dir / "internacao_status.xlsx")
+            int_saida_final = str(output_dir / "internacao_final.xlsx")
+
+            self._publish_real_progress(1, "Complicação: gerando dataset status...")
+            if plano_execucao["complicacao"] == "com_resposta":
+                resultado_comp = run_complicacao_pipeline_gerar_status_dataset(
+                    arquivo_status=file_values["status"],
+                    arquivo_status_resposta_complicacao=file_values["flow_complicacao"],
+                    arquivo_dataset_origem_complicacao=file_values["complicacao"],
+                    saida_status=comp_saida_status,
+                    saida_status_resposta=comp_saida_resposta,
+                    saida_status_integrado=comp_saida_integrado,
+                    saida_dataset_status=comp_saida_dataset_status,
+                )
+            else:
+                resultado_comp = run_complicacao_pipeline_gerar_status_dataset_somente_status(
+                    arquivo_status=file_values["status"],
+                    arquivo_dataset_origem_complicacao=file_values["complicacao"],
+                    saida_status=comp_saida_status,
+                    saida_status_integrado=comp_saida_integrado,
+                    saida_dataset_status=comp_saida_dataset_status,
+                )
+            if not resultado_comp.get("ok", False):
+                detalhe = self._result_message(
+                    resultado_comp,
+                    fail_default="Falha na etapa de criação de dataset da complicação.",
+                )
+                self.after(0, lambda: self._finalize_real_progress(False, f"Complicação falhou: {detalhe}"))
+                return
+
+            if self._etl_cancelled:
+                return
+            self._publish_real_progress(2, "Complicação: orquestrando dataset...")
+            resultado_comp_orq = run_complicacao_pipeline_orquestrar(
+                arquivo_dataset_status=comp_saida_dataset_status,
+                arquivo_saida_final=comp_saida_final,
+                nome_logger=(
+                    "orquestracao_complicacao_ui"
+                    if plano_execucao["complicacao"] == "com_resposta"
+                    else "orquestracao_complicacao_somente_status_ui"
+                ),
+            )
+            if not resultado_comp_orq.get("ok", False):
+                detalhe = self._result_message(
+                    resultado_comp_orq,
+                    fail_default="Falha na etapa de orquestração da complicação.",
+                )
+                self.after(0, lambda: self._finalize_real_progress(False, f"Complicação falhou: {detalhe}"))
+                return
+
+            if self._etl_cancelled:
+                return
+            self._publish_real_progress(3, "Internação: gerando dataset status...")
+            if plano_execucao["internacao"] == "com_resposta":
+                resultado_int = run_internacao_eletivo_pipeline_gerar_status_dataset(
+                    arquivo_status=file_values["status"],
+                    arquivo_status_resposta_eletivo=file_values["flow_internacao_eletivo"],
+                    arquivo_status_resposta_internacao=file_values["flow_internacao_urgencia"],
+                    arquivo_status_resposta_unificado=int_saida_resposta_unificado,
+                    arquivo_dataset_origem_internacao=file_values["internacao"],
+                    saida_status=int_saida_status,
+                    saida_status_resposta=int_saida_resposta,
+                    saida_status_integrado=int_saida_integrado,
+                    saida_dataset_status=int_saida_dataset_status,
+                )
+            else:
+                resultado_int = run_internacao_eletivo_pipeline_gerar_status_dataset_somente_status(
+                    arquivo_status=file_values["status"],
+                    arquivo_dataset_origem_internacao=file_values["internacao"],
+                    saida_status=int_saida_status,
+                    saida_status_integrado=int_saida_integrado,
+                    saida_dataset_status=int_saida_dataset_status,
+                )
+            if not resultado_int.get("ok", False):
+                detalhe = self._result_message(
+                    resultado_int,
+                    fail_default="Falha na etapa de criação de dataset da internação.",
+                )
+                self.after(0, lambda: self._finalize_real_progress(False, f"Internação falhou: {detalhe}"))
+                return
+
+            if self._etl_cancelled:
+                return
+            self._publish_real_progress(4, "Internação: orquestrando dataset...")
+            resultado_int_orq = run_internacao_eletivo_pipeline_orquestrar(
+                arquivo_dataset_status=int_saida_dataset_status,
+                arquivo_saida_final=int_saida_final,
+                nome_logger=(
+                    "orquestracao_internacao_ui"
+                    if plano_execucao["internacao"] == "com_resposta"
+                    else "orquestracao_internacao_somente_status_ui"
+                ),
+            )
+            if not resultado_int_orq.get("ok", False):
+                detalhe = self._result_message(
+                    resultado_int_orq,
+                    fail_default="Falha na etapa de orquestração da internação.",
+                )
+                self.after(0, lambda: self._finalize_real_progress(False, f"Internação falhou: {detalhe}"))
+                return
+        except Exception as erro:
+            self.after(
+                0,
+                lambda: self._finalize_real_progress(
+                    False,
+                    f"Falha no modo Ambos: {type(erro).__name__}: {erro}",
+                ),
+            )
+            return
+
+        self.after(0, lambda: self._finalize_real_progress(True, "Modo Ambos executado com sucesso."))
+
+    @staticmethod
+    def _build_real_ambos_steps() -> list[str]:
+        return [
+            "Preparando execução...",
+            "Complicação: gerando dataset status...",
+            "Complicação: orquestrando dataset...",
+            "Internação: gerando dataset status...",
+            "Internação: orquestrando dataset...",
+            "Finalizando execução...",
+        ]
+
+    @staticmethod
+    def _build_real_complicacao_steps() -> list[str]:
+        return [
+            "Preparando execução...",
+            "Complicação: gerando dataset status...",
+            "Complicação: orquestrando dataset...",
+            "Finalizando execução...",
+        ]
+
+    @staticmethod
+    def _build_real_internacao_steps() -> list[str]:
+        return [
+            "Preparando execução...",
+            "Internação: gerando dataset status...",
+            "Internação: orquestrando dataset...",
+            "Finalizando execução...",
+        ]
+
+    def _open_progress_modal_manual(self) -> None:
+        self._etl_cancelled = False
+        self._etl_after_id = None
+        self.progress_modal = ProgressModal(
+            parent=self,
+            style=self.style,
+            center_window=self._center_window,
+            on_cancel=self._cancel_etl_execution,
+        )
+        self.progress_modal.open()
+        self._set_progress_ui("Preparando execução...", 0)
+
+    def _publish_real_progress(self, step_index: int, text: str) -> None:
+        self.after(0, lambda: self._set_progress_ui(text, step_index))
+
+    def _finalize_real_progress(self, ok: bool, mensagem: str) -> None:
+        if ok:
+            self._set_progress_ui(mensagem, len(self._etl_steps))
+        else:
+            step = max(1, min(self._progress_current_step, max(len(self._etl_steps) - 1, 1)))
+            self._set_progress_ui(f"Falha na execução: {mensagem}", step)
+            if self.progress_modal is not None and self.progress_modal.exists():
+                self.progress_modal.set_error_state(f"Falha na execução:\n{mensagem}")
+        cor = "#AEE3B8" if ok else "#FFB1B1"
+        self._set_execution_status_message(mensagem, cor)
+        if self.progress_modal is not None and self.progress_modal.exists():
+            self.progress_modal.set_cancel_as_close(self._close_progress_modal)
 
     def _start_complicacao_execution(self) -> None:
         if self.complicacao_view is None:
@@ -709,14 +1022,95 @@ class App(ctk.CTk):
             return
 
         self.ui_state.current_execution_plan = plano_execucao
-        self._etl_steps = self.pipeline_runner.build_complicacao_steps(plano_execucao)
         self._current_execution_context = "complicacao"
 
         self.complicacao_view.set_status_message(
             f"Plano selecionado: Complicação {plano_execucao['complicacao']}",
             "#A7C8FF",
         )
-        self._open_progress_modal()
+        self.complicacao_view.set_status_message("Executando modo Complicação...", "#A7C8FF")
+        self._etl_steps = self._build_real_complicacao_steps()
+        self._open_progress_modal_manual()
+        threading.Thread(
+            target=self._run_complicacao_worker,
+            args=(file_values, plano_execucao),
+            daemon=True,
+        ).start()
+
+    def _run_complicacao_worker(
+        self,
+        file_values: dict[str, str],
+        plano_execucao: dict[str, str],
+    ) -> None:
+        try:
+            if self._etl_cancelled:
+                return
+            output_dir = Path(file_values["output_dir"])
+            output_dir.mkdir(parents=True, exist_ok=True)
+
+            comp_saida_status = str(output_dir / "status_complicacao_limpo.csv")
+            comp_saida_resposta = str(output_dir / "status_resposta_complicacao_limpo.csv")
+            comp_saida_integrado = str(output_dir / "status_complicacao.csv")
+            comp_saida_dataset_status = str(output_dir / "complicacao_status.xlsx")
+            comp_saida_final = str(output_dir / "complicacao_final.xlsx")
+
+            self._publish_real_progress(1, "Complicação: gerando dataset status...")
+            if plano_execucao["complicacao"] == "com_resposta":
+                resultado = run_complicacao_pipeline_gerar_status_dataset(
+                    arquivo_status=file_values["status"],
+                    arquivo_status_resposta_complicacao=file_values["flow_complicacao"],
+                    arquivo_dataset_origem_complicacao=file_values["complicacao_dataset"],
+                    saida_status=comp_saida_status,
+                    saida_status_resposta=comp_saida_resposta,
+                    saida_status_integrado=comp_saida_integrado,
+                    saida_dataset_status=comp_saida_dataset_status,
+                )
+            else:
+                resultado = run_complicacao_pipeline_gerar_status_dataset_somente_status(
+                    arquivo_status=file_values["status"],
+                    arquivo_dataset_origem_complicacao=file_values["complicacao_dataset"],
+                    saida_status=comp_saida_status,
+                    saida_status_integrado=comp_saida_integrado,
+                    saida_dataset_status=comp_saida_dataset_status,
+                )
+            if not resultado.get("ok", False):
+                detalhe = self._result_message(
+                    resultado,
+                    fail_default="Falha na etapa de criação de dataset da complicação.",
+                )
+                self.after(0, lambda: self._finalize_real_progress(False, f"Complicação falhou: {detalhe}"))
+                return
+
+            if self._etl_cancelled:
+                return
+            self._publish_real_progress(2, "Complicação: orquestrando dataset...")
+            resultado_orq = run_complicacao_pipeline_orquestrar(
+                arquivo_dataset_status=comp_saida_dataset_status,
+                arquivo_saida_final=comp_saida_final,
+                nome_logger=(
+                    "orquestracao_complicacao_ui"
+                    if plano_execucao["complicacao"] == "com_resposta"
+                    else "orquestracao_complicacao_somente_status_ui"
+                ),
+            )
+            if not resultado_orq.get("ok", False):
+                detalhe = self._result_message(
+                    resultado_orq,
+                    fail_default="Falha na etapa de orquestração da complicação.",
+                )
+                self.after(0, lambda: self._finalize_real_progress(False, f"Complicação falhou: {detalhe}"))
+                return
+        except Exception as erro:
+            self.after(
+                0,
+                lambda: self._finalize_real_progress(
+                    False,
+                    f"Falha no modo Complicação: {type(erro).__name__}: {erro}",
+                ),
+            )
+            return
+
+        self.after(0, lambda: self._finalize_real_progress(True, "Modo Complicação executado com sucesso."))
 
     def _start_internacao_execution(self) -> None:
         if self.internacao_view is None:
@@ -749,14 +1143,98 @@ class App(ctk.CTk):
             return
 
         self.ui_state.current_execution_plan = plano_execucao
-        self._etl_steps = self.pipeline_runner.build_internacao_steps(plano_execucao)
         self._current_execution_context = "internacao"
 
         self.internacao_view.set_status_message(
             f"Plano selecionado: Internação {plano_execucao['internacao']}",
             "#A7C8FF",
         )
-        self._open_progress_modal()
+        self.internacao_view.set_status_message("Executando modo Internação...", "#A7C8FF")
+        self._etl_steps = self._build_real_internacao_steps()
+        self._open_progress_modal_manual()
+        threading.Thread(
+            target=self._run_internacao_worker,
+            args=(file_values, plano_execucao),
+            daemon=True,
+        ).start()
+
+    def _run_internacao_worker(
+        self,
+        file_values: dict[str, str],
+        plano_execucao: dict[str, str],
+    ) -> None:
+        try:
+            if self._etl_cancelled:
+                return
+            output_dir = Path(file_values["output_dir"])
+            output_dir.mkdir(parents=True, exist_ok=True)
+
+            int_saida_status = str(output_dir / "status_internacao_eletivo_limpo.csv")
+            int_saida_resposta_unificado = str(output_dir / "status_resposta_eletivo_internacao.csv")
+            int_saida_resposta = str(output_dir / "status_resposta_eletivo_internacao_limpo.csv")
+            int_saida_integrado = str(output_dir / "status_internacao_eletivo.csv")
+            int_saida_dataset_status = str(output_dir / "internacao_status.xlsx")
+            int_saida_final = str(output_dir / "internacao_final.xlsx")
+
+            self._publish_real_progress(1, "Internação: gerando dataset status...")
+            if plano_execucao["internacao"] == "com_resposta":
+                resultado = run_internacao_eletivo_pipeline_gerar_status_dataset(
+                    arquivo_status=file_values["status"],
+                    arquivo_status_resposta_eletivo=file_values["flow_internacao_eletivo"],
+                    arquivo_status_resposta_internacao=file_values["flow_internacao_urgencia"],
+                    arquivo_status_resposta_unificado=int_saida_resposta_unificado,
+                    arquivo_dataset_origem_internacao=file_values["internacao_dataset"],
+                    saida_status=int_saida_status,
+                    saida_status_resposta=int_saida_resposta,
+                    saida_status_integrado=int_saida_integrado,
+                    saida_dataset_status=int_saida_dataset_status,
+                )
+            else:
+                resultado = run_internacao_eletivo_pipeline_gerar_status_dataset_somente_status(
+                    arquivo_status=file_values["status"],
+                    arquivo_dataset_origem_internacao=file_values["internacao_dataset"],
+                    saida_status=int_saida_status,
+                    saida_status_integrado=int_saida_integrado,
+                    saida_dataset_status=int_saida_dataset_status,
+                )
+            if not resultado.get("ok", False):
+                detalhe = self._result_message(
+                    resultado,
+                    fail_default="Falha na etapa de criação de dataset da internação.",
+                )
+                self.after(0, lambda: self._finalize_real_progress(False, f"Internação falhou: {detalhe}"))
+                return
+
+            if self._etl_cancelled:
+                return
+            self._publish_real_progress(2, "Internação: orquestrando dataset...")
+            resultado_orq = run_internacao_eletivo_pipeline_orquestrar(
+                arquivo_dataset_status=int_saida_dataset_status,
+                arquivo_saida_final=int_saida_final,
+                nome_logger=(
+                    "orquestracao_internacao_ui"
+                    if plano_execucao["internacao"] == "com_resposta"
+                    else "orquestracao_internacao_somente_status_ui"
+                ),
+            )
+            if not resultado_orq.get("ok", False):
+                detalhe = self._result_message(
+                    resultado_orq,
+                    fail_default="Falha na etapa de orquestração da internação.",
+                )
+                self.after(0, lambda: self._finalize_real_progress(False, f"Internação falhou: {detalhe}"))
+                return
+        except Exception as erro:
+            self.after(
+                0,
+                lambda: self._finalize_real_progress(
+                    False,
+                    f"Falha no modo Internação: {type(erro).__name__}: {erro}",
+                ),
+            )
+            return
+
+        self.after(0, lambda: self._finalize_real_progress(True, "Modo Internação executado com sucesso."))
 
     def _reset_response_warning_flags(self) -> None:
         self.ambos_controller.reset_response_warning_flags()
@@ -875,6 +1353,7 @@ class App(ctk.CTk):
     def _set_progress_ui(self, status_text: str, progress_step: int) -> None:
         total_steps = max(len(self._etl_steps), 1)
         pct = min(progress_step / total_steps, 1.0)
+        self._progress_current_step = max(0, progress_step)
         if self.progress_modal is not None:
             self.progress_modal.set_progress(pct, f"{int(pct * 100)}%")
             self.progress_modal.set_status(status_text)
@@ -895,6 +1374,10 @@ class App(ctk.CTk):
         self.progress_modal = None
 
     def _set_execution_status_message(self, text: str, color: str) -> None:
+        if self._current_execution_context == "concatenar":
+            if self.concatenar_view is not None:
+                self.concatenar_view.set_status_message(self._current_concatenar_mode, text, color)
+            return
         if self._current_execution_context == "complicacao":
             if self.complicacao_view is not None:
                 self.complicacao_view.set_status_message(text, color)

@@ -158,6 +158,9 @@ class IngestaoView(ctk.CTkFrame):
             font=ctk.CTkFont(family="Segoe UI", size=16),
             text_color="#A7C8FF",
             fg_color="transparent",
+            anchor="w",
+            justify="left",
+            wraplength=1020,
         )
         status_label.grid(row=len(fields) + 2, column=0, columnspan=3, padx=24, pady=(8, 8), sticky="w")
         self.exec_status_labels[mode] = status_label

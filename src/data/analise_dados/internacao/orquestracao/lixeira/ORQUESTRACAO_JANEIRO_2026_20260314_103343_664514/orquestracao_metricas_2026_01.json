@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "pipeline": "orquestracao_internacao_ui",
+    "pipeline": "orquestracao_internacao_eletivo",
     "versao_metricas": "1.0.0",
     "competencia": "2026-01"
   },
@@ -113,9 +113,9 @@
     "2026-03-09": {
       "processo": {
         "RESOLVIDO": 6261,
-        "MUDAR_CONTATO_LIDO_SEM_RESPOSTA": 3236,
+        "MUDAR_CONTATO_LIDO_SEM_RESPOSTA": 3237,
         "MUDAR_CONTATO_ENTREGUE": 1169,
-        "ENCERRAR_CONTATO_LIDO_SIM": 416,
+        "ENCERRAR_CONTATO_LIDO_SIM": 415,
         "SEGUNDO_ENVIO": 26,
         "MUDAR_CONTATO_ENVIADO": 25,
         "MUDAR_CONTATO_NAO_ENTREGUE_META": 22,
@@ -128,10 +128,10 @@
         "OK_FALLBACK": 2
       },
       "classificacao_acao": {
-        "EM_ANDAMENTO": 4485,
-        "ENCERRADO": 416
+        "EM_ANDAMENTO": 4486,
+        "ENCERRADO": 415
       },
-      "hash_conteudo": "453b682a1d244e7dc6dd80c21356422f652f8ed8900cde1410b4f66276b3381a"
+      "hash_conteudo": "1c22f0c6325db3dd25f9804592cd1e2265fd592326bab3fc9029166af8458e92"
     },
     "2026-03-10": {
       "processo": {

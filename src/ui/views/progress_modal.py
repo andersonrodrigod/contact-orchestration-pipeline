@@ -26,6 +26,7 @@ class ProgressModal:
         self.progress_pct_label: ctk.CTkLabel | None = None
         self.progress_bar: ctk.CTkProgressBar | None = None
         self.cancel_btn: ctk.CTkButton | None = None
+        self._last_ratio: float = 0.0
 
     def open(self) -> None:
         self.close()
@@ -93,6 +94,8 @@ class ProgressModal:
             font=ctk.CTkFont(family="Segoe UI", size=20),
             text_color="#D5E4FF",
             fg_color="transparent",
+            justify="center",
+            wraplength=760,
         )
         self.progress_label.pack(pady=(30, 42))
 
@@ -110,8 +113,9 @@ class ProgressModal:
         modal.protocol("WM_DELETE_WINDOW", self._on_cancel)
 
     def set_progress(self, ratio: float, pct_text: str) -> None:
+        self._last_ratio = max(0.0, min(ratio, 1.0))
         if self.progress_bar is not None:
-            self.progress_bar.set(ratio)
+            self.progress_bar.set(self._last_ratio)
         if self.progress_pct_label is not None:
             self.progress_pct_label.configure(text=pct_text)
 
@@ -122,6 +126,15 @@ class ProgressModal:
     def set_cancel_as_close(self, on_close: Callable[[], None]) -> None:
         if self.cancel_btn is not None:
             self.cancel_btn.configure(text="Fechar", command=on_close)
+
+    def set_error_state(self, text: str) -> None:
+        if self.progress_bar is not None:
+            self.progress_bar.configure(progress_color="#D94B4B")
+            self.progress_bar.set(self._last_ratio)
+        if self.progress_pct_label is not None:
+            self.progress_pct_label.configure(text="ERRO", text_color="#FFB1B1")
+        if self.progress_label is not None:
+            self.progress_label.configure(text=text, text_color="#FFB1B1")
 
     def exists(self) -> bool:
         return self.window is not None and self.window.winfo_exists()

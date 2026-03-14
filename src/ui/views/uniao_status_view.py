@@ -168,8 +168,18 @@ class UniaoStatusView(ctk.CTkFrame):
             font=ctk.CTkFont(family="Segoe UI", size=16),
             text_color="#FFB1B1",
             fg_color="transparent",
+            anchor="w",
+            justify="left",
+            wraplength=1020,
         )
-        status_label.grid(row=len(fields) + 2, column=0, columnspan=3, pady=(6, 8))
+        status_label.grid(
+            row=len(fields) + 2,
+            column=0,
+            columnspan=3,
+            padx=24,
+            pady=(6, 8),
+            sticky="w",
+        )
         self.exec_status_labels[mode] = status_label
 
     def set_active_mode(self, mode: str) -> None:

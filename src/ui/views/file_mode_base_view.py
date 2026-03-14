@@ -110,12 +110,17 @@ class FileModeBaseView(ctk.CTkFrame):
             font=ctk.CTkFont(family="Segoe UI", size=16),
             text_color="#FFB1B1",
             fg_color="transparent",
+            anchor="w",
+            justify="left",
+            wraplength=1020,
         )
         self.exec_status_label.grid(
             row=len(self._fields) + 2,
             column=0,
             columnspan=3,
+            padx=24,
             pady=(8, self._status_bottom_pady),
+            sticky="w",
         )
 
     def get_file_values(self) -> dict[str, str]:
