@@ -41,6 +41,9 @@ No modo `ambos`, cada fluxo usa arquivo intermediario proprio para evitar sobres
 python main.py
 ```
 
+## Documentacao da UI
+- Guia de uso e manutencao da interface: `README_UI_PASSO_A_PASSO.md`
+
 Forcar modo:
 ```bash
 python main.py --modo complicacao_com_resposta

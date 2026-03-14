@@ -4,6 +4,7 @@ from typing import Callable
 
 import customtkinter as ctk
 
+from src.ui.components.ui_factory import create_primary_button
 from src.ui.state import UIStyle
 
 
@@ -95,18 +96,13 @@ class ProgressModal:
         )
         self.progress_label.pack(pady=(30, 42))
 
-        self.cancel_btn = ctk.CTkButton(
-            card,
+        self.cancel_btn = create_primary_button(
+            parent=card,
+            style=self.style,
             text="Cancelar",
             width=260,
             height=60,
-            font=ctk.CTkFont(family="Segoe UI", size=36, weight="bold"),
-            fg_color=self.style.btn_fg_color,
-            hover_color=self.style.btn_hover_color,
-            border_color=self.style.btn_border_color,
-            text_color=self.style.btn_text_color,
-            corner_radius=self.style.btn_corner_radius,
-            border_width=self.style.btn_border_width,
+            font_size=36,
             command=self._on_cancel,
         )
         self.cancel_btn.pack(pady=(0, 24))

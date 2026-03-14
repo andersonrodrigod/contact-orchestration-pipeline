@@ -1,17 +1,22 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from typing import Callable
 
 import customtkinter as ctk
 
 from src.ui.components.file_selector_row import FileSelectorRow
+from src.ui.components.ui_factory import (
+    create_back_button,
+    create_primary_button,
+    grid_shadowed_primary_button,
+)
 from src.ui.state import UIStyle
 
 
 class UniaoStatusView(ctk.CTkFrame):
     MODES = (
-        ("complicacao", "Uniao Complicacao"),
-        ("internacao", "Uniao Internacao"),
+        ("complicacao", "União Complicação"),
+        ("internacao", "União Internação"),
     )
 
     def __init__(
@@ -44,36 +49,13 @@ class UniaoStatusView(ctk.CTkFrame):
 
         title = ctk.CTkLabel(
             self,
-            text="Uniao de Status e Flow de Respostas",
+            text="União de Status e Flow de Respostas",
             font=ctk.CTkFont(size=40, weight="bold"),
             text_color="#E6F0FF",
         )
         title.place(relx=0.5, rely=0.085, anchor="center")
 
-        back_shadow = ctk.CTkFrame(
-            self,
-            width=62,
-            height=52,
-            corner_radius=self._style.btn_corner_radius,
-            fg_color=self._style.btn_shadow_color,
-        )
-        back_shadow.place(x=44, y=52, anchor="nw")
-
-        back_btn = ctk.CTkButton(
-            self,
-            text="←",
-            width=60,
-            height=50,
-            font=ctk.CTkFont(family="Segoe UI", size=26, weight="bold"),
-            fg_color=self._style.btn_fg_color,
-            hover_color=self._style.btn_hover_color,
-            border_color=self._style.btn_border_color,
-            text_color=self._style.btn_text_color,
-            corner_radius=self._style.btn_corner_radius,
-            border_width=self._style.btn_border_width,
-            command=self._on_back,
-        )
-        back_btn.place(x=42, y=50, anchor="nw")
+        create_back_button(self, self._style, self._on_back)
 
         card_shadow = ctk.CTkFrame(
             self,
@@ -103,17 +85,13 @@ class UniaoStatusView(ctk.CTkFrame):
         switcher.grid_columnconfigure((0, 1), weight=1, uniform="uniao_modes")
 
         for col, (mode, label) in enumerate(self.MODES):
-            btn = ctk.CTkButton(
-                switcher,
+            btn = create_primary_button(
+                parent=switcher,
+                style=self._style,
                 text=label,
+                width=420,
                 height=44,
-                font=ctk.CTkFont(family="Segoe UI", size=18, weight="bold"),
-                fg_color=self._style.btn_fg_color,
-                hover_color=self._style.btn_hover_color,
-                border_color=self._style.btn_border_color,
-                text_color=self._style.btn_text_color,
-                corner_radius=self._style.btn_corner_radius,
-                border_width=self._style.btn_border_width,
+                font_size=18,
                 command=lambda m=mode: self.set_active_mode(m),
             )
             btn.grid(row=0, column=col, padx=6, sticky="ew")
@@ -133,13 +111,13 @@ class UniaoStatusView(ctk.CTkFrame):
             parent=content,
             mode="complicacao",
             fields=fields,
-            execute_text="Executar Uniao",
+            execute_text="Executar União",
         )
         self._build_mode_frame(
             parent=content,
             mode="internacao",
             fields=fields,
-            execute_text="Executar Uniao",
+            execute_text="Executar União",
         )
 
         self.set_active_mode(self._active_mode)
@@ -171,30 +149,18 @@ class UniaoStatusView(ctk.CTkFrame):
             )
             self.rows[mode][key] = row
 
-        execute_shadow = ctk.CTkFrame(
-            frame,
-            width=420,
-            height=58,
-            corner_radius=self._style.btn_corner_radius,
-            fg_color=self._style.btn_shadow_color,
-        )
-        execute_shadow.grid(row=len(fields) + 1, column=0, columnspan=3, pady=(16, 0))
-
-        execute_btn = ctk.CTkButton(
-            frame,
+        grid_shadowed_primary_button(
+            parent=frame,
+            style=self._style,
+            row=len(fields) + 1,
             text=execute_text,
             width=420,
             height=56,
-            font=ctk.CTkFont(family="Segoe UI", size=30, weight="bold"),
-            fg_color=self._style.btn_fg_color,
-            hover_color=self._style.btn_hover_color,
-            border_color=self._style.btn_border_color,
-            text_color=self._style.btn_text_color,
-            corner_radius=self._style.btn_corner_radius,
-            border_width=self._style.btn_border_width,
+            font_size=30,
             command=lambda m=mode: self._on_execute(m),
+            shadow_pady=(16, 0),
+            button_pady=(14, 0),
         )
-        execute_btn.grid(row=len(fields) + 1, column=0, columnspan=3, pady=(14, 0))
 
         status_label = ctk.CTkLabel(
             frame,

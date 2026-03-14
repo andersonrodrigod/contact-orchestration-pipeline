@@ -1,10 +1,15 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from typing import Callable
 
 import customtkinter as ctk
 
 from src.ui.components.file_selector_row import FileSelectorRow
+from src.ui.components.ui_factory import (
+    create_back_button,
+    create_primary_button,
+    grid_shadowed_primary_button,
+)
 from src.ui.state import UIStyle
 
 
@@ -44,36 +49,13 @@ class FluxoPartesView(ctk.CTkFrame):
 
         title = ctk.CTkLabel(
             self,
-            text="Execucao em Partes",
+            text="Execução em Partes",
             font=ctk.CTkFont(size=42, weight="bold"),
             text_color="#E6F0FF",
         )
         title.place(relx=0.5, rely=0.085, anchor="center")
 
-        back_shadow = ctk.CTkFrame(
-            self,
-            width=62,
-            height=52,
-            corner_radius=self._style.btn_corner_radius,
-            fg_color=self._style.btn_shadow_color,
-        )
-        back_shadow.place(x=44, y=52, anchor="nw")
-
-        back_btn = ctk.CTkButton(
-            self,
-            text="←",
-            width=60,
-            height=50,
-            font=ctk.CTkFont(family="Segoe UI", size=26, weight="bold"),
-            fg_color=self._style.btn_fg_color,
-            hover_color=self._style.btn_hover_color,
-            border_color=self._style.btn_border_color,
-            text_color=self._style.btn_text_color,
-            corner_radius=self._style.btn_corner_radius,
-            border_width=self._style.btn_border_width,
-            command=self._on_back,
-        )
-        back_btn.place(x=42, y=50, anchor="nw")
+        create_back_button(self, self._style, self._on_back)
 
         card_shadow = ctk.CTkFrame(
             self,
@@ -103,19 +85,15 @@ class FluxoPartesView(ctk.CTkFrame):
         context_switch.grid_columnconfigure((0, 1), weight=1, uniform="context")
 
         for col, (ctx_key, label) in enumerate(
-            (("complicacao", "Complicacao"), ("internacao", "Internacao"))
+            (("complicacao", "Complicação"), ("internacao", "Internação"))
         ):
-            btn = ctk.CTkButton(
-                context_switch,
+            btn = create_primary_button(
+                parent=context_switch,
+                style=self._style,
                 text=label,
+                width=420,
                 height=42,
-                font=ctk.CTkFont(family="Segoe UI", size=20, weight="bold"),
-                fg_color=self._style.btn_fg_color,
-                hover_color=self._style.btn_hover_color,
-                border_color=self._style.btn_border_color,
-                text_color=self._style.btn_text_color,
-                corner_radius=self._style.btn_corner_radius,
-                border_width=self._style.btn_border_width,
+                font_size=20,
                 command=lambda c=ctx_key: self.set_active_context(c),
             )
             btn.grid(row=0, column=col, padx=6, sticky="ew")
@@ -126,24 +104,20 @@ class FluxoPartesView(ctk.CTkFrame):
         action_switch.grid_columnconfigure((0, 1, 2, 3, 4), weight=1, uniform="actions")
 
         action_order = [
-            ("ingestao_normalizacao", "Ingestao"),
-            ("uniao_status", "Uniao de Status"),
+            ("ingestao_normalizacao", "Ingestão"),
+            ("uniao_status", "União de Status"),
             ("criar_dataset", "Criar Dataset"),
             ("enviar_status_dataset", "Enviar Status"),
             ("orquestrar", "Orquestrar"),
         ]
         for col, (action_key, label) in enumerate(action_order):
-            btn = ctk.CTkButton(
-                action_switch,
+            btn = create_primary_button(
+                parent=action_switch,
+                style=self._style,
                 text=label,
+                width=200,
                 height=38,
-                font=ctk.CTkFont(family="Segoe UI", size=16, weight="bold"),
-                fg_color=self._style.btn_fg_color,
-                hover_color=self._style.btn_hover_color,
-                border_color=self._style.btn_border_color,
-                text_color=self._style.btn_text_color,
-                corner_radius=self._style.btn_corner_radius,
-                border_width=self._style.btn_border_width,
+                font_size=16,
                 command=lambda a=action_key: self.set_active_action(a),
             )
             btn.grid(row=0, column=col, padx=4, sticky="ew")
@@ -160,7 +134,6 @@ class FluxoPartesView(ctk.CTkFrame):
                     parent=content,
                     context_key=context_key,
                     action_key=action_key,
-                    action_title=spec["title"],
                     fields=spec["fields"],
                 )
 
@@ -172,7 +145,6 @@ class FluxoPartesView(ctk.CTkFrame):
         parent: ctk.CTkFrame,
         context_key: str,
         action_key: str,
-        action_title: str,
         fields: list[tuple[str, str]],
     ) -> None:
         frame = ctk.CTkFrame(parent, fg_color="#17264A")
@@ -196,30 +168,18 @@ class FluxoPartesView(ctk.CTkFrame):
             )
             self.rows[key][field_key] = row
 
-        execute_shadow = ctk.CTkFrame(
-            frame,
-            width=380,
-            height=58,
-            corner_radius=self._style.btn_corner_radius,
-            fg_color=self._style.btn_shadow_color,
-        )
-        execute_shadow.grid(row=len(fields) + 1, column=0, columnspan=3, pady=(16, 0))
-
-        execute_btn = ctk.CTkButton(
-            frame,
+        grid_shadowed_primary_button(
+            parent=frame,
+            style=self._style,
+            row=len(fields) + 1,
             text="Executar Etapa",
             width=380,
             height=56,
-            font=ctk.CTkFont(family="Segoe UI", size=28, weight="bold"),
-            fg_color=self._style.btn_fg_color,
-            hover_color=self._style.btn_hover_color,
-            border_color=self._style.btn_border_color,
-            text_color=self._style.btn_text_color,
-            corner_radius=self._style.btn_corner_radius,
-            border_width=self._style.btn_border_width,
+            font_size=28,
             command=lambda c=context_key, a=action_key: self._on_execute(c, a),
+            shadow_pady=(16, 0),
+            button_pady=(12, 0),
         )
-        execute_btn.grid(row=len(fields) + 1, column=0, columnspan=3, pady=(12, 0))
 
         status_label = ctk.CTkLabel(
             frame,

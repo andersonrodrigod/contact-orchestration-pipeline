@@ -4,6 +4,7 @@ from typing import Callable
 
 import customtkinter as ctk
 
+from src.ui.components.ui_factory import create_primary_button
 from src.ui.state import UIStyle
 
 
@@ -75,17 +76,13 @@ class MenuView(ctk.CTkFrame):
             )
             sombra.place(x=0, y=4)
 
-            btn = ctk.CTkButton(
-                item_frame,
+            btn = create_primary_button(
+                parent=item_frame,
+                style=self._style,
                 text="",
                 width=794,
                 height=btn_height,
-                corner_radius=self._style.btn_corner_radius,
-                fg_color=self._style.btn_fg_color,
-                hover_color=self._style.btn_hover_color,
-                border_color=self._style.btn_border_color,
-                text_color=self._style.btn_text_color,
-                border_width=self._style.btn_border_width,
+                font_size=24,
                 command=lambda d=destino: self._on_navigate(d),
             )
             btn.place(x=0, y=0)
