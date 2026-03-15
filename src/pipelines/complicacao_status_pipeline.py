@@ -13,6 +13,7 @@ from src.pipelines.join_status_resposta_pipeline import (
 from src.services.analise_dados_fase1_service import gerar_analise_dados_fase1_csv
 from src.services.analise_dados_fase2_service import gerar_analise_dados_fase2_csv
 from src.services.dataset_service import criar_dataset_complicacao
+from src.services.graficos_uniao_status_resposta_service import gerar_graficos_uniao_status_resposta
 from src.services.ingestao_service import executar_ingestao_complicacao, executar_ingestao_somente_status
 from src.services.resumo_complicacao_service import gerar_resumo_complicacao_csv
 
@@ -99,6 +100,18 @@ def run_complicacao_pipeline_enviar_status_com_resposta(
         'ANALISE_DADOS',
         f"CSVs da Fase 1 gerados em: {resultado_analise_fase1.get('pasta_saida', '')}",
     )
+    resultado_graficos_fase1 = gerar_graficos_uniao_status_resposta(
+        contexto='complicacao',
+        raiz_analise_contexto=raiz_analise_dados,
+        pasta_origem_csv=resultado_analise_fase1.get('pasta_saida', ''),
+    )
+    logger.info(
+        'GRAFICOS',
+        (
+            "Graficos da Fase 1 (uniao_status_resposta) gerados em: "
+            f"{resultado_graficos_fase1.get('pasta_saida', '')}"
+        ),
+    )
 
     metricas_por_etapa = {
         **resultado_ingestao.get('metricas_por_etapa', {}),
@@ -119,6 +132,7 @@ def run_complicacao_pipeline_enviar_status_com_resposta(
         mensagens=resultado_integracao.get('mensagens', [])
         + [
             f"Analise de dados Fase 1 gerada em: {resultado_analise_fase1.get('pasta_saida', '')}",
+            f"Manifest de graficos Fase 1: {resultado_graficos_fase1.get('arquivo_manifest', '')}",
         ],
         metricas={
             'total_status': resultado_integracao.get('total_status', 0),
@@ -144,6 +158,7 @@ def run_complicacao_pipeline_enviar_status_com_resposta(
             'qualidade_data': resultado_ingestao.get('qualidade_data', {}),
             'metricas_por_etapa': metricas_por_etapa,
             'analise_dados_fase1': resultado_analise_fase1,
+            'graficos_uniao_status_resposta': resultado_graficos_fase1,
         },
     )
     if not logger_externo:

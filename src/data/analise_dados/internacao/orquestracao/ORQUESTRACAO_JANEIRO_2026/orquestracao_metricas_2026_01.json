@@ -8,186 +8,204 @@
     "2026-02-24": {
       "processo": {
         "RESOLVIDO": 136,
-        "SEGUNDO_ENVIO": 6,
-        "DISPARAR_NOVAMENTE": 2,
-        "ENCERRAR_CONTATO_LIDO_SIM": 1
+        "SEGUNDO_ENVIO": 2
       },
       "status_chave": {
-        "OK_PRINCIPAL": 9
+        "OK_PRINCIPAL": 2
       },
       "classificacao_acao": {
-        "EM_ANDAMENTO": 8,
-        "ENCERRADO": 1
+        "EM_ANDAMENTO": 2
       },
-      "hash_conteudo": "d7df08999d597118a74b0e5448a5dd2b45c50f8aa66b5b7d8a13f5939ef02754"
+      "hash_conteudo": "b26b56d77559652203bb9eaae761f7d2538ee10c8cfd6e48fe9846c3f5142a8b"
     },
     "2026-02-27": {
       "processo": {
         "RESOLVIDO": 239,
-        "DISPARAR_NOVAMENTE": 15,
+        "DISPARAR_NOVAMENTE": 16,
+        "SEGUNDO_ENVIO": 9,
         "MUDAR_CONTATO_LIDO_SEM_RESPOSTA": 8,
-        "SEGUNDO_ENVIO": 8,
         "ENCERRAR_CONTATO_LIDO_SIM": 1
       },
       "status_chave": {
-        "OK_PRINCIPAL": 32
+        "OK_PRINCIPAL": 34
       },
       "classificacao_acao": {
-        "EM_ANDAMENTO": 31,
+        "EM_ANDAMENTO": 33,
         "ENCERRADO": 1
       },
-      "hash_conteudo": "e2693dce7809a285b10c15d8f2dde782f385c46f584e925b606dbc07cc1c848b"
+      "hash_conteudo": "70e9c69f054ce1c3aa8b69f9d276728df1273151a87972751e1d388ee4079820"
     },
     "2026-03-03": {
       "processo": {
         "RESOLVIDO": 6,
-        "DISPARAR_NOVAMENTE": 5,
-        "SEGUNDO_ENVIO": 2,
+        "DISPARAR_NOVAMENTE": 1,
         "MUDAR_CONTATO_LIDO_SEM_RESPOSTA": 1
       },
       "status_chave": {
-        "OK_PRINCIPAL": 8
+        "OK_PRINCIPAL": 2
       },
       "classificacao_acao": {
-        "EM_ANDAMENTO": 8
+        "EM_ANDAMENTO": 2
       },
-      "hash_conteudo": "9660f2e292cc9b612ba3d6b03580381ed11287f64ed66d0936bfa1864bcd64da"
+      "hash_conteudo": "a4c260c1ac2e7e88123732e3ad60e88f11c5a18d5f1ff9a9a701e6f95549331b"
     },
     "2026-03-04": {
       "processo": {
-        "RESOLVIDO": 82,
-        "SEGUNDO_ENVIO": 52,
-        "DISPARAR_NOVAMENTE": 27,
+        "RESOLVIDO": 80,
+        "SEGUNDO_ENVIO": 15,
         "MUDAR_CONTATO_LIDO_SEM_RESPOSTA": 4,
-        "ENCERRAR_CONTATO_LIDO_SIM": 1
+        "DISPARAR_NOVAMENTE": 2,
+        "ENCERRAR_CONTATO_NAO_QUIS": 1
       },
       "status_chave": {
-        "OK_PRINCIPAL": 83,
-        "OK_FALLBACK": 1
+        "OK_PRINCIPAL": 22
       },
       "classificacao_acao": {
-        "EM_ANDAMENTO": 83,
+        "EM_ANDAMENTO": 21,
         "ENCERRADO": 1
       },
-      "hash_conteudo": "29952e49ce16292bc56eb189a1fa995bc5c5d08952a069725a6874b42fba0c05"
+      "hash_conteudo": "c23745e2fb2c345666f4a09e11d1406d6484085781866d6e8b84bab935a9a764"
     },
     "2026-03-05": {
       "processo": {
-        "DISPARAR_NOVAMENTE": 8,
-        "SEGUNDO_ENVIO": 6,
-        "RESOLVIDO": 4
-      },
-      "status_chave": {
-        "OK_PRINCIPAL": 14
-      },
-      "classificacao_acao": {
-        "EM_ANDAMENTO": 14
-      },
-      "hash_conteudo": "9cdd544707c30462101c922fb540b6b3676ba19a20be437b6dfc0bac85aee3b1"
-    },
-    "2026-03-06": {
-      "processo": {
-        "MUDAR_CONTATO_MENSAGEM_NAO_ENTREGUE": 691,
-        "MUDAR_CONTATO_EXPERIMENTO": 220,
-        "MUDAR_CONTATO_LIDO_SEM_RESPOSTA": 207,
-        "MUDAR_CONTATO_NAO_ENTREGUE_META": 158,
-        "RESOLVIDO": 109,
-        "MUDAR_CONTATO_ENTREGUE": 70,
-        "ENCERRAR_CONTATO_LIDO_SIM": 37,
-        "SEGUNDO_ENVIO": 35,
-        "MUDAR_CONTATO_DISPAROS_EXCEDENTE": 12,
-        "MUDAR_CONTATO_OPT_OUT": 8,
-        "DISPARAR_NOVAMENTE": 5,
-        "MUDAR_CONTATO_ENVIADO": 5
-      },
-      "status_chave": {
-        "OK_PRINCIPAL": 1447,
-        "OK_FALLBACK": 1
-      },
-      "classificacao_acao": {
-        "EM_ANDAMENTO": 1411,
-        "ENCERRADO": 37
-      },
-      "hash_conteudo": "e55737da324f1707bcea2064f29955a700edf0cc0609074e4b851cf9253b940e"
-    },
-    "2026-03-09": {
-      "processo": {
-        "RESOLVIDO": 6261,
-        "MUDAR_CONTATO_LIDO_SEM_RESPOSTA": 3236,
-        "MUDAR_CONTATO_ENTREGUE": 1169,
-        "ENCERRAR_CONTATO_LIDO_SIM": 416,
-        "SEGUNDO_ENVIO": 26,
-        "MUDAR_CONTATO_ENVIADO": 25,
-        "MUDAR_CONTATO_NAO_ENTREGUE_META": 22,
-        "MUDAR_CONTATO_DISPAROS_EXCEDENTE": 4,
-        "MUDAR_CONTATO_MENSAGEM_NAO_ENTREGUE": 2,
-        "DISPARAR_NOVAMENTE": 1
-      },
-      "status_chave": {
-        "OK_PRINCIPAL": 4899,
-        "OK_FALLBACK": 2
-      },
-      "classificacao_acao": {
-        "EM_ANDAMENTO": 4485,
-        "ENCERRADO": 416
-      },
-      "hash_conteudo": "453b682a1d244e7dc6dd80c21356422f652f8ed8900cde1410b4f66276b3381a"
-    },
-    "2026-03-10": {
-      "processo": {
-        "RESOLVIDO": 3482,
-        "ENCERRAR_CONTATO_NAO_QUIS": 1,
+        "RESOLVIDO": 4,
+        "DISPARAR_NOVAMENTE": 1,
         "SEGUNDO_ENVIO": 1
       },
       "status_chave": {
         "OK_PRINCIPAL": 2
       },
       "classificacao_acao": {
-        "EM_ANDAMENTO": 1,
-        "ENCERRADO": 1
+        "EM_ANDAMENTO": 2
       },
-      "hash_conteudo": "38037e4e364e84dcb4d0a3f047cbca58a3ab327bdee128267c91e708774adbbc"
+      "hash_conteudo": "4a9e786cce03f9b8b74b6b1ccd6c3ec5cc3fccd4bb88019818ccc4b0a8a581a5"
+    },
+    "2026-03-06": {
+      "processo": {
+        "MUDAR_CONTATO_MENSAGEM_NAO_ENTREGUE": 679,
+        "MUDAR_CONTATO_LIDO_SEM_RESPOSTA": 219,
+        "MUDAR_CONTATO_EXPERIMENTO": 217,
+        "MUDAR_CONTATO_NAO_ENTREGUE_META": 157,
+        "RESOLVIDO": 85,
+        "MUDAR_CONTATO_ENTREGUE": 69,
+        "SEGUNDO_ENVIO": 35,
+        "ENCERRAR_CONTATO_LIDO_SIM": 16,
+        "MUDAR_CONTATO_DISPAROS_EXCEDENTE": 11,
+        "MUDAR_CONTATO_OPT_OUT": 8,
+        "MUDAR_CONTATO_ENVIADO": 5
+      },
+      "status_chave": {
+        "OK_PRINCIPAL": 1415,
+        "OK_FALLBACK": 1
+      },
+      "classificacao_acao": {
+        "EM_ANDAMENTO": 1400,
+        "ENCERRADO": 16
+      },
+      "hash_conteudo": "eb4c9c123c0813de949fabe1cef2a2e1c11a93de75d4a28e111d2069bea22f42"
+    },
+    "2026-03-09": {
+      "processo": {
+        "RESOLVIDO": 6164,
+        "MUDAR_CONTATO_LIDO_SEM_RESPOSTA": 3509,
+        "MUDAR_CONTATO_ENTREGUE": 1158,
+        "ENCERRAR_CONTATO_LIDO_SIM": 168,
+        "SEGUNDO_ENVIO": 34,
+        "MUDAR_CONTATO_NAO_ENTREGUE_META": 24,
+        "MUDAR_CONTATO_ENVIADO": 22,
+        "DISPARAR_NOVAMENTE": 5,
+        "MUDAR_CONTATO_DISPAROS_EXCEDENTE": 4,
+        "MUDAR_CONTATO_LIDO_EXCEDENTE": 2,
+        "MUDAR_CONTATO_MENSAGEM_NAO_ENTREGUE": 2
+      },
+      "status_chave": {
+        "OK_PRINCIPAL": 4924,
+        "OK_FALLBACK": 4
+      },
+      "classificacao_acao": {
+        "EM_ANDAMENTO": 4760,
+        "ENCERRADO": 168
+      },
+      "hash_conteudo": "7425c89479a465c580d70ed5797e8c48c8c20e0ed0610eb535c9084cbf157c40"
+    },
+    "2026-03-10": {
+      "processo": {
+        "RESOLVIDO": 3432,
+        "MUDAR_CONTATO_LIDO_SEM_RESPOSTA": 38,
+        "DISPARAR_NOVAMENTE": 7,
+        "SEGUNDO_ENVIO": 4
+      },
+      "status_chave": {
+        "OK_PRINCIPAL": 49
+      },
+      "classificacao_acao": {
+        "EM_ANDAMENTO": 49
+      },
+      "hash_conteudo": "27b833900a111e8c549acea54fcd36d2abfa1a7c8ccb454ba4f38a1444189e12"
     },
     "2026-03-11": {
       "processo": {
-        "SEGUNDO_ENVIO": 2756,
-        "MUDAR_CONTATO_LIDO_SEM_RESPOSTA": 2671,
-        "MUDAR_CONTATO_MENSAGEM_NAO_ENTREGUE": 1050,
-        "RESOLVIDO": 996,
-        "MUDAR_CONTATO_ENTREGUE": 727,
-        "ENCERRAR_CONTATO_LIDO_SIM": 555,
-        "MUDAR_CONTATO_NAO_ENTREGUE_META": 247,
-        "DISPARAR_NOVAMENTE": 98,
-        "MUDAR_CONTATO_EXPERIMENTO": 70,
-        "MUDAR_CONTATO_ENVIADO": 50,
-        "MUDAR_CONTATO_DISPAROS_EXCEDENTE": 23,
-        "MUDAR_CONTATO_OPT_OUT": 5,
-        "ENCERRAR_CONTATO_NAO_QUIS": 3,
-        "MUDAR_CONTATO_LIDO_EXCEDENTE": 1,
+        "MUDAR_CONTATO_LIDO_SEM_RESPOSTA": 1506,
+        "RESOLVIDO": 985,
+        "MUDAR_CONTATO_ENTREGUE": 292,
+        "MUDAR_CONTATO_MENSAGEM_NAO_ENTREGUE": 262,
+        "ENCERRAR_CONTATO_LIDO_SIM": 160,
+        "SEGUNDO_ENVIO": 103,
+        "MUDAR_CONTATO_NAO_ENTREGUE_META": 77,
+        "MUDAR_CONTATO_EXPERIMENTO": 30,
+        "MUDAR_CONTATO_ENVIADO": 18,
+        "MUDAR_CONTATO_DISPAROS_EXCEDENTE": 15,
+        "MUDAR_CONTATO_OPT_OUT": 4,
+        "DISPARAR_NOVAMENTE": 2
+      },
+      "status_chave": {
+        "OK_PRINCIPAL": 2429,
+        "OK_FALLBACK": 40
+      },
+      "classificacao_acao": {
+        "EM_ANDAMENTO": 2309,
+        "ENCERRADO": 160
+      },
+      "hash_conteudo": "f1ec268127fca04a230ba2c0575aa1f4efd925cc8a0a52613cf0c28efaecc9b5"
+    },
+    "2026-03-13": {
+      "processo": {
+        "SEGUNDO_ENVIO": 2548,
+        "MUDAR_CONTATO_LIDO_SEM_RESPOSTA": 1960,
+        "MUDAR_CONTATO_MENSAGEM_NAO_ENTREGUE": 646,
+        "MUDAR_CONTATO_ENTREGUE": 378,
+        "RESOLVIDO": 191,
+        "MUDAR_CONTATO_NAO_ENTREGUE_META": 120,
+        "DISPARAR_NOVAMENTE": 85,
+        "MUDAR_CONTATO_EXPERIMENTO": 31,
+        "MUDAR_CONTATO_ENVIADO": 22,
+        "ENCERRAR_CONTATO_LIDO_SIM": 13,
+        "MUDAR_CONTATO_DISPAROS_EXCEDENTE": 4,
+        "MUDAR_CONTATO_OPT_OUT": 2,
         "MUDAR_CONTATO_LIDO_NAO": 1
       },
       "status_chave": {
-        "OK_PRINCIPAL": 7927,
-        "OK_FALLBACK": 330
+        "OK_PRINCIPAL": 5513,
+        "OK_FALLBACK": 297
       },
       "classificacao_acao": {
-        "EM_ANDAMENTO": 7699,
-        "ENCERRADO": 558
+        "EM_ANDAMENTO": 5797,
+        "ENCERRADO": 13
       },
-      "hash_conteudo": "4a2b0a5d70d89e7e5437929c39b82fdbc1d3ef8710ceb976fdcf7f8836096aff"
+      "hash_conteudo": "4b9cb98ce0fe4328fd22af272326350b4666389b9be4b32ecc45aac3c8a3b620"
     },
     "SEM_DATA": {
       "processo": {
-        "RESOLVIDO": 1802,
-        "PROGRAMADO": 1364
+        "RESOLVIDO": 1804,
+        "PROGRAMADO": 1376
       },
       "status_chave": {
-        "SEM_MATCH": 1364
+        "SEM_MATCH": 1376
       },
       "classificacao_acao": {
-        "PROGRAMADO": 1364
+        "PROGRAMADO": 1376
       },
-      "hash_conteudo": "b116f754679992ea0ff72e9666503d0e3cc453b765d0164c1af54fa379c3cba4"
+      "hash_conteudo": "bfb2783486142a21930b09608e51ad90a28589307852d7a1a47ed5f420d15a29"
     }
   }
 }
