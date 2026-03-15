@@ -42,12 +42,11 @@ COLUNAS_SAIDA_DIA = [
     'TOTAL_P4_10',
     'MEDIA_P4',
     'TOTAL_VIDEO_SIM',
-]
-
-COLUNAS_SAIDA_GERAL = COLUNAS_SAIDA_DIA + [
     'TOTAL_VIDEO_SIM_NQA',
     'TOTAL_VIDEO_SEM_CONTATO',
 ]
+
+COLUNAS_SAIDA_GERAL = COLUNAS_SAIDA_DIA
 
 
 def _serie_data(df, coluna):
@@ -107,6 +106,42 @@ def _calcular_data_referencia_fixa(dt_envio):
     max_dt_envio = dt_envio_valido.max()
     data_referencia = max_dt_envio - pd.DateOffset(months=1)
     return max_dt_envio, data_referencia
+
+
+def _tipos_video_abnominal_aceitos():
+    # Mantemos ambos para tolerar variacao historica de nomenclatura.
+    return {'video_abnominal', 'video_abdominal'}
+
+
+def _calcular_metricas_video_resumo_dia(df_base, dt_internacao):
+    hoje = pd.Timestamp.now().normalize()
+    mes_alvo = (hoje - pd.DateOffset(months=2))
+    mask_mes_alvo = (
+        dt_internacao.notna()
+        & (dt_internacao.dt.year == mes_alvo.year)
+        & (dt_internacao.dt.month == mes_alvo.month)
+    )
+
+    tipo_norm = _serie_normalizada(_serie_texto(df_base, 'TIPO'))
+    p1_norm = _serie_normalizada(_serie_texto(df_base, 'P1'))
+    rp1_raw = _serie_texto(df_base, 'RP1')
+    rp1_norm = _serie_normalizada(rp1_raw)
+
+    mask_base = (
+        mask_mes_alvo
+        & tipo_norm.isin(_tipos_video_abnominal_aceitos())
+        & (p1_norm == 'sim')
+    )
+
+    mask_rp1_vazio = rp1_raw.astype(str).str.strip() == ''
+    mask_rp1_nao_quis = rp1_norm == 'nao_quis'
+    mask_rp1_outros = (~mask_rp1_vazio) & (~mask_rp1_nao_quis)
+
+    return {
+        'TOTAL_VIDEO_SIM': int((mask_base & mask_rp1_outros).sum()),
+        'TOTAL_VIDEO_SIM_NQA': int((mask_base & mask_rp1_nao_quis).sum()),
+        'TOTAL_VIDEO_SEM_CONTATO': int((mask_base & mask_rp1_vazio).sum()),
+    }
 
 
 def _montar_metricas(df):
@@ -191,6 +226,8 @@ def gerar_resumo_complicacao_csv(
 
     metricas_dia = _montar_metricas(df_base.loc[mask_dia].copy())
     metricas_geral = _montar_metricas(df_base.copy())
+    metricas_video_dia = _calcular_metricas_video_resumo_dia(df_base, dt_internacao)
+    metricas_dia.update(metricas_video_dia)
 
     pasta_saida = Path(raiz_analise) / 'resumo_complicacao'
     arquivo_dia = pasta_saida / 'RESUMO_DIA_COMPLICACAO.csv'
