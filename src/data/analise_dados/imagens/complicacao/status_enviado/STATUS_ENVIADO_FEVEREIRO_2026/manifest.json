@@ -1,0 +1,50 @@
+{
+  "etapa": "status_enviado",
+  "contexto": "complicacao",
+  "periodo": "STATUS_ENVIADO_FEVEREIRO_2026",
+  "gerado_em": "2026-03-15T16:20:36",
+  "pasta_origem_csv": "src\\data\\analise_dados\\complicacao\\status_enviado\\STATUS_ENVIADO_FEVEREIRO_2026",
+  "pasta_saida_imagens": "src\\data\\analise_dados\\imagens\\complicacao\\status_enviado\\STATUS_ENVIADO_FEVEREIRO_2026",
+  "graficos_gerados": [
+    {
+      "id": "QT_SOMA_COLUNA_SEM_LIDA.csv",
+      "arquivo_csv": "src\\data\\analise_dados\\complicacao\\status_enviado\\STATUS_ENVIADO_FEVEREIRO_2026\\QT_SOMA_COLUNA_SEM_LIDA.csv",
+      "arquivo_png": "src\\data\\analise_dados\\imagens\\complicacao\\status_enviado\\STATUS_ENVIADO_FEVEREIRO_2026\\status_enviado_qt_soma_coluna_sem_lida_complicacao.png"
+    },
+    {
+      "id": "QT_SOMA_COLUNA_SEM_RESPOSTA_LIDA.csv",
+      "arquivo_csv": "src\\data\\analise_dados\\complicacao\\status_enviado\\STATUS_ENVIADO_FEVEREIRO_2026\\QT_SOMA_COLUNA_SEM_RESPOSTA_LIDA.csv",
+      "arquivo_png": "src\\data\\analise_dados\\imagens\\complicacao\\status_enviado\\STATUS_ENVIADO_FEVEREIRO_2026\\status_enviado_qt_soma_coluna_sem_resposta_lida_complicacao.png"
+    },
+    {
+      "id": "QT_VALIDOS.csv",
+      "arquivo_csv": "src\\data\\analise_dados\\complicacao\\status_enviado\\STATUS_ENVIADO_FEVEREIRO_2026\\QT_VALIDOS.csv",
+      "arquivo_png": "src\\data\\analise_dados\\imagens\\complicacao\\status_enviado\\STATUS_ENVIADO_FEVEREIRO_2026\\status_enviado_qt_validos_complicacao.png"
+    },
+    {
+      "id": "SEM_QT_SOMA_COLUNA_SEM_LIDA.csv",
+      "arquivo_csv": "src\\data\\analise_dados\\complicacao\\status_enviado\\STATUS_ENVIADO_FEVEREIRO_2026\\SEM_QT_SOMA_COLUNA_SEM_LIDA.csv",
+      "arquivo_png": "src\\data\\analise_dados\\imagens\\complicacao\\status_enviado\\STATUS_ENVIADO_FEVEREIRO_2026\\status_enviado_sem_qt_soma_coluna_sem_lida_complicacao.png"
+    },
+    {
+      "id": "SEM_QT_SOMA_COLUNA_SEM_RESPOSTA_LIDA.csv",
+      "arquivo_csv": "src\\data\\analise_dados\\complicacao\\status_enviado\\STATUS_ENVIADO_FEVEREIRO_2026\\SEM_QT_SOMA_COLUNA_SEM_RESPOSTA_LIDA.csv",
+      "arquivo_png": "src\\data\\analise_dados\\imagens\\complicacao\\status_enviado\\STATUS_ENVIADO_FEVEREIRO_2026\\status_enviado_sem_qt_soma_coluna_sem_resposta_lida_complicacao.png"
+    },
+    {
+      "id": "SEM_QT_VALIDOS.csv",
+      "arquivo_csv": "src\\data\\analise_dados\\complicacao\\status_enviado\\STATUS_ENVIADO_FEVEREIRO_2026\\SEM_QT_VALIDOS.csv",
+      "arquivo_png": "src\\data\\analise_dados\\imagens\\complicacao\\status_enviado\\STATUS_ENVIADO_FEVEREIRO_2026\\status_enviado_sem_qt_validos_complicacao.png"
+    },
+    {
+      "id": "QT_TELEFONES_OCORRENCIAS.csv",
+      "arquivo_csv": "src\\data\\analise_dados\\complicacao\\status_enviado\\STATUS_ENVIADO_FEVEREIRO_2026\\QT_TELEFONES_OCORRENCIAS.csv",
+      "arquivo_png": "src\\data\\analise_dados\\imagens\\complicacao\\status_enviado\\STATUS_ENVIADO_FEVEREIRO_2026\\status_enviado_qt_telefones_ocorrencias_complicacao.png"
+    }
+  ],
+  "graficos_ignorados": [],
+  "mensagens_validacao": [
+    "Total de graficos gerados: 7.",
+    "Total de graficos ignorados: 0."
+  ]
+}

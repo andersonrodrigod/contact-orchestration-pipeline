@@ -4,11 +4,13 @@ from datetime import datetime
 import json
 from pathlib import Path
 import re
+from typing import Any
 
 import pandas as pd
 
 from src.utils.arquivos import ler_arquivo_csv
 
+plt: Any
 try:
     import matplotlib
 

@@ -13,6 +13,7 @@ from src.pipelines.join_status_resposta_pipeline import (
 from src.services.analise_dados_fase1_service import gerar_analise_dados_fase1_csv
 from src.services.analise_dados_fase2_service import gerar_analise_dados_fase2_csv
 from src.services.dataset_service import criar_dataset_complicacao
+from src.services.graficos_status_enviado_service import gerar_graficos_status_enviado
 from src.services.graficos_uniao_status_resposta_service import gerar_graficos_uniao_status_resposta
 from src.services.ingestao_service import executar_ingestao_somente_status, executar_ingestao_unificar
 from src.services.resumo_internacao_service import gerar_resumo_internacao_csv
@@ -330,6 +331,18 @@ def run_internacao_eletivo_pipeline_gerar_status_dataset(
     )
     for mensagem in resultado_analise_fase2.get('mensagens', []):
         logger.warning('ANALISE_DADOS', mensagem)
+    resultado_graficos_fase2 = gerar_graficos_status_enviado(
+        contexto='internacao',
+        raiz_analise_contexto=raiz_analise_dados,
+        pastas_origem_csv=resultado_analise_fase2.get('pastas_saida', []),
+    )
+    logger.info(
+        'GRAFICOS',
+        (
+            "Graficos da Fase 2 (status_enviado) gerados em: "
+            f"{resultado_graficos_fase2.get('pasta_base_saida', '')}"
+        ),
+    )
 
     metricas_por_etapa = {
         **resultado_status.get('metricas_por_etapa', {}),
@@ -354,6 +367,7 @@ def run_internacao_eletivo_pipeline_gerar_status_dataset(
                 'Resumo internacao gerado em: '
                 f"{resultado_resumo_internacao.get('pasta_saida', '')}",
                 f"Analise de dados Fase 2 gerada em: {resultado_analise_fase2.get('pasta_saida', '')}",
+                f"Manifests de graficos Fase 2: {', '.join(resultado_graficos_fase2.get('manifests', []))}",
             ]
         ),
         metricas={
@@ -379,6 +393,7 @@ def run_internacao_eletivo_pipeline_gerar_status_dataset(
             'metricas_por_etapa': metricas_por_etapa,
             'resumo_internacao': resultado_resumo_internacao,
             'analise_dados_fase2': resultado_analise_fase2,
+            'graficos_status_enviado': resultado_graficos_fase2,
         },
     )
     logger.finalizar('SUCESSO')
@@ -446,6 +461,18 @@ def run_internacao_eletivo_pipeline_gerar_status_dataset_somente_status(
     )
     for mensagem in resultado_analise_fase2.get('mensagens', []):
         logger.warning('ANALISE_DADOS', mensagem)
+    resultado_graficos_fase2 = gerar_graficos_status_enviado(
+        contexto='internacao',
+        raiz_analise_contexto=raiz_analise_dados,
+        pastas_origem_csv=resultado_analise_fase2.get('pastas_saida', []),
+    )
+    logger.info(
+        'GRAFICOS',
+        (
+            "Graficos da Fase 2 (status_enviado) gerados em: "
+            f"{resultado_graficos_fase2.get('pasta_base_saida', '')}"
+        ),
+    )
 
     metricas_por_etapa = {
         **resultado_status.get('metricas_por_etapa', {}),
@@ -470,6 +497,7 @@ def run_internacao_eletivo_pipeline_gerar_status_dataset_somente_status(
                 'Resumo internacao gerado em: '
                 f"{resultado_resumo_internacao.get('pasta_saida', '')}",
                 f"Analise de dados Fase 2 gerada em: {resultado_analise_fase2.get('pasta_saida', '')}",
+                f"Manifests de graficos Fase 2: {', '.join(resultado_graficos_fase2.get('manifests', []))}",
             ]
         ),
         metricas={
@@ -495,6 +523,7 @@ def run_internacao_eletivo_pipeline_gerar_status_dataset_somente_status(
             'metricas_por_etapa': metricas_por_etapa,
             'resumo_internacao': resultado_resumo_internacao,
             'analise_dados_fase2': resultado_analise_fase2,
+            'graficos_status_enviado': resultado_graficos_fase2,
         },
     )
     logger.finalizar('SUCESSO')
