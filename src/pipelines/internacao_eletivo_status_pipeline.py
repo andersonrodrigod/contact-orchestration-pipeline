@@ -302,6 +302,8 @@ def run_internacao_eletivo_pipeline_gerar_status_dataset(
         contexto=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.nome,
         logger=logger,
         finalizar_logger=False,
+        gerar_resumo=False,
+        raiz_analise_dados=raiz_analise_dados,
     )
     if not resultado_dataset.get('ok'):
         logger.finalizar('FALHA')
@@ -432,6 +434,8 @@ def run_internacao_eletivo_pipeline_gerar_status_dataset_somente_status(
         contexto=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.nome,
         logger=logger,
         finalizar_logger=False,
+        gerar_resumo=False,
+        raiz_analise_dados=raiz_analise_dados,
     )
     if not resultado_dataset.get('ok'):
         logger.finalizar('FALHA')
@@ -540,8 +544,10 @@ def run_internacao_eletivo_pipeline_criar_dataset_status(
     contexto=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.nome,
     logger=None,
     finalizar_logger=True,
+    gerar_resumo=True,
+    raiz_analise_dados='src/data/analise_dados/internacao',
 ):
-    return run_criacao_dataset_status_base(
+    resultado_dataset = run_criacao_dataset_status_base(
         arquivo_origem_dataset=arquivo_origem_dataset,
         arquivo_status_integrado=arquivo_status_integrado,
         arquivo_saida_dataset=arquivo_saida_dataset,
@@ -551,3 +557,35 @@ def run_internacao_eletivo_pipeline_criar_dataset_status(
         logger=logger,
         finalizar_logger=finalizar_logger,
     )
+    if not resultado_dataset.get('ok') or not gerar_resumo:
+        return resultado_dataset
+
+    resultado_resumo_internacao = gerar_resumo_internacao_csv(
+        arquivo_origem_internacao=arquivo_origem_dataset,
+        raiz_analise=raiz_analise_dados,
+    )
+    if logger is not None:
+        logger.info(
+            'ANALISE_DADOS',
+            'Resumo internacao gerado em: '
+            f"{resultado_resumo_internacao.get('pasta_saida', '')}",
+        )
+        for mensagem in resultado_resumo_internacao.get('mensagens', []):
+            logger.warning('ANALISE_DADOS', mensagem)
+
+    resultado = dict(resultado_dataset)
+    resultado['mensagens'] = (
+        resultado.get('mensagens', [])
+        + resultado_resumo_internacao.get('mensagens', [])
+        + [f"Resumo internacao gerado em: {resultado_resumo_internacao.get('pasta_saida', '')}"]
+    )
+    dados = dict(resultado.get('dados', {}))
+    metricas_por_etapa = dict(dados.get('metricas_por_etapa', {}))
+    metricas_por_etapa['resumo_internacao'] = {
+        'pasta_analise': resultado_resumo_internacao.get('pasta_saida', ''),
+        'arquivos_gerados': resultado_resumo_internacao.get('arquivos_gerados', []),
+    }
+    dados['metricas_por_etapa'] = metricas_por_etapa
+    dados['resumo_internacao'] = resultado_resumo_internacao
+    resultado['dados'] = dados
+    return resultado

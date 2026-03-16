@@ -280,6 +280,8 @@ def run_complicacao_pipeline_gerar_status_dataset(
         contexto=CONTEXTO_PIPELINE_COMPLICACAO.nome,
         logger=logger,
         finalizar_logger=False,
+        gerar_resumo=False,
+        raiz_analise_dados=raiz_analise_dados,
     )
     if not resultado_dataset.get('ok'):
         logger.finalizar('FALHA')
@@ -405,6 +407,8 @@ def run_complicacao_pipeline_gerar_status_dataset_somente_status(
         contexto=CONTEXTO_PIPELINE_COMPLICACAO.nome,
         logger=logger,
         finalizar_logger=False,
+        gerar_resumo=False,
+        raiz_analise_dados=raiz_analise_dados,
     )
     if not resultado_dataset.get('ok'):
         logger.finalizar('FALHA')
@@ -508,8 +512,10 @@ def run_complicacao_pipeline_criar_dataset_status(
     contexto=CONTEXTO_PIPELINE_COMPLICACAO.nome,
     logger=None,
     finalizar_logger=True,
+    gerar_resumo=True,
+    raiz_analise_dados='src/data/analise_dados/complicacao',
 ):
-    return run_criacao_dataset_status_base(
+    resultado_dataset = run_criacao_dataset_status_base(
         arquivo_origem_dataset=arquivo_origem_dataset,
         arquivo_status_integrado=arquivo_status_integrado,
         arquivo_saida_dataset=arquivo_saida_dataset,
@@ -519,3 +525,35 @@ def run_complicacao_pipeline_criar_dataset_status(
         logger=logger,
         finalizar_logger=finalizar_logger,
     )
+    if not resultado_dataset.get('ok') or not gerar_resumo:
+        return resultado_dataset
+
+    resultado_resumo_complicacao = gerar_resumo_complicacao_csv(
+        arquivo_origem_complicacao=arquivo_origem_dataset,
+        raiz_analise=raiz_analise_dados,
+    )
+    if logger is not None:
+        logger.info(
+            'ANALISE_DADOS',
+            'Resumo complicacao gerado em: '
+            f"{resultado_resumo_complicacao.get('pasta_saida', '')}",
+        )
+        for mensagem in resultado_resumo_complicacao.get('mensagens', []):
+            logger.warning('ANALISE_DADOS', mensagem)
+
+    resultado = dict(resultado_dataset)
+    resultado['mensagens'] = (
+        resultado.get('mensagens', [])
+        + resultado_resumo_complicacao.get('mensagens', [])
+        + [f"Resumo complicacao gerado em: {resultado_resumo_complicacao.get('pasta_saida', '')}"]
+    )
+    dados = dict(resultado.get('dados', {}))
+    metricas_por_etapa = dict(dados.get('metricas_por_etapa', {}))
+    metricas_por_etapa['resumo_complicacao'] = {
+        'pasta_analise': resultado_resumo_complicacao.get('pasta_saida', ''),
+        'arquivos_gerados': resultado_resumo_complicacao.get('arquivos_gerados', []),
+    }
+    dados['metricas_por_etapa'] = metricas_por_etapa
+    dados['resumo_complicacao'] = resultado_resumo_complicacao
+    resultado['dados'] = dados
+    return resultado
