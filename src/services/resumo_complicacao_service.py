@@ -22,7 +22,7 @@ COLUNAS_SAIDA_DIA = [
     'TOTAL',
     'RESPOSTAS',
     'NQA',
-    'LIDA_SEM_RESPOSTA',
+    'LIDA',
     'SEM_RETORNO',
     'TOTAL_P1_SIM',
     'TOTAL_P1_NAO',
@@ -48,6 +48,12 @@ COLUNAS_SAIDA_DIA = [
 ]
 
 COLUNAS_SAIDA_GERAL = COLUNAS_SAIDA_DIA
+COLUNAS_VIDEO = [
+    'TOTAL_VIDEO_SIM',
+    'TOTAL_VIDEO_SIM_NQA',
+    'TOTAL_VIDEO_SEM_CONTATO',
+    'TOTAL_VIDEO_RESPONDIDO_SIM',
+]
 
 
 def _serie_data(df, coluna):
@@ -107,6 +113,14 @@ def _calcular_data_referencia_fixa(dt_envio):
     max_dt_envio = dt_envio_valido.max()
     data_referencia = max_dt_envio - pd.DateOffset(months=1)
     return max_dt_envio, data_referencia
+
+
+def _deve_considerar_todo_periodo_internacao(dt_internacao, hoje):
+    dt_validas = dt_internacao[dt_internacao.notna()]
+    if len(dt_validas) == 0:
+        return False
+    limite_um_mes = hoje - pd.DateOffset(months=1)
+    return dt_validas.max() <= limite_um_mes
 
 
 def _calcular_metricas_video(df_base, mask_periodo):
@@ -171,7 +185,7 @@ def _montar_metricas(df):
     rp1_norm = _serie_normalizada(rp1)
 
     sem_retorno = (status.astype(str).str.strip() == '')
-    status_lida = status_norm == 'lida'
+    status_lida = status_norm.isin({'lida', 'obito', 'nao quis'})
 
     p4_numerico = pd.to_numeric(p4.astype(str).str.replace(',', '.', regex=False), errors='coerce')
     p4_valido = p4_numerico[(p4_numerico >= 1) & (p4_numerico <= 10)]
@@ -180,7 +194,7 @@ def _montar_metricas(df):
         'TOTAL': int(len(df)),
         'RESPOSTAS': int(p1_ok.sum() + sobra_p2.sum() + sobra_p3.sum() + sobra_p4.sum()),
         'NQA': int((status_norm == 'nao_quis').sum()),
-        'LIDA_SEM_RESPOSTA': int((status_lida & (~p1_ok)).sum()),
+        'LIDA': int(status_lida.sum()),
         'SEM_RETORNO': int(sem_retorno.sum()),
         'TOTAL_P1_SIM': int((p1_norm == 'sim').sum()),
         'TOTAL_P1_NAO': int((p1_norm == 'nao').sum()),
@@ -224,14 +238,22 @@ def gerar_resumo_complicacao_csv(
     dt_envio = _serie_data(df_base, 'DT_ENVIO')
     dt_internacao = _serie_data(df_base, 'DT_INTERNACAO')
     max_dt_envio, data_referencia = _calcular_data_referencia_fixa(dt_envio)
+    hoje = pd.Timestamp.now().normalize()
     mask_dia = dt_internacao.notna() & pd.notna(data_referencia) & (dt_internacao <= data_referencia)
+    if _deve_considerar_todo_periodo_internacao(dt_internacao, hoje):
+        mask_dia = dt_internacao.notna()
 
-    metricas_dia = _montar_metricas(df_base.loc[mask_dia].copy())
+    # RESUMO_DIA base: logica de 1 mes (ja existente) para todas as colunas nao-video.
+    metricas_dia_base = _montar_metricas(df_base.loc[mask_dia].copy())
     metricas_geral = _montar_metricas(df_base.copy())
     metricas_video_dia = _calcular_metricas_video_resumo_dia(df_base, dt_internacao)
     metricas_video_geral = _calcular_metricas_video(
         df_base, pd.Series(True, index=df_base.index, dtype='bool')
     )
+
+    metricas_dia = {
+        chave: valor for chave, valor in metricas_dia_base.items() if chave not in COLUNAS_VIDEO
+    }
     metricas_dia.update(metricas_video_dia)
     metricas_geral.update(metricas_video_geral)
 

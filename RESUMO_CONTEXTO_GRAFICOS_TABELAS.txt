@@ -1,0 +1,70 @@
+RESUMO DE CONTEXTO - GRAFICOS E TABELAS (COMPLICACAO)
+
+Data de referencia deste resumo: 16/03/2026
+Local: raiz do projeto (fora de src)
+
+1) Objetivo desta fase
+- Consolidar regras de resumo de complicacao (dia e geral).
+- Gerar tabela visual (imagem) para o contexto de complicacao.
+- Preparar base para operador consumir resultado em layout pronto.
+
+2) Arquivos-chave alterados
+- src/services/resumo_complicacao_service.py
+- src/services/tabela_resumo_complicacao_service.py
+- src/pipelines/complicacao_status_pipeline.py
+- src/ui/app.py (ajuste de assets para exe)
+
+3) Regras atuais do RESUMO (complicacao)
+3.1 Coluna LIDA
+- A coluna de saida agora chama: LIDA (nao mais LIDA_SEM_RESPOSTA).
+- Regra: STATUS em {LIDA, OBITO, NAO QUIS} (normalizado internamente).
+
+3.2 Colunas de video
+- Filtro de TIPO: VIDEO ABDOMINAL (literal atual usado na base).
+- TOTAL_VIDEO_SIM: P1 = Sim.
+- TOTAL_VIDEO_SIM_NQA: RP1 = Nao quis.
+- TOTAL_VIDEO_SEM_CONTATO: P1 = Sim e RP1 vazio/nulo.
+- TOTAL_VIDEO_RESPONDIDO_SIM: P1 = Sim e RP1 preenchido e diferente de Nao quis.
+
+3.3 Regra de data (Resumo Dia)
+- Base do dia continua com logica de DT_ENVIO para referencia.
+- Ajuste aplicado: se DT_INTERNACAO ja passou de 1 mes (contexto do periodo),
+  considerar todo o periodo valido de internacao para o resumo dia base.
+- Para colunas de video do dia, existe regra especifica de janela com fallback.
+
+4) Tabela visual gerada (modo complicacao)
+- Servico: src/services/tabela_resumo_complicacao_service.py
+- Saida de imagem:
+  src/data/analise_dados/imagens/complicacao/resumo_complicacao/tabela_resumo_dia_complicacao.png
+- Manifest:
+  src/data/analise_dados/imagens/complicacao/resumo_complicacao/manifest_tabela_resumo_dia_complicacao.json
+
+4.1 Estrutura da tabela
+- Titulo: Desempenho da pesquisa de Complicacoes Cirurgicas {MES DT_INTERNACAO}
+- Colunas: Categoria Metrica | Ate o Dia | Total | Percentual
+- Blocos:
+  a) Resumo - Dia de Internacao
+  b) Resumo - Geral
+
+4.2 Regras de preenchimento
+- Resumo - Dia:
+  - Usa RESUMO_DIA_COMPLICACAO.csv
+  - Ate o Dia: data baseada na logica de DT_ENVIO (mes anterior)
+- Resumo - Geral:
+  - Usa RESUMO_GERAL_COMPLICACAO.csv
+  - Ate o Dia: data atual de execucao (dd/mm/aa)
+- Percentuais (ambos blocos):
+  - Lidas = LIDA / TOTAL
+  - Respondidos / Lidas = RESPOSTAS / LIDA
+  - Respondidos / Total = RESPOSTAS / TOTAL
+- Linha Total mostra TOTAL correspondente do bloco.
+
+5) Build de executavel (UI)
+- Build PyInstaller gerada com nome v2 por bloqueio da pasta antiga.
+- Executavel atual para teste:
+  dist/ContactOrchestrationApp_v2/ContactOrchestrationApp_v2.exe
+
+6) Observacoes abertas para proxima iteracao
+- Revisar visual fino da tabela (espacamento, tipografia, destaque) para aproximar do modelo final.
+- Avaliar padronizacao de encoding para literais com acento (ex.: Nao quis / Não quis).
+- Se necessario, separar regra de negocio de formatacao para facilitar manutencao.

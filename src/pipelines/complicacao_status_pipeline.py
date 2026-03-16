@@ -17,6 +17,7 @@ from src.services.graficos_status_enviado_service import gerar_graficos_status_e
 from src.services.graficos_uniao_status_resposta_service import gerar_graficos_uniao_status_resposta
 from src.services.ingestao_service import executar_ingestao_complicacao, executar_ingestao_somente_status
 from src.services.resumo_complicacao_service import gerar_resumo_complicacao_csv
+from src.services.tabela_resumo_complicacao_service import gerar_tabela_resumo_dia_complicacao
 
 
 def run_complicacao_pipeline_enviar_status_com_resposta(
@@ -298,6 +299,20 @@ def run_complicacao_pipeline_gerar_status_dataset(
     )
     for mensagem in resultado_resumo_complicacao.get('mensagens', []):
         logger.warning('ANALISE_DADOS', mensagem)
+    resultado_tabela_resumo = gerar_tabela_resumo_dia_complicacao(
+        arquivo_resumo_dia=(
+            f"{resultado_resumo_complicacao.get('pasta_saida', '')}/RESUMO_DIA_COMPLICACAO.csv"
+        ),
+        arquivo_origem_complicacao=arquivo_dataset_origem_complicacao,
+        pasta_saida='src/data/analise_dados/imagens/complicacao/resumo_complicacao',
+    )
+    logger.info(
+        'GRAFICOS',
+        (
+            "Tabela de resumo (Dia de Internacao) gerada em: "
+            f"{resultado_tabela_resumo.get('arquivo_png', '')}"
+        ),
+    )
 
     resultado_analise_fase2 = gerar_analise_dados_fase2_csv(
         arquivo_dataset_status=saida_dataset_status,
@@ -340,9 +355,11 @@ def run_complicacao_pipeline_gerar_status_dataset(
             resultado_status.get('mensagens', [])
             + resultado_dataset.get('mensagens', [])
             + resultado_resumo_complicacao.get('mensagens', [])
+            + resultado_tabela_resumo.get('mensagens', [])
             + [
                 'Resumo complicacao gerado em: '
                 f"{resultado_resumo_complicacao.get('pasta_saida', '')}",
+                f"Tabela resumo dia gerada em: {resultado_tabela_resumo.get('arquivo_png', '')}",
                 f"Analise de dados Fase 2 gerada em: {resultado_analise_fase2.get('pasta_saida', '')}",
                 f"Manifests de graficos Fase 2: {', '.join(resultado_graficos_fase2.get('manifests', []))}",
             ]
@@ -369,6 +386,7 @@ def run_complicacao_pipeline_gerar_status_dataset(
             'qualidade_data': resultado_status.get('qualidade_data', {}),
             'metricas_por_etapa': metricas_por_etapa,
             'resumo_complicacao': resultado_resumo_complicacao,
+            'tabela_resumo_dia_complicacao': resultado_tabela_resumo,
             'analise_dados_fase2': resultado_analise_fase2,
             'graficos_status_enviado': resultado_graficos_fase2,
         },
@@ -425,6 +443,20 @@ def run_complicacao_pipeline_gerar_status_dataset_somente_status(
     )
     for mensagem in resultado_resumo_complicacao.get('mensagens', []):
         logger.warning('ANALISE_DADOS', mensagem)
+    resultado_tabela_resumo = gerar_tabela_resumo_dia_complicacao(
+        arquivo_resumo_dia=(
+            f"{resultado_resumo_complicacao.get('pasta_saida', '')}/RESUMO_DIA_COMPLICACAO.csv"
+        ),
+        arquivo_origem_complicacao=arquivo_dataset_origem_complicacao,
+        pasta_saida='src/data/analise_dados/imagens/complicacao/resumo_complicacao',
+    )
+    logger.info(
+        'GRAFICOS',
+        (
+            "Tabela de resumo (Dia de Internacao) gerada em: "
+            f"{resultado_tabela_resumo.get('arquivo_png', '')}"
+        ),
+    )
 
     resultado_analise_fase2 = gerar_analise_dados_fase2_csv(
         arquivo_dataset_status=saida_dataset_status,
@@ -467,9 +499,11 @@ def run_complicacao_pipeline_gerar_status_dataset_somente_status(
             resultado_status.get('mensagens', [])
             + resultado_dataset.get('mensagens', [])
             + resultado_resumo_complicacao.get('mensagens', [])
+            + resultado_tabela_resumo.get('mensagens', [])
             + [
                 'Resumo complicacao gerado em: '
                 f"{resultado_resumo_complicacao.get('pasta_saida', '')}",
+                f"Tabela resumo dia gerada em: {resultado_tabela_resumo.get('arquivo_png', '')}",
                 f"Analise de dados Fase 2 gerada em: {resultado_analise_fase2.get('pasta_saida', '')}",
                 f"Manifests de graficos Fase 2: {', '.join(resultado_graficos_fase2.get('manifests', []))}",
             ]
@@ -496,6 +530,7 @@ def run_complicacao_pipeline_gerar_status_dataset_somente_status(
             'qualidade_data': resultado_status.get('qualidade_data', {}),
             'metricas_por_etapa': metricas_por_etapa,
             'resumo_complicacao': resultado_resumo_complicacao,
+            'tabela_resumo_dia_complicacao': resultado_tabela_resumo,
             'analise_dados_fase2': resultado_analise_fase2,
             'graficos_status_enviado': resultado_graficos_fase2,
         },
@@ -540,12 +575,29 @@ def run_complicacao_pipeline_criar_dataset_status(
         )
         for mensagem in resultado_resumo_complicacao.get('mensagens', []):
             logger.warning('ANALISE_DADOS', mensagem)
+    resultado_tabela_resumo = gerar_tabela_resumo_dia_complicacao(
+        arquivo_resumo_dia=(
+            f"{resultado_resumo_complicacao.get('pasta_saida', '')}/RESUMO_DIA_COMPLICACAO.csv"
+        ),
+        arquivo_origem_complicacao=arquivo_origem_dataset,
+        pasta_saida='src/data/analise_dados/imagens/complicacao/resumo_complicacao',
+    )
+    if logger is not None:
+        logger.info(
+            'GRAFICOS',
+            (
+                "Tabela de resumo (Dia de Internacao) gerada em: "
+                f"{resultado_tabela_resumo.get('arquivo_png', '')}"
+            ),
+        )
 
     resultado = dict(resultado_dataset)
     resultado['mensagens'] = (
         resultado.get('mensagens', [])
         + resultado_resumo_complicacao.get('mensagens', [])
+        + resultado_tabela_resumo.get('mensagens', [])
         + [f"Resumo complicacao gerado em: {resultado_resumo_complicacao.get('pasta_saida', '')}"]
+        + [f"Tabela resumo dia gerada em: {resultado_tabela_resumo.get('arquivo_png', '')}"]
     )
     dados = dict(resultado.get('dados', {}))
     metricas_por_etapa = dict(dados.get('metricas_por_etapa', {}))
@@ -555,5 +607,6 @@ def run_complicacao_pipeline_criar_dataset_status(
     }
     dados['metricas_por_etapa'] = metricas_por_etapa
     dados['resumo_complicacao'] = resultado_resumo_complicacao
+    dados['tabela_resumo_dia_complicacao'] = resultado_tabela_resumo
     resultado['dados'] = dados
     return resultado

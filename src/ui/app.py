@@ -1,6 +1,7 @@
 ﻿from __future__ import annotations
 
 from pathlib import Path
+import sys
 import threading
 from tkinter import filedialog
 from typing import Callable
@@ -1396,7 +1397,7 @@ class App(ctk.CTk):
         window.geometry(f"{width}x{height}+{x}+{y}")
 
     def _load_icon(self, name: str, width: int, height: int) -> ctk.CTkImage:
-        icon_path = Path("assets/icons") / name
+        icon_path = self._resolver_caminho_asset("icons", name)
         image = Image.open(icon_path).convert("RGBA")
         tinted = self._tint_icon(image)
         icon = ctk.CTkImage(
@@ -1406,6 +1407,24 @@ class App(ctk.CTk):
         )
         self._icon_refs.append(icon)
         return icon
+
+    def _resolver_caminho_asset(self, *partes: str) -> Path:
+        candidatos = []
+        meipass = getattr(sys, "_MEIPASS", None)
+        if meipass:
+            candidatos.append(Path(meipass) / "assets")
+        candidatos.append(Path(__file__).resolve().parents[2] / "assets")
+        candidatos.append(Path.cwd() / "assets")
+
+        for base in candidatos:
+            caminho = base.joinpath(*partes)
+            if caminho.exists():
+                return caminho
+
+        raise FileNotFoundError(
+            f"Asset nao encontrado: {'/'.join(partes)}. Candidatos: "
+            + ", ".join(str(base.joinpath(*partes)) for base in candidatos)
+        )
 
     def _tint_icon(self, image: Image.Image) -> Image.Image:
         alpha = image.split()[-1]
