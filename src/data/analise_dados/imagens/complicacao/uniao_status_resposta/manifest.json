@@ -1,7 +1,7 @@
 {
   "etapa": "uniao_status_resposta",
   "contexto": "complicacao",
-  "gerado_em": "2026-03-15T15:41:00",
+  "gerado_em": "2026-03-15T17:46:17",
   "pasta_origem_csv": "src\\data\\analise_dados\\complicacao\\uniao_status_resposta",
   "pasta_saida_imagens": "src\\data\\analise_dados\\imagens\\complicacao\\uniao_status_resposta",
   "graficos_gerados": [

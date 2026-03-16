@@ -3,6 +3,7 @@ from core.error_codes import ERRO_ORQUESTRACAO, ERRO_VALIDACAO_ARQUIVOS
 from src.services.analise_dados_fase3_orquestracao_service import (
     gerar_analise_dados_fase3_orquestracao,
 )
+from src.services.graficos_orquestracao_service import gerar_graficos_orquestracao
 from src.services.orquestracao_service import gerar_dataset_final
 from src.utils.arquivos import validar_arquivos_existem
 
@@ -15,6 +16,15 @@ def _resolver_raiz_analise(nome_logger):
     if 'internacao' in logger_norm or 'eletivo' in logger_norm:
         return f'{base}/internacao'
     return base
+
+
+def _resolver_contexto(nome_logger):
+    logger_norm = str(nome_logger or '').lower()
+    if 'complicacao' in logger_norm:
+        return 'complicacao'
+    if 'internacao' in logger_norm or 'eletivo' in logger_norm:
+        return 'internacao'
+    return 'complicacao'
 
 
 def executar_orquestracao_pipeline(arquivo_dataset_entrada, arquivo_dataset_saida, nome_logger):
@@ -48,6 +58,18 @@ def executar_orquestracao_pipeline(arquivo_dataset_entrada, arquivo_dataset_said
             )
             for mensagem in resultado_analise_fase3.get('mensagens', []):
                 logger.warning('ANALISE_DADOS', mensagem)
+            resultado_graficos_fase3 = gerar_graficos_orquestracao(
+                contexto=_resolver_contexto(nome_logger),
+                raiz_analise_contexto=_resolver_raiz_analise(nome_logger),
+                pastas_origem_csv=resultado_analise_fase3.get('pastas_saida', []),
+            )
+            logger.info(
+                'GRAFICOS',
+                (
+                    "Graficos da Fase 3 (orquestracao) gerados em: "
+                    f"{resultado_graficos_fase3.get('pasta_base_saida', '')}"
+                ),
+            )
             resultado['metricas_por_etapa'] = {
                 'orquestracao': {
                     'total_usuarios': resultado.get('total_usuarios', 0),
@@ -58,11 +80,13 @@ def executar_orquestracao_pipeline(arquivo_dataset_entrada, arquivo_dataset_said
             }
             resultado['dados'] = resultado.get('dados', {})
             resultado['dados']['analise_dados_fase3'] = resultado_analise_fase3
+            resultado['dados']['graficos_orquestracao'] = resultado_graficos_fase3
             resultado['mensagens'] = (
                 resultado.get('mensagens', [])
                 + resultado_analise_fase3.get('mensagens', [])
                 + [
                     f"Analise de dados Fase 3 gerada em: {resultado_analise_fase3.get('pasta_saida', '')}",
+                    f"Manifests de graficos Fase 3: {', '.join(resultado_graficos_fase3.get('manifests', []))}",
                 ]
             )
         elif not resultado.get('codigo_erro'):

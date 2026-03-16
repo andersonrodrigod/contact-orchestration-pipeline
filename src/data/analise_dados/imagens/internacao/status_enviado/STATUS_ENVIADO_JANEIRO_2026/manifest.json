@@ -2,7 +2,7 @@
   "etapa": "status_enviado",
   "contexto": "internacao",
   "periodo": "STATUS_ENVIADO_JANEIRO_2026",
-  "gerado_em": "2026-03-15T16:20:38",
+  "gerado_em": "2026-03-15T17:51:49",
   "pasta_origem_csv": "src\\data\\analise_dados\\internacao\\status_enviado\\STATUS_ENVIADO_JANEIRO_2026",
   "pasta_saida_imagens": "src\\data\\analise_dados\\imagens\\internacao\\status_enviado\\STATUS_ENVIADO_JANEIRO_2026",
   "graficos_gerados": [

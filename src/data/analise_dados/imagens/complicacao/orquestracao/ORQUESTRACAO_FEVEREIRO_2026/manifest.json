@@ -1,0 +1,35 @@
+{
+  "etapa": "orquestracao",
+  "contexto": "complicacao",
+  "periodo": "ORQUESTRACAO_FEVEREIRO_2026",
+  "gerado_em": "2026-03-15T21:08:17",
+  "pasta_origem_csv": "src\\data\\analise_dados\\complicacao\\orquestracao\\ORQUESTRACAO_FEVEREIRO_2026",
+  "pasta_saida_imagens": "src\\data\\analise_dados\\imagens\\complicacao\\orquestracao\\ORQUESTRACAO_FEVEREIRO_2026",
+  "graficos_gerados": [
+    {
+      "id": "PROCESSO.csv",
+      "arquivo_csv": "src\\data\\analise_dados\\complicacao\\orquestracao\\ORQUESTRACAO_FEVEREIRO_2026\\PROCESSO.csv",
+      "arquivo_png": "src\\data\\analise_dados\\imagens\\complicacao\\orquestracao\\ORQUESTRACAO_FEVEREIRO_2026\\orquestracao_processo_complicacao.png"
+    },
+    {
+      "id": "ACAO.csv",
+      "arquivo_csv": "src\\data\\analise_dados\\complicacao\\orquestracao\\ORQUESTRACAO_FEVEREIRO_2026\\ACAO.csv",
+      "arquivo_png": "src\\data\\analise_dados\\imagens\\complicacao\\orquestracao\\ORQUESTRACAO_FEVEREIRO_2026\\orquestracao_acao_pizza_complicacao.png"
+    },
+    {
+      "id": "ACAO.csv",
+      "arquivo_csv": "src\\data\\analise_dados\\complicacao\\orquestracao\\ORQUESTRACAO_FEVEREIRO_2026\\ACAO.csv",
+      "arquivo_png": "src\\data\\analise_dados\\imagens\\complicacao\\orquestracao\\ORQUESTRACAO_FEVEREIRO_2026\\orquestracao_acao_colunas_complicacao.png"
+    },
+    {
+      "id": "STATUS_CHAVE.csv",
+      "arquivo_csv": "src\\data\\analise_dados\\complicacao\\orquestracao\\ORQUESTRACAO_FEVEREIRO_2026\\STATUS_CHAVE.csv",
+      "arquivo_png": "src\\data\\analise_dados\\imagens\\complicacao\\orquestracao\\ORQUESTRACAO_FEVEREIRO_2026\\orquestracao_status_chave_complicacao.png"
+    }
+  ],
+  "graficos_ignorados": [],
+  "mensagens_validacao": [
+    "Total de graficos gerados: 4.",
+    "Total de graficos ignorados: 0."
+  ]
+}

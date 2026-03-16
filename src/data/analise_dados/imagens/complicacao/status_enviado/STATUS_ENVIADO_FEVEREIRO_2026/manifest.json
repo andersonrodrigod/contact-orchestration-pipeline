@@ -2,7 +2,7 @@
   "etapa": "status_enviado",
   "contexto": "complicacao",
   "periodo": "STATUS_ENVIADO_FEVEREIRO_2026",
-  "gerado_em": "2026-03-15T16:20:36",
+  "gerado_em": "2026-03-15T17:47:02",
   "pasta_origem_csv": "src\\data\\analise_dados\\complicacao\\status_enviado\\STATUS_ENVIADO_FEVEREIRO_2026",
   "pasta_saida_imagens": "src\\data\\analise_dados\\imagens\\complicacao\\status_enviado\\STATUS_ENVIADO_FEVEREIRO_2026",
   "graficos_gerados": [
