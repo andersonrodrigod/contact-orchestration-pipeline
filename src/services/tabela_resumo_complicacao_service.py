@@ -297,6 +297,74 @@ def _gerar_grafico_pizza_video(
     return str(arquivo_png_pizza)
 
 
+def _partes_pizza_duas_fatias(positivo, total_base, label_positivo, label_negativo):
+    positivo = max(0.0, float(positivo))
+    total_base = max(0.0, float(total_base))
+    negativo = max(0.0, total_base - positivo)
+    if total_base <= 0:
+        return ["Sem dados"], [1.0]
+    if positivo <= 0 and negativo <= 0:
+        return ["Sem dados"], [1.0]
+    return [label_positivo, label_negativo], [positivo, negativo]
+
+
+def _gerar_grafico_pizza_funil(
+    total,
+    lida,
+    respostas,
+    mes_titulo,
+    subtitulo,
+    arquivo_saida,
+):
+    cores = {
+        "Positivo": "#2652B5",
+        "Negativo": "#E64A36",
+        "Sem dados": "#B0BEC5",
+    }
+    fig, axes = plt.subplots(1, 3, figsize=(16, 5.8))
+    fig.suptitle(
+        f"Complicacoes Cirurgicas {mes_titulo} - {subtitulo}",
+        fontsize=15,
+        fontweight="bold",
+        y=0.98,
+    )
+
+    configuracoes = [
+        ("Lidas / Nao lidas", lida, total, "Lidas", "Nao lidas"),
+        ("Respondidos / Nao respondidos (Lidas)", respostas, lida, "Respondidos", "Nao respondidos"),
+        ("Respondidos / Nao respondidos (Total)", respostas, total, "Respondidos", "Nao respondidos"),
+    ]
+
+    for idx, (titulo, positivo, base, label_pos, label_neg) in enumerate(configuracoes):
+        labels, valores = _partes_pizza_duas_fatias(positivo, base, label_pos, label_neg)
+        cores_fatias = []
+        for label in labels:
+            if label == "Sem dados":
+                cores_fatias.append(cores["Sem dados"])
+            elif label == label_pos:
+                cores_fatias.append(cores["Positivo"])
+            else:
+                cores_fatias.append(cores["Negativo"])
+        _, _, autotexts = axes[idx].pie(
+            valores,
+            startangle=90,
+            colors=cores_fatias,
+            autopct=_autopct_com_quantidade(sum(valores)),
+            textprops={"fontsize": 9.5, "color": "white", "fontweight": "bold"},
+        )
+        for autotext in autotexts:
+            autotext.set_color("white")
+            autotext.set_weight("bold")
+        axes[idx].set_title(titulo, fontsize=11, fontweight="bold")
+        axes[idx].axis("equal")
+        axes[idx].legend(labels, loc="lower center", bbox_to_anchor=(0.5, -0.25), ncol=2, fontsize=9)
+
+    fig.tight_layout(rect=[0, 0.06, 1, 0.93])
+    fig.savefig(arquivo_saida, dpi=150)
+    plt.close(fig)
+    return str(arquivo_saida)
+
+
 def gerar_tabela_resumo_dia_complicacao(
     arquivo_resumo_dia="src/data/analise_dados/complicacao/resumo_complicacao/RESUMO_DIA_COMPLICACAO.csv",
     arquivo_resumo_geral="src/data/analise_dados/complicacao/resumo_complicacao/RESUMO_GERAL_COMPLICACAO.csv",
@@ -318,6 +386,8 @@ def gerar_tabela_resumo_dia_complicacao(
         "arquivo_saida_imagem": str(arquivo_png),
         "arquivo_saida_imagem_video_nova_pergunta": "",
         "arquivo_saida_grafico_pizza_video": "",
+        "arquivo_saida_grafico_pizza_funil_dia": "",
+        "arquivo_saida_grafico_pizza_funil_geral": "",
         "mensagens_validacao": [],
     }
 
@@ -450,10 +520,29 @@ def gerar_tabela_resumo_dia_complicacao(
         pasta_saida=pasta_saida,
     )
     manifest["arquivo_saida_grafico_pizza_video"] = arquivo_png_pizza_video
+    arquivo_png_pizza_funil_dia = _gerar_grafico_pizza_funil(
+        total=total,
+        lida=lida,
+        respostas=respostas,
+        mes_titulo=mes_titulo,
+        subtitulo="Resumo Dia",
+        arquivo_saida=pasta_saida / "grafico_pizza_funil_dia_complicacao.png",
+    )
+    manifest["arquivo_saida_grafico_pizza_funil_dia"] = arquivo_png_pizza_funil_dia
+    arquivo_png_pizza_funil_geral = _gerar_grafico_pizza_funil(
+        total=total_geral,
+        lida=lida_geral,
+        respostas=respostas_geral,
+        mes_titulo=mes_titulo,
+        subtitulo="Resumo Geral",
+        arquivo_saida=pasta_saida / "grafico_pizza_funil_geral_complicacao.png",
+    )
+    manifest["arquivo_saida_grafico_pizza_funil_geral"] = arquivo_png_pizza_funil_geral
 
     manifest["mensagens_validacao"].append("Tabela Resumo - Dia e Resumo - Geral gerada com sucesso.")
     manifest["mensagens_validacao"].append("Tabela Resumo - Video (Nova Pergunta) gerada com sucesso.")
     manifest["mensagens_validacao"].append("Grafico pizza de video (Diario x Geral) gerado com sucesso.")
+    manifest["mensagens_validacao"].append("Graficos pizza do funil (Dia e Geral) gerados com sucesso.")
     arquivo_manifest.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
 
     return {
@@ -461,6 +550,8 @@ def gerar_tabela_resumo_dia_complicacao(
         "arquivo_png": str(arquivo_png),
         "arquivo_png_video_nova_pergunta": arquivo_png_video,
         "arquivo_png_pizza_video": arquivo_png_pizza_video,
+        "arquivo_png_pizza_funil_dia": arquivo_png_pizza_funil_dia,
+        "arquivo_png_pizza_funil_geral": arquivo_png_pizza_funil_geral,
         "arquivo_manifest": str(arquivo_manifest),
         "mensagens": manifest["mensagens_validacao"],
     }
