@@ -4,3 +4,6 @@
 __pycache__/
 logs/
 .~lock.*#
+build/
+dist/
+*.spec
