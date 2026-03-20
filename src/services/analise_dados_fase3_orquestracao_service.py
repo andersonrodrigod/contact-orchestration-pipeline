@@ -1,5 +1,3 @@
-import hashlib
-import json
 import re
 import shutil
 from datetime import datetime
@@ -109,7 +107,7 @@ def _classificar_acao(df):
         .str.normalize('NFKD')
         .str.encode('ascii', errors='ignore')
         .str.decode('ascii')
-        .str.replace(r'\s+', ' ', regex=True)
+        .str.replace(r'[_\s]+', ' ', regex=True)
         .str.strip()
     )
     classificacao = pd.Series('EM_ANDAMENTO', index=df.index, dtype='object')
@@ -147,16 +145,6 @@ def _contagem_total(serie, nome_chave):
     )
 
 
-def _contagem_por_data(dt_envio, serie, nome_chave):
-    return (
-        pd.DataFrame({'DATA': dt_envio, nome_chave: serie})
-        .groupby(['DATA', nome_chave], dropna=False)
-        .size()
-        .reset_index(name='TOTAL')
-        .sort_values(['DATA', 'TOTAL', nome_chave], ascending=[True, False, True])
-    )
-
-
 def _remover_chave_vazia(df, coluna_chave):
     if coluna_chave not in df.columns:
         return df
@@ -184,28 +172,25 @@ def _somar_programado_no_total(df_processo_total, incremento_programado):
     return df_out.sort_values(['TOTAL', 'PROCESSO'], ascending=[False, True]).reset_index(drop=True)
 
 
-def _somar_programado_por_data(df_processo_data, df_programado_por_data):
-    if len(df_programado_por_data) == 0:
-        return df_processo_data
-    df_out = df_processo_data.copy()
-    for _, linha in df_programado_por_data.iterrows():
-        data = linha['DATA']
-        total_add = int(linha['TOTAL'])
-        mask = (df_out['DATA'] == data) & (df_out['PROCESSO'] == 'PROGRAMADO')
-        if mask.any():
-            df_out.loc[mask, 'TOTAL'] = (
-                pd.to_numeric(df_out.loc[mask, 'TOTAL'], errors='coerce').fillna(0).astype(int)
-                + total_add
-            )
-        else:
-            df_out = pd.concat(
-                [
-                    df_out,
-                    pd.DataFrame([{'DATA': data, 'PROCESSO': 'PROGRAMADO', 'TOTAL': total_add}]),
-                ],
-                ignore_index=True,
-            )
-    return df_out.sort_values(['DATA', 'TOTAL', 'PROCESSO'], ascending=[True, False, True]).reset_index(drop=True)
+def _somar_resolvidos_no_acao_total(df_acao_total, incremento_resolvidos):
+    if incremento_resolvidos <= 0:
+        return df_acao_total
+    df_out = df_acao_total.copy()
+    mask_res = df_out['ACAO'] == 'RESOLVIDOS'
+    if mask_res.any():
+        df_out.loc[mask_res, 'TOTAL'] = (
+            pd.to_numeric(df_out.loc[mask_res, 'TOTAL'], errors='coerce').fillna(0).astype(int)
+            + int(incremento_resolvidos)
+        )
+    else:
+        df_out = pd.concat(
+            [
+                df_out,
+                pd.DataFrame([{'ACAO': 'RESOLVIDOS', 'TOTAL': int(incremento_resolvidos)}]),
+            ],
+            ignore_index=True,
+        )
+    return df_out.sort_values(['TOTAL', 'ACAO'], ascending=[False, True]).reset_index(drop=True)
 
 
 def _carregar_aba_planilha(arquivo_dataset_orquestrado, nome_aba):
@@ -226,16 +211,6 @@ def _nome_pasta_competencia(competencia):
     return f'ORQUESTRACAO_{mes_nome}_{ano}'
 
 
-def _arquivo_json_competencia(competencia):
-    ano, mes = competencia.split('-')
-    return f'orquestracao_metricas_{ano}_{mes}.json'
-
-
-def _hash_payload(payload_dia):
-    conteudo = json.dumps(payload_dia, ensure_ascii=False, sort_keys=True)
-    return hashlib.sha256(conteudo.encode('utf-8')).hexdigest()
-
-
 def _backup_para_lixeira(pasta_destino, pasta_lixeira):
     if not pasta_destino.exists():
         return ''
@@ -247,53 +222,6 @@ def _backup_para_lixeira(pasta_destino, pasta_lixeira):
     destino_backup = pasta_lixeira / f'{pasta_destino.name}_{timestamp}'
     shutil.move(str(pasta_destino), str(destino_backup))
     return str(destino_backup)
-
-
-def _gerar_payload_json(df_processo_data, df_status_data, df_acao_data, pipeline_nome, competencia):
-    dias = sorted(
-        set(df_processo_data['DATA'].unique())
-        | set(df_status_data['DATA'].unique())
-        | set(df_acao_data['DATA'].unique())
-    )
-    dados = {}
-    for dia in dias:
-        processo = (
-            df_processo_data[df_processo_data['DATA'] == dia]
-            .set_index('PROCESSO')['TOTAL']
-            .to_dict()
-        )
-        status_chave = (
-            df_status_data[df_status_data['DATA'] == dia]
-            .set_index('STATUS_CHAVE')['TOTAL']
-            .to_dict()
-        )
-        acao = (
-            df_acao_data[df_acao_data['DATA'] == dia]
-            .set_index('ACAO')['TOTAL']
-            .to_dict()
-        )
-        payload_dia = {
-            'processo': {k: int(v) for k, v in processo.items()},
-            'status_chave': {k: int(v) for k, v in status_chave.items()},
-            'classificacao_acao': {k: int(v) for k, v in acao.items()},
-        }
-        payload_dia['hash_conteudo'] = _hash_payload(payload_dia)
-        dados[dia] = payload_dia
-
-    return {
-        'metadata': {
-            'pipeline': pipeline_nome,
-            'versao_metricas': '1.0.0',
-            'competencia': competencia,
-        },
-        'orquestracao_por_dt_envio': dados,
-    }
-
-
-def _salvar_json(caminho, payload):
-    caminho.parent.mkdir(parents=True, exist_ok=True)
-    with open(caminho, 'w', encoding='utf-8') as arquivo:
-        json.dump(payload, arquivo, ensure_ascii=False, indent=2)
 
 
 def gerar_analise_dados_fase3_orquestracao(
@@ -371,12 +299,10 @@ def gerar_analise_dados_fase3_orquestracao(
             continue
 
         processo = _normalizar_processo(df_p)
-        processo, valido_proc = _aplicar_regra_temporal(df_p, processo, valor_quando_invalido='PROGRAMADO')
-        dt_envio_proc = _normalizar_dt_envio(df_p)
+        processo, _ = _aplicar_regra_temporal(df_p, processo, valor_quando_invalido='PROGRAMADO')
 
         acao = _classificar_acao(df_u)
         acao, valido_acao = _aplicar_regra_temporal(df_u, acao, valor_quando_invalido='PROGRAMADO')
-        dt_envio_u = _normalizar_dt_envio(df_u)
 
         status_chave = _normalizar_status_chave(df_u)
 
@@ -384,36 +310,14 @@ def gerar_analise_dados_fase3_orquestracao(
         df_processo_total = _contagem_total(processo, 'PROCESSO')
         df_acao_total = _contagem_total(acao, 'ACAO')
         df_status_total = _contagem_total(status_chave[valido_acao], 'STATUS_CHAVE')
-
-        # Quebra por data (somente validos temporalmente)
-        df_processo_data = _contagem_por_data(
-            dt_envio_proc[valido_proc],
-            processo[valido_proc],
-            'PROCESSO',
-        )
-        df_acao_data = _contagem_por_data(
-            dt_envio_u[valido_acao],
-            acao[valido_acao],
-            'ACAO',
-        )
-        df_status_data = _contagem_por_data(
-            dt_envio_u[valido_acao],
-            status_chave[valido_acao],
-            'STATUS_CHAVE',
-        )
+        total_resolvidos = int((processo == 'RESOLVIDO').sum())
+        df_acao_total = _somar_resolvidos_no_acao_total(df_acao_total, total_resolvidos)
 
         # PROGRAMADO final em PROCESSO = PROGRAMADO existente + todos os SEM_MATCH.
         sem_match_mask = status_chave.str.upper() == 'SEM_MATCH'
         total_sem_match = int(sem_match_mask.sum())
         df_processo_total = _somar_programado_no_total(df_processo_total, total_sem_match)
-        df_sem_match_data = _contagem_por_data(
-            dt_envio_u[sem_match_mask],
-            pd.Series('PROGRAMADO', index=dt_envio_u[sem_match_mask].index),
-            'PROCESSO',
-        )
-        df_processo_data = _somar_programado_por_data(df_processo_data, df_sem_match_data)
         df_processo_total = _remover_chave_vazia(df_processo_total, 'PROCESSO')
-        df_processo_data = _remover_chave_vazia(df_processo_data, 'PROCESSO')
 
         nome_pasta = _nome_pasta_competencia(competencia)
         pasta_comp = raiz_orquestracao / nome_pasta
@@ -423,36 +327,19 @@ def gerar_analise_dados_fase3_orquestracao(
         pasta_comp.mkdir(parents=True, exist_ok=True)
 
         arq_processo = pasta_comp / 'PROCESSO.csv'
-        arq_processo_data = pasta_comp / 'PROCESSO_DATA.csv'
         arq_acao = pasta_comp / 'ACAO.csv'
-        arq_acao_data = pasta_comp / 'ACAO_DATA.csv'
         arq_status = pasta_comp / 'STATUS_CHAVE.csv'
-        arq_json = pasta_comp / _arquivo_json_competencia(competencia)
 
         salvar_dataframe(df_processo_total, arq_processo)
-        salvar_dataframe(df_processo_data, arq_processo_data)
         salvar_dataframe(df_acao_total, arq_acao)
-        salvar_dataframe(df_acao_data, arq_acao_data)
         salvar_dataframe(df_status_total, arq_status)
-
-        payload_json = _gerar_payload_json(
-            df_processo_data=df_processo_data,
-            df_status_data=df_status_data,
-            df_acao_data=df_acao_data,
-            pipeline_nome=pipeline_nome,
-            competencia=competencia,
-        )
-        _salvar_json(arq_json, payload_json)
 
         pastas_saida.append(str(pasta_comp))
         arquivos_gerados.extend(
             [
                 str(arq_processo),
-                str(arq_processo_data),
                 str(arq_acao),
-                str(arq_acao_data),
                 str(arq_status),
-                str(arq_json),
             ]
         )
 

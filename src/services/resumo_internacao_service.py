@@ -20,7 +20,7 @@ COLUNAS_SAIDA = [
     'TOTAL',
     'RESPOSTAS',
     'NQA',
-    'LIDA_SEM_RESPOSTA',
+    'LIDA',
     'SEM_RETORNO',
     'TOTAL_P1_1',
     'TOTAL_P1_2',
@@ -128,7 +128,7 @@ def gerar_resumo_internacao_csv(
 
     status_norm = _serie_normalizada(status)
     sem_retorno = status.astype(str).str.strip() == ''
-    lida_sem_resposta = (status_norm == 'lida') & (~p1_ok)
+    status_lida = status_norm.isin({'lida', 'obito', 'nao quis'})
 
     p1_cnt = _contagem_numerica_1_5(p1)
     p2_cnt = _contagem_numerica_1_5(p2)
@@ -147,8 +147,8 @@ def gerar_resumo_internacao_csv(
             + sobra_p5.sum()
             + sobra_p6.sum()
         ),
-        'NQA': int((status_norm == 'nao_quis').sum()),
-        'LIDA_SEM_RESPOSTA': int(lida_sem_resposta.sum()),
+        'NQA': int((status_norm == 'nao quis').sum()),
+        'LIDA': int(status_lida.sum()),
         'SEM_RETORNO': int(sem_retorno.sum()),
         'TOTAL_P1_1': p1_cnt[1],
         'TOTAL_P1_2': p1_cnt[2],

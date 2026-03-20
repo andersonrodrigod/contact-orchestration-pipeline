@@ -22,7 +22,7 @@ COLUNAS_SAIDA_DIA = [
     'TOTAL',
     'RESPOSTAS',
     'NQA',
-    'LIDA_SEM_RESPOSTA',
+    'LIDA',
     'SEM_RETORNO',
     'TOTAL_P1_SIM',
     'TOTAL_P1_NAO',
@@ -42,11 +42,17 @@ COLUNAS_SAIDA_DIA = [
     'TOTAL_P4_10',
     'MEDIA_P4',
     'TOTAL_VIDEO_SIM',
-]
-
-COLUNAS_SAIDA_GERAL = COLUNAS_SAIDA_DIA + [
     'TOTAL_VIDEO_SIM_NQA',
     'TOTAL_VIDEO_SEM_CONTATO',
+    'TOTAL_VIDEO_RESPONDIDO_SIM',
+]
+
+COLUNAS_SAIDA_GERAL = COLUNAS_SAIDA_DIA
+COLUNAS_VIDEO = [
+    'TOTAL_VIDEO_SIM',
+    'TOTAL_VIDEO_SIM_NQA',
+    'TOTAL_VIDEO_SEM_CONTATO',
+    'TOTAL_VIDEO_RESPONDIDO_SIM',
 ]
 
 
@@ -109,13 +115,58 @@ def _calcular_data_referencia_fixa(dt_envio):
     return max_dt_envio, data_referencia
 
 
+def _deve_considerar_todo_periodo_internacao(dt_internacao, hoje):
+    dt_validas = dt_internacao[dt_internacao.notna()]
+    if len(dt_validas) == 0:
+        return False
+    limite_um_mes = hoje - pd.DateOffset(months=1)
+    return dt_validas.max() <= limite_um_mes
+
+
+def _calcular_metricas_video(df_base, mask_periodo):
+    tipo = _serie_texto(df_base, 'TIPO')
+    p1 = _serie_texto(df_base, 'P1')
+    rp1 = _serie_texto(df_base, 'RP1')
+
+    mask_tipo_video = tipo == 'VIDEO ABDOMINAL'
+    mask_p1_sim = p1 == 'Sim'
+    mask_rp1_nao_quis = rp1 == 'Não quis'
+    mask_rp1_vazio = rp1.fillna('').astype(str).str.strip() == ''
+    mask_rp1_respondido = (~mask_rp1_nao_quis) & (~mask_rp1_vazio)
+    mask_base = mask_periodo & mask_tipo_video
+
+    return {
+        'TOTAL_VIDEO_SIM': int((mask_base & mask_p1_sim).sum()),
+        'TOTAL_VIDEO_SIM_NQA': int((mask_base & mask_rp1_nao_quis).sum()),
+        'TOTAL_VIDEO_SEM_CONTATO': int((mask_base & mask_p1_sim & mask_rp1_vazio).sum()),
+        'TOTAL_VIDEO_RESPONDIDO_SIM': int((mask_base & mask_p1_sim & mask_rp1_respondido).sum()),
+    }
+
+def _calcular_metricas_video_resumo_dia(df_base, dt_internacao):
+    hoje = pd.Timestamp.now().normalize()
+    data_corte = hoje - pd.DateOffset(months=2)
+    mask_dt_valida = dt_internacao.notna()
+    mask_periodo = mask_dt_valida & (dt_internacao <= data_corte)
+
+    # Regra adicional: quando o intervalo de DT_INTERNACAO ultrapassa 2 meses,
+    # considerar todos os registros com data valida para o resumo dia (campos de video).
+    if mask_dt_valida.any():
+        dt_validas = dt_internacao[mask_dt_valida]
+        min_dt = dt_validas.min()
+        max_dt = dt_validas.max()
+        diff_meses = (max_dt.year - min_dt.year) * 12 + (max_dt.month - min_dt.month)
+        if diff_meses > 2:
+            mask_periodo = mask_dt_valida
+
+    return _calcular_metricas_video(df_base, mask_periodo)
+
+
 def _montar_metricas(df):
     status = _serie_texto(df, 'STATUS')
     p1 = _serie_texto(df, 'P1')
     p2 = _serie_texto(df, 'P2')
     p3 = _serie_texto(df, 'P3')
     p4 = _serie_texto(df, 'P4')
-    tipo = _serie_texto(df, 'TIPO')
     rp1 = _serie_texto(df, 'RP1')
 
     p1_ok = _serie_bool_preenchida(p1)
@@ -131,11 +182,10 @@ def _montar_metricas(df):
     p1_norm = _serie_normalizada(p1)
     p2_norm = _serie_normalizada(p2)
     p3_norm = _serie_normalizada(p3)
-    tipo_norm = _serie_normalizada(tipo)
     rp1_norm = _serie_normalizada(rp1)
 
     sem_retorno = (status.astype(str).str.strip() == '')
-    status_lida = status_norm == 'lida'
+    status_lida = status_norm.isin({'lida', 'obito', 'nao quis'})
 
     p4_numerico = pd.to_numeric(p4.astype(str).str.replace(',', '.', regex=False), errors='coerce')
     p4_valido = p4_numerico[(p4_numerico >= 1) & (p4_numerico <= 10)]
@@ -144,7 +194,7 @@ def _montar_metricas(df):
         'TOTAL': int(len(df)),
         'RESPOSTAS': int(p1_ok.sum() + sobra_p2.sum() + sobra_p3.sum() + sobra_p4.sum()),
         'NQA': int((status_norm == 'nao_quis').sum()),
-        'LIDA_SEM_RESPOSTA': int((status_lida & (~p1_ok)).sum()),
+        'LIDA': int(status_lida.sum()),
         'SEM_RETORNO': int(sem_retorno.sum()),
         'TOTAL_P1_SIM': int((p1_norm == 'sim').sum()),
         'TOTAL_P1_NAO': int((p1_norm == 'nao').sum()),
@@ -163,9 +213,10 @@ def _montar_metricas(df):
         'TOTAL_P4_9': int((p4_valido == 9).sum()),
         'TOTAL_P4_10': int((p4_valido == 10).sum()),
         'MEDIA_P4': round(float(p4_valido.mean()), 2) if len(p4_valido) > 0 else 0.0,
-        'TOTAL_VIDEO_SIM': int(((p1_norm == 'sim') & (tipo_norm == 'video_abdominal')).sum()),
-        'TOTAL_VIDEO_SIM_NQA': int((rp1_norm == 'nao_quis').sum()),
-        'TOTAL_VIDEO_SEM_CONTATO': int((rp1.astype(str).str.strip() == '').sum()),
+        'TOTAL_VIDEO_SIM': 0,
+        'TOTAL_VIDEO_SIM_NQA': 0,
+        'TOTAL_VIDEO_SEM_CONTATO': 0,
+        'TOTAL_VIDEO_RESPONDIDO_SIM': 0,
     }
     return metricas
 
@@ -187,10 +238,24 @@ def gerar_resumo_complicacao_csv(
     dt_envio = _serie_data(df_base, 'DT_ENVIO')
     dt_internacao = _serie_data(df_base, 'DT_INTERNACAO')
     max_dt_envio, data_referencia = _calcular_data_referencia_fixa(dt_envio)
+    hoje = pd.Timestamp.now().normalize()
     mask_dia = dt_internacao.notna() & pd.notna(data_referencia) & (dt_internacao <= data_referencia)
+    if _deve_considerar_todo_periodo_internacao(dt_internacao, hoje):
+        mask_dia = dt_internacao.notna()
 
-    metricas_dia = _montar_metricas(df_base.loc[mask_dia].copy())
+    # RESUMO_DIA base: logica de 1 mes (ja existente) para todas as colunas nao-video.
+    metricas_dia_base = _montar_metricas(df_base.loc[mask_dia].copy())
     metricas_geral = _montar_metricas(df_base.copy())
+    metricas_video_dia = _calcular_metricas_video_resumo_dia(df_base, dt_internacao)
+    metricas_video_geral = _calcular_metricas_video(
+        df_base, pd.Series(True, index=df_base.index, dtype='bool')
+    )
+
+    metricas_dia = {
+        chave: valor for chave, valor in metricas_dia_base.items() if chave not in COLUNAS_VIDEO
+    }
+    metricas_dia.update(metricas_video_dia)
+    metricas_geral.update(metricas_video_geral)
 
     pasta_saida = Path(raiz_analise) / 'resumo_complicacao'
     arquivo_dia = pasta_saida / 'RESUMO_DIA_COMPLICACAO.csv'

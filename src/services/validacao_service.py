@@ -72,16 +72,14 @@ def validar_colunas_origem_para_padronizacao(
     if faltando_status:
         resultado['ok'] = False
         resultado['mensagens'].append(
-            f'Arquivo status.csv com estrutura alterada. Colunas faltando: {faltando_status}. '
-            'O codigo do app precisa ser adaptado para a nova alteracao.'
+            f'Arquivo status.csv com estrutura alterada. Colunas faltando: {faltando_status}.'
         )
 
     if faltando_status_resposta:
         resultado['ok'] = False
         resultado['mensagens'].append(
             'Arquivo status_resposta com estrutura alterada. '
-            f'Colunas faltando: {faltando_status_resposta}. '
-            'O codigo do app precisa ser adaptado para a nova alteracao.'
+            f'Colunas faltando: {faltando_status_resposta}.'
         )
 
     if resultado['ok']:
