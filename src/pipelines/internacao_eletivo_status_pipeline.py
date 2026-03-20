@@ -17,6 +17,7 @@ from src.services.graficos_status_enviado_service import gerar_graficos_status_e
 from src.services.graficos_uniao_status_resposta_service import gerar_graficos_uniao_status_resposta
 from src.services.ingestao_service import executar_ingestao_somente_status, executar_ingestao_unificar
 from src.services.resumo_internacao_service import gerar_resumo_internacao_csv
+from src.services.tabela_resumo_internacao_service import gerar_tabela_resumo_geral_internacao
 
 
 def run_internacao_eletivo_pipeline_enviar_status_com_resposta(
@@ -320,6 +321,20 @@ def run_internacao_eletivo_pipeline_gerar_status_dataset(
     )
     for mensagem in resultado_resumo_internacao.get('mensagens', []):
         logger.warning('ANALISE_DADOS', mensagem)
+    resultado_tabela_resumo = gerar_tabela_resumo_geral_internacao(
+        arquivo_resumo_geral=(
+            f"{resultado_resumo_internacao.get('pasta_saida', '')}/RESUMO_GERAL_INTERNACAO.csv"
+        ),
+        arquivo_origem_internacao=arquivo_dataset_origem_internacao,
+        pasta_saida='src/data/analise_dados/imagens/internacao/resumo_internacao',
+    )
+    logger.info(
+        'GRAFICOS',
+        (
+            "Tabela de resumo (Geral Internacao) gerada em: "
+            f"{resultado_tabela_resumo.get('arquivo_png', '')}"
+        ),
+    )
 
     resultado_analise_fase2 = gerar_analise_dados_fase2_csv(
         arquivo_dataset_status=saida_dataset_status,
@@ -364,10 +379,12 @@ def run_internacao_eletivo_pipeline_gerar_status_dataset(
             resultado_status.get('mensagens', [])
             + resultado_dataset.get('mensagens', [])
             + resultado_resumo_internacao.get('mensagens', [])
+            + resultado_tabela_resumo.get('mensagens', [])
             + resultado_analise_fase2.get('mensagens', [])
             + [
                 'Resumo internacao gerado em: '
                 f"{resultado_resumo_internacao.get('pasta_saida', '')}",
+                f"Tabela resumo internacao gerada em: {resultado_tabela_resumo.get('arquivo_png', '')}",
                 f"Analise de dados Fase 2 gerada em: {resultado_analise_fase2.get('pasta_saida', '')}",
                 f"Manifests de graficos Fase 2: {', '.join(resultado_graficos_fase2.get('manifests', []))}",
             ]
@@ -394,6 +411,7 @@ def run_internacao_eletivo_pipeline_gerar_status_dataset(
             'qualidade_data': resultado_status.get('qualidade_data', {}),
             'metricas_por_etapa': metricas_por_etapa,
             'resumo_internacao': resultado_resumo_internacao,
+            'tabela_resumo_geral_internacao': resultado_tabela_resumo,
             'analise_dados_fase2': resultado_analise_fase2,
             'graficos_status_enviado': resultado_graficos_fase2,
         },
@@ -452,6 +470,20 @@ def run_internacao_eletivo_pipeline_gerar_status_dataset_somente_status(
     )
     for mensagem in resultado_resumo_internacao.get('mensagens', []):
         logger.warning('ANALISE_DADOS', mensagem)
+    resultado_tabela_resumo = gerar_tabela_resumo_geral_internacao(
+        arquivo_resumo_geral=(
+            f"{resultado_resumo_internacao.get('pasta_saida', '')}/RESUMO_GERAL_INTERNACAO.csv"
+        ),
+        arquivo_origem_internacao=arquivo_dataset_origem_internacao,
+        pasta_saida='src/data/analise_dados/imagens/internacao/resumo_internacao',
+    )
+    logger.info(
+        'GRAFICOS',
+        (
+            "Tabela de resumo (Geral Internacao) gerada em: "
+            f"{resultado_tabela_resumo.get('arquivo_png', '')}"
+        ),
+    )
 
     resultado_analise_fase2 = gerar_analise_dados_fase2_csv(
         arquivo_dataset_status=saida_dataset_status,
@@ -496,10 +528,12 @@ def run_internacao_eletivo_pipeline_gerar_status_dataset_somente_status(
             resultado_status.get('mensagens', [])
             + resultado_dataset.get('mensagens', [])
             + resultado_resumo_internacao.get('mensagens', [])
+            + resultado_tabela_resumo.get('mensagens', [])
             + resultado_analise_fase2.get('mensagens', [])
             + [
                 'Resumo internacao gerado em: '
                 f"{resultado_resumo_internacao.get('pasta_saida', '')}",
+                f"Tabela resumo internacao gerada em: {resultado_tabela_resumo.get('arquivo_png', '')}",
                 f"Analise de dados Fase 2 gerada em: {resultado_analise_fase2.get('pasta_saida', '')}",
                 f"Manifests de graficos Fase 2: {', '.join(resultado_graficos_fase2.get('manifests', []))}",
             ]
@@ -526,6 +560,7 @@ def run_internacao_eletivo_pipeline_gerar_status_dataset_somente_status(
             'qualidade_data': resultado_status.get('qualidade_data', {}),
             'metricas_por_etapa': metricas_por_etapa,
             'resumo_internacao': resultado_resumo_internacao,
+            'tabela_resumo_geral_internacao': resultado_tabela_resumo,
             'analise_dados_fase2': resultado_analise_fase2,
             'graficos_status_enviado': resultado_graficos_fase2,
         },
@@ -572,12 +607,29 @@ def run_internacao_eletivo_pipeline_criar_dataset_status(
         )
         for mensagem in resultado_resumo_internacao.get('mensagens', []):
             logger.warning('ANALISE_DADOS', mensagem)
+    resultado_tabela_resumo = gerar_tabela_resumo_geral_internacao(
+        arquivo_resumo_geral=(
+            f"{resultado_resumo_internacao.get('pasta_saida', '')}/RESUMO_GERAL_INTERNACAO.csv"
+        ),
+        arquivo_origem_internacao=arquivo_origem_dataset,
+        pasta_saida='src/data/analise_dados/imagens/internacao/resumo_internacao',
+    )
+    if logger is not None:
+        logger.info(
+            'GRAFICOS',
+            (
+                "Tabela de resumo (Geral Internacao) gerada em: "
+                f"{resultado_tabela_resumo.get('arquivo_png', '')}"
+            ),
+        )
 
     resultado = dict(resultado_dataset)
     resultado['mensagens'] = (
         resultado.get('mensagens', [])
         + resultado_resumo_internacao.get('mensagens', [])
+        + resultado_tabela_resumo.get('mensagens', [])
         + [f"Resumo internacao gerado em: {resultado_resumo_internacao.get('pasta_saida', '')}"]
+        + [f"Tabela resumo internacao gerada em: {resultado_tabela_resumo.get('arquivo_png', '')}"]
     )
     dados = dict(resultado.get('dados', {}))
     metricas_por_etapa = dict(dados.get('metricas_por_etapa', {}))
@@ -587,5 +639,6 @@ def run_internacao_eletivo_pipeline_criar_dataset_status(
     }
     dados['metricas_por_etapa'] = metricas_por_etapa
     dados['resumo_internacao'] = resultado_resumo_internacao
+    dados['tabela_resumo_geral_internacao'] = resultado_tabela_resumo
     resultado['dados'] = dados
     return resultado
