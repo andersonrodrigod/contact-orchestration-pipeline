@@ -7,7 +7,24 @@ from src.services.schema_resposta_service import (
 from src.utils.arquivos import ler_arquivo_csv, salvar_dataframe
 
 
-def _validar_e_derivar_chave_data(df, coluna_original, coluna_chave):
+def _preservar_status_e_derivar_chave_data(df, coluna_original, coluna_chave):
+    if coluna_original not in df.columns:
+        raise ValueError(f'Coluna obrigatoria nao encontrada: {coluna_original}')
+
+    df_resultado = df.copy()
+    serie_original = df_resultado[coluna_original].astype(str).str.strip()
+    serie_data = pd.to_datetime(serie_original, errors='coerce', dayfirst=True)
+    mask_valida = serie_data.notna()
+    qtd_invalidos = int((~mask_valida).sum())
+
+    # Mantem as linhas de status no dataset final; datas invalidas apenas perdem a chave
+    # de integracao e ficam vazias no arquivo salvo.
+    df_resultado.loc[~mask_valida, coluna_original] = ''
+    df_resultado[coluna_chave] = serie_data.dt.date
+    return df_resultado, qtd_invalidos
+
+
+def _filtrar_e_derivar_chave_data(df, coluna_original, coluna_chave):
     if coluna_original not in df.columns:
         raise ValueError(f'Coluna obrigatoria nao encontrada: {coluna_original}')
 
@@ -63,13 +80,12 @@ def integrar_status_com_resposta(
     total_status_entrada = len(df_status)
     total_resposta_entrada = len(df_resposta)
 
-    df_status, descartados_status_data = _validar_e_derivar_chave_data(
+    df_status, descartados_status_data = _preservar_status_e_derivar_chave_data(
         df_status, 'DT ENVIO', '__CHAVE_DATA'
     )
-    df_resposta, descartados_resposta_data = _validar_e_derivar_chave_data(
+    df_resposta, descartados_resposta_data = _filtrar_e_derivar_chave_data(
         df_resposta, 'DT_ATENDIMENTO', '__CHAVE_DATA'
     )
-    _falhar_se_todas_datas_invalidas(total_status_entrada, descartados_status_data, 'DT ENVIO')
     _falhar_se_todas_datas_invalidas(total_resposta_entrada, descartados_resposta_data, 'DT_ATENDIMENTO')
 
     df_resposta = (
