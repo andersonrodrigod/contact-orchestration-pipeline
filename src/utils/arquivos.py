@@ -2,6 +2,20 @@ import pandas as pd
 from pathlib import Path
 
 
+def _limpar_colunas_excel(df):
+    colunas_manter = []
+    for coluna in df.columns:
+        nome_coluna = str(coluna).strip()
+        if nome_coluna == "" or nome_coluna.lower().startswith("unnamed:"):
+            serie = df[coluna]
+            if serie.fillna("").astype(str).str.strip().eq("").all():
+                continue
+        colunas_manter.append(coluna)
+    if len(colunas_manter) == len(df.columns):
+        return df
+    return df.loc[:, colunas_manter].copy()
+
+
 def _delimitador_mais_provavel(caminho_arquivo):
     encodings = ['utf-8-sig', 'utf-8', 'cp1252', 'latin1']
     for encoding in encodings:
@@ -21,7 +35,8 @@ def _delimitador_mais_provavel(caminho_arquivo):
 def ler_arquivo_csv(caminho_arquivo, separador=';'):
     caminho_texto = str(caminho_arquivo).lower()
     if caminho_texto.endswith('.xlsx') or caminho_texto.endswith('.xls'):
-        return pd.read_excel(caminho_arquivo, dtype=str, keep_default_na=False)
+        df = pd.read_excel(caminho_arquivo, dtype=str, keep_default_na=False)
+        return _limpar_colunas_excel(df)
 
     encodings = ['utf-8-sig', 'utf-8', 'cp1252', 'latin1']
     delimitador_provavel = _delimitador_mais_provavel(caminho_arquivo)

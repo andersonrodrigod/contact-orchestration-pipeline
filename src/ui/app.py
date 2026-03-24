@@ -265,6 +265,45 @@ class App(ctk.CTk):
             return f"status_resposta_eletivo_internacao{ext}"
         return f"concatenacao_livre{ext}"
 
+    @staticmethod
+    def _default_output_filename_uniao_status(
+        mode: str,
+        file_values: dict[str, str] | None = None,
+    ) -> str:
+        ext = ".csv"
+        if file_values:
+            for key in ("arquivo_status", "arquivo_flow_resposta"):
+                v = (file_values.get(key) or "").strip().lower()
+                if v.endswith(".xlsx") or v.endswith(".xls"):
+                    ext = ".xlsx"
+                    break
+
+        if mode == "internacao":
+            return f"status_internacao_eletivo{ext}"
+        return f"status_complicacao{ext}"
+
+    @staticmethod
+    def _default_output_filename_ingestao(
+        mode: str,
+        key: str,
+        file_values: dict[str, str] | None = None,
+    ) -> str:
+        ext = ".csv"
+        if file_values:
+            for input_key in ("arquivo_status", "arquivo_status_resposta"):
+                v = (file_values.get(input_key) or "").strip().lower()
+                if v.endswith(".xlsx") or v.endswith(".xls"):
+                    ext = ".xlsx"
+                    break
+
+        if mode == "internacao":
+            if key == "saida_status":
+                return f"status_internacao_eletivo_limpo{ext}"
+            return f"status_resposta_eletivo_internacao_limpo{ext}"
+        if key == "saida_status":
+            return f"status_complicacao_limpo{ext}"
+        return f"status_resposta_complicacao_limpo{ext}"
+
     def _clear_file_concatenar(self, mode: str, key: str) -> None:
         if self.concatenar_view is None:
             return
@@ -456,12 +495,17 @@ class App(ctk.CTk):
         if self.ingestao_view is None:
             return
         labels = self.ingestao_view.get_file_labels(mode)
+        file_values = self.ingestao_view.get_file_values(mode)
         if key.startswith("saida_"):
             selected_dir = filedialog.askdirectory(
                 title=f"Selecionar pasta - {labels.get(key, key)}"
             )
             if selected_dir:
-                filename = self.ingestao_controller.default_output_filename(mode, key)
+                filename = self._default_output_filename_ingestao(
+                    mode=mode,
+                    key=key,
+                    file_values=file_values,
+                )
                 path = str(Path(selected_dir) / filename)
             else:
                 path = ""
@@ -542,12 +586,16 @@ class App(ctk.CTk):
         if self.uniao_status_view is None:
             return
         labels = self.uniao_status_view.get_file_labels(mode)
+        file_values = self.uniao_status_view.get_file_values(mode)
         if key == "arquivo_saida":
             selected_dir = filedialog.askdirectory(
                 title=f"Selecionar pasta - {labels.get(key, key)}"
             )
             if selected_dir:
-                filename = "status_internacao_eletivo.csv" if mode == "internacao" else "status_complicacao.csv"
+                filename = self._default_output_filename_uniao_status(
+                    mode=mode,
+                    file_values=file_values,
+                )
                 path = str(Path(selected_dir) / filename)
             else:
                 path = ""
