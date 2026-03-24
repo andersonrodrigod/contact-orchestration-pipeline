@@ -161,12 +161,12 @@ class FluxoPartesController:
             return "status_internacao_eletivo_limpo.csv" if context == "internacao" else "status_complicacao_limpo.csv"
         if key == "saida_status_resposta":
             return (
-                "status_resposta_eletivo_internacao_limpo.csv"
+                "flow_resposta_eletivo_internacao_limpo.csv"
                 if context == "internacao"
-                else "status_resposta_complicacao_limpo.csv"
+                else "flow_resposta_complicacao_limpo.csv"
             )
         if key == "arquivo_status_resposta_unificado":
-            return "status_resposta_eletivo_internacao.csv"
+            return "flow_resposta_eletivo_internacao.csv"
         if key == "arquivo_saida":
             if action == "uniao_status":
                 return "status_internacao_eletivo.csv" if context == "internacao" else "status_complicacao.csv"

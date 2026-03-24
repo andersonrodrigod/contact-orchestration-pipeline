@@ -25,8 +25,8 @@ O projeto roda por `main.py` e escreve logs em `logs/`.
 ## Saidas padrao
 - `src/data/arquivo_limpo/status_complicacao_limpo.csv`
 - `src/data/arquivo_limpo/status_internacao_eletivo_limpo.csv`
-- `src/data/arquivo_limpo/status_resposta_complicacao_limpo.csv`
-- `src/data/arquivo_limpo/status_resposta_eletivo_internacao_limpo.csv`
+- `src/data/arquivo_limpo/flow_resposta_complicacao_limpo.csv`
+- `src/data/arquivo_limpo/flow_resposta_eletivo_internacao_limpo.csv`
 - `src/data/arquivo_limpo/status_complicacao.csv`
 - `src/data/arquivo_limpo/status_internacao_eletivo.csv`
 - `src/data/arquivo_limpo/dataset_complicacao.xlsx`

@@ -408,7 +408,7 @@ def _enriquecer_dataset_com_status(
 def concatenar_status_resposta_eletivo_internacao(
     arquivo_eletivo='src/data/status_resposta_eletivo.csv',
     arquivo_internacao='src/data/status_resposta_internacao.csv',
-    arquivo_saida='src/data/status_resposta_eletivo_internacao.csv',
+    arquivo_saida='src/data/flow_resposta_eletivo_internacao.csv',
 ):
     df_eletivo = ler_arquivo_csv(arquivo_eletivo)
     df_internacao = ler_arquivo_csv(arquivo_internacao)

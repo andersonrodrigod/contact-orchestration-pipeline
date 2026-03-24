@@ -21,10 +21,10 @@ class IngestaoController:
         if mode == "internacao":
             if key == "saida_status":
                 return "status_internacao_eletivo_limpo.csv"
-            return "status_resposta_eletivo_internacao_limpo.csv"
+            return "flow_resposta_eletivo_internacao_limpo.csv"
         if key == "saida_status":
             return "status_complicacao_limpo.csv"
-        return "status_resposta_complicacao_limpo.csv"
+        return "flow_resposta_complicacao_limpo.csv"
 
     @staticmethod
     def _normalizar_status_resposta_somente(

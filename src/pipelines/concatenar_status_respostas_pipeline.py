@@ -6,7 +6,7 @@ from src.services.dataset_service import concatenar_status_resposta_eletivo_inte
 def run_unificar_status_respostas_pipeline(
     arquivo_eletivo='src/data/status_resposta_eletivo.csv',
     arquivo_internacao='src/data/status_resposta_internacao.csv',
-    arquivo_saida='src/data/status_resposta_eletivo_internacao.csv',
+    arquivo_saida='src/data/flow_resposta_eletivo_internacao.csv',
     logger=None,
 ):
     logger_externo = logger is not None

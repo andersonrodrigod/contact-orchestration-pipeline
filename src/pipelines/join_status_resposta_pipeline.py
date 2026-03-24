@@ -85,7 +85,7 @@ def _run_unificar_status_resposta_pipeline(
 
 def run_unificar_status_resposta_complicacao_pipeline(
     arquivo_status='src/data/arquivo_limpo/status_limpo.csv',
-    arquivo_status_resposta='src/data/arquivo_limpo/status_resposta_complicacao_limpo.csv',
+    arquivo_status_resposta='src/data/arquivo_limpo/flow_resposta_complicacao_limpo.csv',
     arquivo_saida='src/data/arquivo_limpo/status.csv',
     logger=None,
 ):
@@ -102,7 +102,7 @@ def run_unificar_status_resposta_complicacao_pipeline(
 
 def run_unificar_status_resposta_internacao_eletivo_pipeline(
     arquivo_status='src/data/arquivo_limpo/status_limpo.csv',
-    arquivo_status_resposta='src/data/arquivo_limpo/status_resposta_eletivo_internacao_limpo.csv',
+    arquivo_status_resposta='src/data/arquivo_limpo/flow_resposta_eletivo_internacao_limpo.csv',
     arquivo_saida='src/data/arquivo_limpo/status.csv',
     logger=None,
 ):

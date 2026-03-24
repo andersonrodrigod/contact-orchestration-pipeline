@@ -46,7 +46,7 @@ def _falhar_se_todas_datas_invalidas(total_linhas, descartados, coluna):
 
 def integrar_status_com_resposta(
     arquivo_status='src/data/arquivo_limpo/status_limpo.csv',
-    arquivo_status_resposta='src/data/arquivo_limpo/status_resposta_complicacao_limpo.csv',
+    arquivo_status_resposta='src/data/arquivo_limpo/flow_resposta_complicacao_limpo.csv',
     arquivo_saida='src/data/arquivo_limpo/status.csv',
     colunas_limpar=None,
 ):
