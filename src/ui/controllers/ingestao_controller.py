@@ -17,14 +17,23 @@ from src.utils.arquivos import ler_arquivo_csv, salvar_dataframe
 
 class IngestaoController:
     @staticmethod
-    def default_output_filename(mode: str, key: str) -> str:
+    def _default_output_filename(mode: str, kind: str) -> str:
         if mode == "internacao":
-            if key == "saida_status":
+            if kind == "status":
                 return "status_internacao_eletivo_limpo.csv"
             return "flow_resposta_eletivo_internacao_limpo.csv"
-        if key == "saida_status":
+        if kind == "status":
             return "status_complicacao_limpo.csv"
         return "flow_resposta_complicacao_limpo.csv"
+
+    @classmethod
+    def build_output_path(
+        cls,
+        mode: str,
+        pasta_saida: str,
+        kind: str,
+    ) -> str:
+        return str(Path(pasta_saida) / cls._default_output_filename(mode, kind))
 
     @staticmethod
     def _normalizar_status_resposta_somente(
@@ -54,8 +63,7 @@ class IngestaoController:
     ) -> tuple[dict[str, str], str | None]:
         tem_status = bool(file_values.get("arquivo_status", "").strip())
         tem_resposta = bool(file_values.get("arquivo_status_resposta", "").strip())
-        tem_saida_status = bool(file_values.get("saida_status", "").strip())
-        tem_saida_resposta = bool(file_values.get("saida_status_resposta", "").strip())
+        tem_pasta_saida = bool(file_values.get("pasta_saida", "").strip())
 
         if not tem_status and not tem_resposta:
             return {}, (
@@ -64,44 +72,44 @@ class IngestaoController:
                 f"{file_labels.get('arquivo_status_resposta', 'arquivo_status_resposta')}."
             )
 
-        if tem_status and not tem_saida_status:
-            return {}, f"Arquivo obrigatorio ausente: {file_labels.get('saida_status', 'saida_status')}."
-
-        if tem_resposta and not tem_saida_resposta:
+        if (tem_status or tem_resposta) and not tem_pasta_saida:
             return {}, (
                 f"Arquivo obrigatorio ausente: "
-                f"{file_labels.get('saida_status_resposta', 'saida_status_resposta')}."
+                f"{file_labels.get('pasta_saida', 'pasta_saida')}."
             )
 
         contexto = "internacao_eletivo" if mode == "internacao" else "complicacao"
         if tem_status and tem_resposta:
-            return {"tipo": "completo", "contexto": contexto}, None
+            return {"tipo": "completo", "contexto": contexto, "mode": mode}, None
         if tem_status:
-            return {"tipo": "status", "contexto": contexto}, None
-        return {"tipo": "resposta", "contexto": contexto}, None
+            return {"tipo": "status", "contexto": contexto, "mode": mode}, None
+        return {"tipo": "resposta", "contexto": contexto, "mode": mode}, None
 
     def run(self, plan: dict[str, str], file_values: dict[str, str]) -> dict:
         tipo = plan["tipo"]
         contexto = plan["contexto"]
+        pasta_saida = file_values["pasta_saida"]
+        saida_status = self.build_output_path(plan["mode"], pasta_saida, "status")
+        saida_status_resposta = self.build_output_path(plan["mode"], pasta_saida, "resposta")
 
         if tipo == "completo":
             return executar_normalizacao_padronizacao(
                 arquivo_status=file_values["arquivo_status"],
                 arquivo_status_resposta=file_values["arquivo_status_resposta"],
-                saida_status=file_values["saida_status"],
-                saida_status_resposta=file_values["saida_status_resposta"],
+                saida_status=saida_status,
+                saida_status_resposta=saida_status_resposta,
                 contexto=contexto,
             )
 
         if tipo == "status":
             return executar_ingestao_somente_status(
                 arquivo_status=file_values["arquivo_status"],
-                saida_status=file_values["saida_status"],
+                saida_status=saida_status,
                 contexto=contexto,
             )
 
         resultado = self._normalizar_status_resposta_somente(
             arquivo_status_resposta=file_values["arquivo_status_resposta"],
-            saida_status_resposta=file_values["saida_status_resposta"],
+            saida_status_resposta=saida_status_resposta,
         )
         return resultado
