@@ -124,11 +124,11 @@ def _deve_considerar_todo_periodo_internacao(dt_internacao, hoje):
 
 
 def _calcular_metricas_video(df_base, mask_periodo):
-    tipo = _serie_texto(df_base, 'TIPO')
+    tipo = _serie_normalizada(_serie_texto(df_base, 'TIPO'))
     p1 = _serie_texto(df_base, 'P1')
     rp1 = _serie_texto(df_base, 'RP1')
 
-    mask_tipo_video = tipo == 'VIDEO ABDOMINAL'
+    mask_tipo_video = tipo == 'video abdominal'
     mask_p1_sim = p1 == 'Sim'
     mask_rp1_nao_quis = rp1 == 'Não quis'
     mask_rp1_vazio = rp1.fillna('').astype(str).str.strip() == ''
@@ -221,6 +221,14 @@ def _montar_metricas(df):
     return metricas
 
 
+def _montar_arquivos_resumo(metricas_dia, metricas_geral, pasta_saida, sufixo=""):
+    arquivo_dia = pasta_saida / f"RESUMO_DIA_COMPLICACAO{sufixo}.csv"
+    arquivo_geral = pasta_saida / f"RESUMO_GERAL_COMPLICACAO{sufixo}.csv"
+    salvar_dataframe(pd.DataFrame([{k: metricas_dia[k] for k in COLUNAS_SAIDA_DIA}]), arquivo_dia)
+    salvar_dataframe(pd.DataFrame([{k: metricas_geral[k] for k in COLUNAS_SAIDA_GERAL}]), arquivo_geral)
+    return arquivo_dia, arquivo_geral
+
+
 def gerar_resumo_complicacao_csv(
     arquivo_origem_complicacao,
     raiz_analise='src/data/analise_dados/complicacao',
@@ -258,11 +266,32 @@ def gerar_resumo_complicacao_csv(
     metricas_geral.update(metricas_video_geral)
 
     pasta_saida = Path(raiz_analise) / 'resumo_complicacao'
-    arquivo_dia = pasta_saida / 'RESUMO_DIA_COMPLICACAO.csv'
-    arquivo_geral = pasta_saida / 'RESUMO_GERAL_COMPLICACAO.csv'
+    pasta_saida.mkdir(parents=True, exist_ok=True)
+    arquivo_dia, arquivo_geral = _montar_arquivos_resumo(metricas_dia, metricas_geral, pasta_saida)
 
-    salvar_dataframe(pd.DataFrame([{k: metricas_dia[k] for k in COLUNAS_SAIDA_DIA}]), arquivo_dia)
-    salvar_dataframe(pd.DataFrame([{k: metricas_geral[k] for k in COLUNAS_SAIDA_GERAL}]), arquivo_geral)
+    tipo = _serie_normalizada(_serie_texto(df_base, 'TIPO'))
+    mask_video_abdominal = tipo == 'video abdominal'
+    metricas_dia_video_base = _montar_metricas(df_base.loc[mask_dia & mask_video_abdominal].copy())
+    metricas_geral_video = _montar_metricas(df_base.loc[mask_video_abdominal].copy())
+    metricas_video_dia_filtrado = _calcular_metricas_video_resumo_dia(
+        df_base.loc[mask_video_abdominal].copy(),
+        dt_internacao.loc[mask_video_abdominal].copy(),
+    )
+    metricas_video_geral_filtrado = _calcular_metricas_video(
+        df_base.loc[mask_video_abdominal].copy(),
+        pd.Series(True, index=df_base.loc[mask_video_abdominal].index, dtype='bool'),
+    )
+    metricas_dia_video = {
+        chave: valor for chave, valor in metricas_dia_video_base.items() if chave not in COLUNAS_VIDEO
+    }
+    metricas_dia_video.update(metricas_video_dia_filtrado)
+    metricas_geral_video.update(metricas_video_geral_filtrado)
+    arquivo_dia_video, arquivo_geral_video = _montar_arquivos_resumo(
+        metricas_dia_video,
+        metricas_geral_video,
+        pasta_saida,
+        '_VIDEO_ABDOMINAL',
+    )
 
     mensagens = []
     if len(faltando) > 0:
@@ -274,11 +303,18 @@ def gerar_resumo_complicacao_csv(
     return {
         'ok': True,
         'pasta_saida': str(pasta_saida),
-        'arquivos_gerados': [str(arquivo_dia), str(arquivo_geral)],
+        'arquivos_gerados': [
+            str(arquivo_dia),
+            str(arquivo_geral),
+            str(arquivo_dia_video),
+            str(arquivo_geral_video),
+        ],
         'mensagens': mensagens,
         'metricas': {
             'resumo_dia_total': metricas_dia['TOTAL'],
             'resumo_geral_total': metricas_geral['TOTAL'],
+            'resumo_dia_total_video_abdominal': metricas_dia_video['TOTAL'],
+            'resumo_geral_total_video_abdominal': metricas_geral_video['TOTAL'],
             'max_dt_envio_utilizado': (
                 max_dt_envio.strftime('%Y-%m-%d') if pd.notna(max_dt_envio) else ''
             ),

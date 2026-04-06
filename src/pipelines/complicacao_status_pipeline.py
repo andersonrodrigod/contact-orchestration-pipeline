@@ -303,14 +303,36 @@ def run_complicacao_pipeline_gerar_status_dataset(
         arquivo_resumo_dia=(
             f"{resultado_resumo_complicacao.get('pasta_saida', '')}/RESUMO_DIA_COMPLICACAO.csv"
         ),
+        arquivo_resumo_geral=(
+            f"{resultado_resumo_complicacao.get('pasta_saida', '')}/RESUMO_GERAL_COMPLICACAO.csv"
+        ),
         arquivo_origem_complicacao=arquivo_dataset_origem_complicacao,
         pasta_saida='src/data/analise_dados/imagens/complicacao/resumo_complicacao',
+    )
+    resultado_tabela_resumo_video_abdominal = gerar_tabela_resumo_dia_complicacao(
+        arquivo_resumo_dia=(
+            f"{resultado_resumo_complicacao.get('pasta_saida', '')}/RESUMO_DIA_COMPLICACAO_VIDEO_ABDOMINAL.csv"
+        ),
+        arquivo_resumo_geral=(
+            f"{resultado_resumo_complicacao.get('pasta_saida', '')}/RESUMO_GERAL_COMPLICACAO_VIDEO_ABDOMINAL.csv"
+        ),
+        arquivo_origem_complicacao=arquivo_dataset_origem_complicacao,
+        pasta_saida='src/data/analise_dados/imagens/complicacao/resumo_complicacao',
+        sufixo_arquivo='video_abdominal',
+        subtitulo='TIPO: VIDEO ABDOMINAL',
     )
     logger.info(
         'GRAFICOS',
         (
             "Tabela de resumo (Dia de Internacao) gerada em: "
             f"{resultado_tabela_resumo.get('arquivo_png', '')}"
+        ),
+    )
+    logger.info(
+        'GRAFICOS',
+        (
+            "Tabela de resumo (Dia de Internacao - VIDEO ABDOMINAL) gerada em: "
+            f"{resultado_tabela_resumo_video_abdominal.get('arquivo_png', '')}"
         ),
     )
 
@@ -356,10 +378,13 @@ def run_complicacao_pipeline_gerar_status_dataset(
             + resultado_dataset.get('mensagens', [])
             + resultado_resumo_complicacao.get('mensagens', [])
             + resultado_tabela_resumo.get('mensagens', [])
+            + resultado_tabela_resumo_video_abdominal.get('mensagens', [])
             + [
                 'Resumo complicacao gerado em: '
                 f"{resultado_resumo_complicacao.get('pasta_saida', '')}",
                 f"Tabela resumo dia gerada em: {resultado_tabela_resumo.get('arquivo_png', '')}",
+                "Tabela resumo dia VIDEO ABDOMINAL gerada em: "
+                f"{resultado_tabela_resumo_video_abdominal.get('arquivo_png', '')}",
                 f"Analise de dados Fase 2 gerada em: {resultado_analise_fase2.get('pasta_saida', '')}",
                 f"Manifests de graficos Fase 2: {', '.join(resultado_graficos_fase2.get('manifests', []))}",
             ]
@@ -387,6 +412,7 @@ def run_complicacao_pipeline_gerar_status_dataset(
             'metricas_por_etapa': metricas_por_etapa,
             'resumo_complicacao': resultado_resumo_complicacao,
             'tabela_resumo_dia_complicacao': resultado_tabela_resumo,
+            'tabela_resumo_dia_complicacao_video_abdominal': resultado_tabela_resumo_video_abdominal,
             'analise_dados_fase2': resultado_analise_fase2,
             'graficos_status_enviado': resultado_graficos_fase2,
         },
@@ -447,14 +473,36 @@ def run_complicacao_pipeline_gerar_status_dataset_somente_status(
         arquivo_resumo_dia=(
             f"{resultado_resumo_complicacao.get('pasta_saida', '')}/RESUMO_DIA_COMPLICACAO.csv"
         ),
+        arquivo_resumo_geral=(
+            f"{resultado_resumo_complicacao.get('pasta_saida', '')}/RESUMO_GERAL_COMPLICACAO.csv"
+        ),
         arquivo_origem_complicacao=arquivo_dataset_origem_complicacao,
         pasta_saida='src/data/analise_dados/imagens/complicacao/resumo_complicacao',
+    )
+    resultado_tabela_resumo_video_abdominal = gerar_tabela_resumo_dia_complicacao(
+        arquivo_resumo_dia=(
+            f"{resultado_resumo_complicacao.get('pasta_saida', '')}/RESUMO_DIA_COMPLICACAO_VIDEO_ABDOMINAL.csv"
+        ),
+        arquivo_resumo_geral=(
+            f"{resultado_resumo_complicacao.get('pasta_saida', '')}/RESUMO_GERAL_COMPLICACAO_VIDEO_ABDOMINAL.csv"
+        ),
+        arquivo_origem_complicacao=arquivo_dataset_origem_complicacao,
+        pasta_saida='src/data/analise_dados/imagens/complicacao/resumo_complicacao',
+        sufixo_arquivo='video_abdominal',
+        subtitulo='TIPO: VIDEO ABDOMINAL',
     )
     logger.info(
         'GRAFICOS',
         (
             "Tabela de resumo (Dia de Internacao) gerada em: "
             f"{resultado_tabela_resumo.get('arquivo_png', '')}"
+        ),
+    )
+    logger.info(
+        'GRAFICOS',
+        (
+            "Tabela de resumo (Dia de Internacao - VIDEO ABDOMINAL) gerada em: "
+            f"{resultado_tabela_resumo_video_abdominal.get('arquivo_png', '')}"
         ),
     )
 
@@ -500,10 +548,13 @@ def run_complicacao_pipeline_gerar_status_dataset_somente_status(
             + resultado_dataset.get('mensagens', [])
             + resultado_resumo_complicacao.get('mensagens', [])
             + resultado_tabela_resumo.get('mensagens', [])
+            + resultado_tabela_resumo_video_abdominal.get('mensagens', [])
             + [
                 'Resumo complicacao gerado em: '
                 f"{resultado_resumo_complicacao.get('pasta_saida', '')}",
                 f"Tabela resumo dia gerada em: {resultado_tabela_resumo.get('arquivo_png', '')}",
+                "Tabela resumo dia VIDEO ABDOMINAL gerada em: "
+                f"{resultado_tabela_resumo_video_abdominal.get('arquivo_png', '')}",
                 f"Analise de dados Fase 2 gerada em: {resultado_analise_fase2.get('pasta_saida', '')}",
                 f"Manifests de graficos Fase 2: {', '.join(resultado_graficos_fase2.get('manifests', []))}",
             ]
@@ -531,6 +582,7 @@ def run_complicacao_pipeline_gerar_status_dataset_somente_status(
             'metricas_por_etapa': metricas_por_etapa,
             'resumo_complicacao': resultado_resumo_complicacao,
             'tabela_resumo_dia_complicacao': resultado_tabela_resumo,
+            'tabela_resumo_dia_complicacao_video_abdominal': resultado_tabela_resumo_video_abdominal,
             'analise_dados_fase2': resultado_analise_fase2,
             'graficos_status_enviado': resultado_graficos_fase2,
         },
@@ -579,8 +631,23 @@ def run_complicacao_pipeline_criar_dataset_status(
         arquivo_resumo_dia=(
             f"{resultado_resumo_complicacao.get('pasta_saida', '')}/RESUMO_DIA_COMPLICACAO.csv"
         ),
+        arquivo_resumo_geral=(
+            f"{resultado_resumo_complicacao.get('pasta_saida', '')}/RESUMO_GERAL_COMPLICACAO.csv"
+        ),
         arquivo_origem_complicacao=arquivo_origem_dataset,
         pasta_saida='src/data/analise_dados/imagens/complicacao/resumo_complicacao',
+    )
+    resultado_tabela_resumo_video_abdominal = gerar_tabela_resumo_dia_complicacao(
+        arquivo_resumo_dia=(
+            f"{resultado_resumo_complicacao.get('pasta_saida', '')}/RESUMO_DIA_COMPLICACAO_VIDEO_ABDOMINAL.csv"
+        ),
+        arquivo_resumo_geral=(
+            f"{resultado_resumo_complicacao.get('pasta_saida', '')}/RESUMO_GERAL_COMPLICACAO_VIDEO_ABDOMINAL.csv"
+        ),
+        arquivo_origem_complicacao=arquivo_origem_dataset,
+        pasta_saida='src/data/analise_dados/imagens/complicacao/resumo_complicacao',
+        sufixo_arquivo='video_abdominal',
+        subtitulo='TIPO: VIDEO ABDOMINAL',
     )
     if logger is not None:
         logger.info(
@@ -590,14 +657,26 @@ def run_complicacao_pipeline_criar_dataset_status(
                 f"{resultado_tabela_resumo.get('arquivo_png', '')}"
             ),
         )
+        logger.info(
+            'GRAFICOS',
+            (
+                "Tabela de resumo (Dia de Internacao - VIDEO ABDOMINAL) gerada em: "
+                f"{resultado_tabela_resumo_video_abdominal.get('arquivo_png', '')}"
+            ),
+        )
 
     resultado = dict(resultado_dataset)
     resultado['mensagens'] = (
         resultado.get('mensagens', [])
         + resultado_resumo_complicacao.get('mensagens', [])
         + resultado_tabela_resumo.get('mensagens', [])
+        + resultado_tabela_resumo_video_abdominal.get('mensagens', [])
         + [f"Resumo complicacao gerado em: {resultado_resumo_complicacao.get('pasta_saida', '')}"]
         + [f"Tabela resumo dia gerada em: {resultado_tabela_resumo.get('arquivo_png', '')}"]
+        + [
+            "Tabela resumo dia VIDEO ABDOMINAL gerada em: "
+            f"{resultado_tabela_resumo_video_abdominal.get('arquivo_png', '')}"
+        ]
     )
     dados = dict(resultado.get('dados', {}))
     metricas_por_etapa = dict(dados.get('metricas_por_etapa', {}))
@@ -608,5 +687,6 @@ def run_complicacao_pipeline_criar_dataset_status(
     dados['metricas_por_etapa'] = metricas_por_etapa
     dados['resumo_complicacao'] = resultado_resumo_complicacao
     dados['tabela_resumo_dia_complicacao'] = resultado_tabela_resumo
+    dados['tabela_resumo_dia_complicacao_video_abdominal'] = resultado_tabela_resumo_video_abdominal
     resultado['dados'] = dados
     return resultado
