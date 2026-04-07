@@ -17,14 +17,28 @@ from src.utils.arquivos import ler_arquivo_csv, salvar_dataframe
 
 class IngestaoController:
     @staticmethod
-    def _default_output_filename(mode: str, kind: str) -> str:
+    def _output_extension(file_values: dict[str, str]) -> str:
+        for key in ("arquivo_status", "arquivo_status_resposta"):
+            valor = (file_values.get(key) or "").strip().lower()
+            if valor.endswith(".xlsx") or valor.endswith(".xls"):
+                return ".xlsx"
+        return ".csv"
+
+    @classmethod
+    def _default_output_filename(
+        cls,
+        mode: str,
+        kind: str,
+        file_values: dict[str, str],
+    ) -> str:
+        ext = cls._output_extension(file_values)
         if mode == "internacao":
             if kind == "status":
-                return "status_internacao_eletivo_limpo.csv"
-            return "status_resposta_eletivo_internacao_limpo.csv"
+                return f"status_internacao_eletivo_limpo{ext}"
+            return f"status_resposta_eletivo_internacao_limpo{ext}"
         if kind == "status":
-            return "status_complicacao_limpo.csv"
-        return "status_resposta_complicacao_limpo.csv"
+            return f"status_complicacao_limpo{ext}"
+        return f"status_resposta_complicacao_limpo{ext}"
 
     @classmethod
     def build_output_path(
@@ -32,8 +46,9 @@ class IngestaoController:
         mode: str,
         pasta_saida: str,
         kind: str,
+        file_values: dict[str, str],
     ) -> str:
-        return str(Path(pasta_saida) / cls._default_output_filename(mode, kind))
+        return str(Path(pasta_saida) / cls._default_output_filename(mode, kind, file_values))
 
     @staticmethod
     def _normalizar_status_resposta_somente(
@@ -89,8 +104,10 @@ class IngestaoController:
         tipo = plan["tipo"]
         contexto = plan["contexto"]
         pasta_saida = file_values["pasta_saida"]
-        saida_status = self.build_output_path(plan["mode"], pasta_saida, "status")
-        saida_status_resposta = self.build_output_path(plan["mode"], pasta_saida, "resposta")
+        saida_status = self.build_output_path(plan["mode"], pasta_saida, "status", file_values)
+        saida_status_resposta = self.build_output_path(
+            plan["mode"], pasta_saida, "resposta", file_values
+        )
 
         if tipo == "completo":
             return executar_normalizacao_padronizacao(
