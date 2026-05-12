@@ -105,8 +105,7 @@ class IngestaoView(ctk.CTkFrame):
         fields = [
             ("arquivo_status", "Arquivo Status"),
             ("arquivo_status_resposta", "Arquivo Status Resposta"),
-            ("saida_status", "Salvar Status Limpo"),
-            ("saida_status_resposta", "Salvar Status Resposta Limpo"),
+            ("pasta_saida", "Pasta para Salvar Arquivos"),
         ]
         self._build_mode_frame(content, "complicacao", fields)
         self._build_mode_frame(content, "internacao", fields)

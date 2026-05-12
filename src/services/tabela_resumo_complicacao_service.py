@@ -102,8 +102,13 @@ def _gerar_tabela_video_nova_pergunta(
     df_resumo_geral,
     mes_titulo,
     pasta_saida,
+    sufixo_arquivo="",
+    subtitulo="",
 ):
-    arquivo_png_video = pasta_saida / "tabela_resumo_video_nova_pergunta_complicacao.png"
+    nome_arquivo = "tabela_resumo_video_nova_pergunta_complicacao"
+    if sufixo_arquivo:
+        nome_arquivo = f"{nome_arquivo}_{sufixo_arquivo}"
+    arquivo_png_video = pasta_saida / f"{nome_arquivo}.png"
 
     linha_dia = df_resumo_dia.iloc[0]
     linha_geral = df_resumo_geral.iloc[0]
@@ -121,6 +126,8 @@ def _gerar_tabela_video_nova_pergunta(
         "Desempenho da pesquisa de Complicacoes Cirurgicas "
         f"{mes_titulo} (NOVA PERGUNTA)"
     )
+    if subtitulo:
+        titulo_video = f"{titulo_video}\n{subtitulo}"
     colunas_video = ["", "Quantidade", "Respondidos", "Percentual"]
     linhas_video = [
         [
@@ -211,8 +218,13 @@ def _gerar_grafico_pizza_video(
     df_resumo_geral,
     mes_titulo,
     pasta_saida,
+    sufixo_arquivo="",
+    subtitulo="",
 ):
-    arquivo_png_pizza = pasta_saida / "grafico_pizza_video_complicacao.png"
+    nome_arquivo = "grafico_pizza_video_complicacao"
+    if sufixo_arquivo:
+        nome_arquivo = f"{nome_arquivo}_{sufixo_arquivo}"
+    arquivo_png_pizza = pasta_saida / f"{nome_arquivo}.png"
     linha_dia = df_resumo_dia.iloc[0]
     linha_geral = df_resumo_geral.iloc[0]
 
@@ -248,12 +260,10 @@ def _gerar_grafico_pizza_video(
     }
 
     fig, axes = plt.subplots(1, 2, figsize=(14, 6))
-    fig.suptitle(
-        f"Video Abdominal - Complicacoes Cirurgicas {mes_titulo}",
-        fontsize=15,
-        fontweight="bold",
-        y=0.98,
-    )
+    titulo = f"Video Abdominal - Complicacoes Cirurgicas {mes_titulo}"
+    if subtitulo:
+        titulo = f"{titulo}\n{subtitulo}"
+    fig.suptitle(titulo, fontsize=15, fontweight="bold", y=0.98)
 
     cores_dia = [cores.get(label, "#607D8B") for label in labels_dia]
     _, _, autotexts_dia = axes[0].pie(
@@ -370,11 +380,16 @@ def gerar_tabela_resumo_dia_complicacao(
     arquivo_resumo_geral="src/data/analise_dados/complicacao/resumo_complicacao/RESUMO_GERAL_COMPLICACAO.csv",
     arquivo_origem_complicacao="src/data/complicacao.xlsx",
     pasta_saida="src/data/analise_dados/imagens/complicacao/resumo_complicacao",
+    sufixo_arquivo="",
+    subtitulo="",
 ):
     pasta_saida = Path(pasta_saida)
     pasta_saida.mkdir(parents=True, exist_ok=True)
-    arquivo_png = pasta_saida / "tabela_resumo_dia_complicacao.png"
-    arquivo_manifest = pasta_saida / "manifest_tabela_resumo_dia_complicacao.json"
+    nome_base = "tabela_resumo_dia_complicacao"
+    if sufixo_arquivo:
+        nome_base = f"{nome_base}_{sufixo_arquivo}"
+    arquivo_png = pasta_saida / f"{nome_base}.png"
+    arquivo_manifest = pasta_saida / f"manifest_{nome_base}.json"
 
     manifest = {
         "etapa": "resumo_complicacao_tabela",
@@ -425,6 +440,8 @@ def gerar_tabela_resumo_dia_complicacao(
     ate_o_dia_geral = datetime.now().strftime("%d/%m/%y")
 
     titulo = f"Desempenho da pesquisa de Complicacoes Cirurgicas {mes_titulo}"
+    if subtitulo:
+        titulo = f"{titulo}\n{subtitulo}"
     colunas = ["Categoria Metrica", "Ate o Dia", "Total", "Percentual"]
     linhas = [
         ["Resumo - Dia de Internacao", "", "", ""],
@@ -511,6 +528,8 @@ def gerar_tabela_resumo_dia_complicacao(
         df_resumo_geral=df_resumo_geral,
         mes_titulo=mes_titulo,
         pasta_saida=pasta_saida,
+        sufixo_arquivo=sufixo_arquivo,
+        subtitulo=subtitulo,
     )
     manifest["arquivo_saida_imagem_video_nova_pergunta"] = arquivo_png_video
     arquivo_png_pizza_video = _gerar_grafico_pizza_video(
@@ -518,6 +537,8 @@ def gerar_tabela_resumo_dia_complicacao(
         df_resumo_geral=df_resumo_geral,
         mes_titulo=mes_titulo,
         pasta_saida=pasta_saida,
+        sufixo_arquivo=sufixo_arquivo,
+        subtitulo=subtitulo,
     )
     manifest["arquivo_saida_grafico_pizza_video"] = arquivo_png_pizza_video
     arquivo_png_pizza_funil_dia = _gerar_grafico_pizza_funil(
@@ -526,7 +547,11 @@ def gerar_tabela_resumo_dia_complicacao(
         respostas=respostas,
         mes_titulo=mes_titulo,
         subtitulo="Resumo Dia",
-        arquivo_saida=pasta_saida / "grafico_pizza_funil_dia_complicacao.png",
+        arquivo_saida=pasta_saida / (
+            "grafico_pizza_funil_dia_complicacao.png"
+            if not sufixo_arquivo
+            else f"grafico_pizza_funil_dia_complicacao_{sufixo_arquivo}.png"
+        ),
     )
     manifest["arquivo_saida_grafico_pizza_funil_dia"] = arquivo_png_pizza_funil_dia
     arquivo_png_pizza_funil_geral = _gerar_grafico_pizza_funil(
@@ -535,7 +560,11 @@ def gerar_tabela_resumo_dia_complicacao(
         respostas=respostas_geral,
         mes_titulo=mes_titulo,
         subtitulo="Resumo Geral",
-        arquivo_saida=pasta_saida / "grafico_pizza_funil_geral_complicacao.png",
+        arquivo_saida=pasta_saida / (
+            "grafico_pizza_funil_geral_complicacao.png"
+            if not sufixo_arquivo
+            else f"grafico_pizza_funil_geral_complicacao_{sufixo_arquivo}.png"
+        ),
     )
     manifest["arquivo_saida_grafico_pizza_funil_geral"] = arquivo_png_pizza_funil_geral
 
