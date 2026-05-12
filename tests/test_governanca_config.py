@@ -26,7 +26,7 @@ class GovernancaConfigTests(unittest.TestCase):
     def test_resolver_limiar_nat_data_bloqueia_override_quando_parametro_desabilitado(self):
         limiar, origem = resolver_limiar_nat_data(
             55.0,
-            contexto='internacao_eletivo',
+            contexto='complicacao',
             permitir_override_limiar=False,
         )
         self.assertEqual(limiar, 30.0)

@@ -10,7 +10,7 @@ from core.error_codes import (
 )
 from core.logger import PipelineLogger
 from src.config.governanca_config import resolver_limiar_nat_data
-from src.config.paths import DEFAULTS_COMPLICACAO, DEFAULTS_INTERNACAO_ELETIVO
+from src.config.paths import DEFAULTS_COMPLICACAO
 from src.contracts.preflight_contracts import build_preflight_result
 from src.services.validacao_service import (
     validar_colunas_origem_dataset_complicacao,
@@ -134,18 +134,6 @@ def _executar_preflight_com_dataframes(
     return resultado
 
 
-def _arquivo_unificado_esta_atualizado(arquivo_unificado, arquivo_eletivo, arquivo_internacao):
-    if not Path(arquivo_unificado).exists():
-        return False
-
-    mtime_unificado = Path(arquivo_unificado).stat().st_mtime
-    mtime_eletivo = Path(arquivo_eletivo).stat().st_mtime if Path(arquivo_eletivo).exists() else 0
-    mtime_internacao = (
-        Path(arquivo_internacao).stat().st_mtime if Path(arquivo_internacao).exists() else 0
-    )
-    return mtime_unificado >= max(mtime_eletivo, mtime_internacao)
-
-
 def run_preflight_pipeline(
     contexto,
     arquivo_status,
@@ -219,91 +207,3 @@ def run_preflight_complicacao(limiar_nat_data=None):
         limiar_nat_data=limiar_nat_data,
         nome_logger='preflight_complicacao',
     )
-
-
-def run_preflight_internacao_eletivo(limiar_nat_data=None):
-    arquivo_status = DEFAULTS_INTERNACAO_ELETIVO['arquivo_status']
-    arquivo_unificado = DEFAULTS_INTERNACAO_ELETIVO['arquivo_status_resposta_unificado']
-    arquivo_eletivo = DEFAULTS_INTERNACAO_ELETIVO['arquivo_status_resposta_eletivo']
-    arquivo_internacao = DEFAULTS_INTERNACAO_ELETIVO['arquivo_status_resposta_internacao']
-    arquivo_dataset_origem = DEFAULTS_INTERNACAO_ELETIVO['arquivo_dataset_origem_internacao']
-
-    if _arquivo_unificado_esta_atualizado(arquivo_unificado, arquivo_eletivo, arquivo_internacao):
-        return run_preflight_pipeline(
-            contexto='internacao_eletivo',
-            arquivo_status=arquivo_status,
-            arquivo_status_resposta=arquivo_unificado,
-            arquivo_dataset_origem=arquivo_dataset_origem,
-            limiar_nat_data=limiar_nat_data,
-            nome_logger='preflight_internacao_eletivo',
-        )
-
-    limiar_nat_data, origem_limiar = resolver_limiar_nat_data(
-        limiar_nat_data,
-        contexto='internacao_eletivo',
-    )
-    logger = PipelineLogger(nome_pipeline='preflight_internacao_eletivo')
-    if Path(arquivo_unificado).exists():
-        logger.warning(
-            'INICIO',
-            (
-                'Arquivo unificado desatualizado em relacao a eletivo/internacao; '
-                'usando fallback eletivo+internacao em memoria.'
-            ),
-        )
-    else:
-        logger.info('INICIO', 'Arquivo unificado ausente; usando fallback eletivo+internacao em memoria.')
-    logger.info('INICIO', f'limiar_nat_data={limiar_nat_data}')
-    logger.info('INICIO', f'limiar_nat_data_origem={origem_limiar}')
-    validacao_arquivos = validar_arquivos_existem(
-        {
-            'arquivo_status': arquivo_status,
-            'arquivo_status_resposta_eletivo': arquivo_eletivo,
-            'arquivo_status_resposta_internacao': arquivo_internacao,
-            'arquivo_dataset_origem': arquivo_dataset_origem,
-        }
-    )
-    if not validacao_arquivos['ok']:
-        resultado = build_preflight_result(
-            ok=False,
-            contexto='internacao_eletivo',
-            bloqueios=validacao_arquivos['faltando'],
-            avisos=[],
-            detalhes={'validacao_arquivos': validacao_arquivos},
-            codigo_erro=ERRO_VALIDACAO_ARQUIVOS,
-        )
-        logger.finalizar('FALHA_ARQUIVOS')
-        return resultado
-
-    try:
-        df_status = ler_arquivo_csv(arquivo_status)
-        df_eletivo = ler_arquivo_csv(arquivo_eletivo)
-        df_internacao = ler_arquivo_csv(arquivo_internacao)
-        colunas_unificadas = sorted(set(df_eletivo.columns).union(set(df_internacao.columns)))
-        df_status_resposta = pd.concat(
-            [
-                df_eletivo.reindex(columns=colunas_unificadas, fill_value=''),
-                df_internacao.reindex(columns=colunas_unificadas, fill_value=''),
-            ],
-            ignore_index=True,
-        )
-        df_origem = ler_arquivo_csv(arquivo_dataset_origem)
-        return _executar_preflight_com_dataframes(
-            contexto='internacao_eletivo',
-            df_status=df_status,
-            df_status_resposta=df_status_resposta,
-            df_origem=df_origem,
-            limiar_nat_data=limiar_nat_data,
-            logger=logger,
-        )
-    except Exception as erro:
-        logger.exception('ERRO_EXECUCAO', erro)
-        logger.finalizar('ERRO')
-        return build_preflight_result(
-            ok=False,
-            contexto='internacao_eletivo',
-            bloqueios=[f'Erro inesperado no preflight: {type(erro).__name__}: {erro}'],
-            avisos=[],
-            detalhes={},
-            codigo_erro=ERRO_INGESTAO,
-        )

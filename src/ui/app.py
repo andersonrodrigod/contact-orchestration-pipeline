@@ -6,12 +6,10 @@ import threading
 from tkinter import filedialog
 from typing import Callable
 
-from src.ui.controllers.ambos_controller import AmbosController
 from src.ui.controllers.concatenar_controller import ConcatenarController
 from src.ui.controllers.complicacao_controller import ComplicacaoController
 from src.ui.controllers.fluxo_partes_controller import FluxoPartesController
 from src.ui.controllers.ingestao_controller import IngestaoController
-from src.ui.controllers.internacao_controller import InternacaoController
 from src.ui.controllers.uniao_status_controller import UniaoStatusController
 from src.pipelines.complicacao_orquestracao_pipeline import run_complicacao_pipeline_orquestrar
 from src.pipelines.complicacao_status_pipeline import (
@@ -19,29 +17,15 @@ from src.pipelines.complicacao_status_pipeline import (
     run_complicacao_pipeline_gerar_status_dataset_somente_status,
 )
 from src.pipelines.concatenar_livre_pipeline import run_unificar_arquivos_livre_pipeline
-from src.pipelines.concatenar_status_pipeline import run_unificar_status_pipeline
-from src.pipelines.concatenar_status_respostas_pipeline import (
-    run_unificar_status_respostas_pipeline,
-)
-from src.pipelines.internacao_eletivo_orquestracao_pipeline import (
-    run_internacao_eletivo_pipeline_orquestrar,
-)
-from src.pipelines.internacao_eletivo_status_pipeline import (
-    run_internacao_eletivo_pipeline_gerar_status_dataset,
-    run_internacao_eletivo_pipeline_gerar_status_dataset_somente_status,
-)
 from src.pipelines.join_status_resposta_pipeline import (
     run_unificar_status_resposta_complicacao_pipeline,
-    run_unificar_status_resposta_internacao_eletivo_pipeline,
 )
 from src.ui.services.pipeline_runner import PipelineRunner
 from src.ui.state import UIStyle, UIRuntimeState
-from src.ui.views.ambos_view import AmbosView
 from src.ui.views.concatenar_view import ConcatenarView
 from src.ui.views.complicacao_view import ComplicacaoView
 from src.ui.views.fluxo_partes_view import FluxoPartesView
 from src.ui.views.ingestao_view import IngestaoView
-from src.ui.views.internacao_view import InternacaoView
 from src.ui.views.menu_view import MenuView
 from src.ui.views.progress_modal import ProgressModal
 from src.ui.views.uniao_status_view import UniaoStatusView
@@ -71,12 +55,10 @@ class App(ctk.CTk):
 
         self.style = UIStyle()
         self.ui_state = UIRuntimeState()
-        self.ambos_controller = AmbosController()
         self.concatenar_controller = ConcatenarController()
         self.complicacao_controller = ComplicacaoController()
         self.fluxo_partes_controller = FluxoPartesController()
         self.ingestao_controller = IngestaoController()
-        self.internacao_controller = InternacaoController()
         self.uniao_status_controller = UniaoStatusController()
         self.pipeline_runner = PipelineRunner()
 
@@ -84,12 +66,10 @@ class App(ctk.CTk):
         self.frames: dict[str, ctk.CTkFrame] = {}
 
         self.menu_view: MenuView | None = None
-        self.ambos_view: AmbosView | None = None
         self.concatenar_view: ConcatenarView | None = None
         self.complicacao_view: ComplicacaoView | None = None
         self.fluxo_partes_view: FluxoPartesView | None = None
         self.ingestao_view: IngestaoView | None = None
-        self.internacao_view: InternacaoView | None = None
         self.uniao_status_view: UniaoStatusView | None = None
         self.progress_modal: ProgressModal | None = None
 
@@ -97,7 +77,7 @@ class App(ctk.CTk):
         self._etl_after_id: str | None = None
         self._warning_modal: ctk.CTkToplevel | None = None
         self._etl_steps: list[str] = []
-        self._current_execution_context: str = "ambos"
+        self._current_execution_context: str = "complicacao"
         self._progress_current_step: int = 0
         self._current_concatenar_mode: str = "status"
 
@@ -113,9 +93,7 @@ class App(ctk.CTk):
         self.container.grid_columnconfigure(0, weight=1)
 
         self._create_menu_frame()
-        self._create_frame_fluxo_completo()
         self._create_frame_modo_complicacao()
-        self._create_frame_modo_internacao()
         self._create_frame_fluxo_partes()
         self._create_frame_juntar_status()
         self._create_frame_concatenar()
@@ -176,17 +154,6 @@ class App(ctk.CTk):
         )
         self.frames["menu_frame"] = self.menu_view
 
-    def _create_frame_fluxo_completo(self) -> None:
-        self.ambos_view = AmbosView(
-            parent=self.container,
-            style=self.style,
-            on_back=lambda: self.show_frame("menu_frame"),
-            on_execute=self._start_etl_execution,
-            on_select_file=self._select_file,
-            on_clear_file=self._clear_file,
-        )
-        self.frames["frame_fluxo_completo"] = self.ambos_view
-
     def _create_frame_modo_complicacao(self) -> None:
         self.complicacao_view = ComplicacaoView(
             parent=self.container,
@@ -197,17 +164,6 @@ class App(ctk.CTk):
             on_clear_file=self._clear_file_complicacao,
         )
         self.frames["frame_modo_complicacao"] = self.complicacao_view
-
-    def _create_frame_modo_internacao(self) -> None:
-        self.internacao_view = InternacaoView(
-            parent=self.container,
-            style=self.style,
-            on_back=lambda: self.show_frame("menu_frame"),
-            on_execute=self._start_internacao_execution,
-            on_select_file=self._select_file_internacao,
-            on_clear_file=self._clear_file_internacao,
-        )
-        self.frames["frame_modo_internacao"] = self.internacao_view
 
     def _select_file_concatenar(self, mode: str, key: str) -> None:
         if self.concatenar_view is None:
@@ -249,8 +205,6 @@ class App(ctk.CTk):
         ext = ".csv"
         if file_values:
             keys_by_mode = {
-                "status": ["status_complicacao", "status_internacao_eletivo"],
-                "status_resposta": ["resposta_eletivo", "resposta_internacao"],
                 "livre": ["arquivo_a", "arquivo_b"],
             }
             for key in keys_by_mode.get(mode, []):
@@ -259,10 +213,6 @@ class App(ctk.CTk):
                     ext = ".xlsx"
                     break
 
-        if mode == "status":
-            return f"status_complicacao_internacao_eletivo{ext}"
-        if mode == "status_resposta":
-            return f"status_resposta_eletivo_internacao{ext}"
         return f"concatenacao_livre{ext}"
 
     @staticmethod
@@ -278,8 +228,6 @@ class App(ctk.CTk):
                     ext = ".xlsx"
                     break
 
-        if mode == "internacao":
-            return f"status_internacao_eletivo{ext}"
         return f"status_complicacao{ext}"
 
     @staticmethod
@@ -321,25 +269,11 @@ class App(ctk.CTk):
     def _run_concatenar_worker(self, mode: str, file_values: dict[str, str]) -> None:
         try:
             self._publish_real_progress(1, "Executando concatenação...")
-            if mode == "status":
-                arquivo_saida = file_values["arquivo_saida"]
-                resultado = run_unificar_status_pipeline(
-                    arquivo_status_complicacao=file_values["status_complicacao"],
-                    arquivo_status_internacao_eletivo=file_values["status_internacao_eletivo"],
-                    arquivo_saida=arquivo_saida,
-                )
-            elif mode == "status_resposta":
-                resultado = run_unificar_status_respostas_pipeline(
-                    arquivo_eletivo=file_values["resposta_eletivo"],
-                    arquivo_internacao=file_values["resposta_internacao"],
-                    arquivo_saida=file_values["arquivo_saida"],
-                )
-            else:
-                resultado = run_unificar_arquivos_livre_pipeline(
-                    arquivo_a=file_values["arquivo_a"],
-                    arquivo_b=file_values["arquivo_b"],
-                    arquivo_saida=file_values["arquivo_saida"],
-                )
+            resultado = run_unificar_arquivos_livre_pipeline(
+                arquivo_a=file_values["arquivo_a"],
+                arquivo_b=file_values["arquivo_b"],
+                arquivo_saida=file_values["arquivo_saida"],
+            )
         except Exception as erro:
             self.after(
                 0,
@@ -603,18 +537,11 @@ class App(ctk.CTk):
             return
 
         try:
-            if mode == "complicacao":
-                resultado = run_unificar_status_resposta_complicacao_pipeline(
-                    arquivo_status=file_values["arquivo_status"],
-                    arquivo_status_resposta=file_values["arquivo_flow_resposta"],
-                    arquivo_saida=file_values["arquivo_saida"],
-                )
-            else:
-                resultado = run_unificar_status_resposta_internacao_eletivo_pipeline(
-                    arquivo_status=file_values["arquivo_status"],
-                    arquivo_status_resposta=file_values["arquivo_flow_resposta"],
-                    arquivo_saida=file_values["arquivo_saida"],
-                )
+            resultado = run_unificar_status_resposta_complicacao_pipeline(
+                arquivo_status=file_values["arquivo_status"],
+                arquivo_status_resposta=file_values["arquivo_flow_resposta"],
+                arquivo_saida=file_values["arquivo_saida"],
+            )
         except Exception as erro:
             self.uniao_status_view.set_status_message(
                 mode,
@@ -637,27 +564,6 @@ class App(ctk.CTk):
         )
         self.uniao_status_view.set_status_message(mode, mensagem, "#FFB1B1")
 
-    def _select_file(self, key: str) -> None:
-        if self.ambos_view is None:
-            return
-        labels = self.ambos_view.get_file_labels()
-        if key == "output_dir":
-            path = filedialog.askdirectory(title="Selecionar pasta de saída")
-        else:
-            path = filedialog.askopenfilename(
-                title=f"Selecionar arquivo - {labels.get(key, key)}"
-            )
-        if path:
-            self.ambos_view.set_file_value(key, path)
-            self._reset_response_warning_flags()
-            self.ambos_view.clear_status_message()
-
-    def _clear_file(self, key: str) -> None:
-        if self.ambos_view is None:
-            return
-        self.ambos_view.clear_file_value(key)
-        self._reset_response_warning_flags()
-
     def _select_file_complicacao(self, key: str) -> None:
         if self.complicacao_view is None:
             return
@@ -679,77 +585,6 @@ class App(ctk.CTk):
         self.complicacao_view.clear_file_value(key)
         self._reset_response_warning_flags()
 
-    def _select_file_internacao(self, key: str) -> None:
-        if self.internacao_view is None:
-            return
-        labels = self.internacao_view.get_file_labels()
-        if key == "output_dir":
-            path = filedialog.askdirectory(title="Selecionar pasta de saída")
-        else:
-            path = filedialog.askopenfilename(
-                title=f"Selecionar arquivo - {labels.get(key, key)}"
-            )
-        if path:
-            self.internacao_view.set_file_value(key, path)
-            self._reset_response_warning_flags()
-            self.internacao_view.clear_status_message()
-
-    def _clear_file_internacao(self, key: str) -> None:
-        if self.internacao_view is None:
-            return
-        self.internacao_view.clear_file_value(key)
-        self._reset_response_warning_flags()
-
-    def _start_etl_execution(self) -> None:
-        if self.ambos_view is None:
-            return
-
-        file_values = self.ambos_view.get_file_values()
-        if not file_values.get("output_dir", "").strip():
-            self.ambos_view.set_status_message(
-                "Selecione a Pasta de saída antes de executar o ETL.",
-                "#FFB1B1",
-            )
-            return
-        file_labels = self.ambos_view.get_file_labels()
-        plano_execucao, erro_validacao = self.ambos_controller.resolve_execution_plan(
-            file_values=file_values,
-            file_labels=file_labels,
-        )
-
-        if erro_validacao:
-            self.ambos_view.set_status_message(erro_validacao, "#FFB1B1")
-            return
-
-        if self.ambos_controller.needs_missing_responses_confirmation(plano_execucao):
-            title, message = self.ambos_controller.missing_responses_warning()
-            self._show_warning_popup(
-                title=title,
-                message=message,
-                on_ack=self._ack_ambos_warning,
-            )
-            return
-
-        self.ui_state.current_execution_plan = plano_execucao
-        self._current_execution_context = "ambos"
-
-        self.ambos_view.set_status_message(
-            (
-                "Plano selecionado: "
-                f"Complicação {plano_execucao['complicacao']} | "
-                f"Internação {plano_execucao['internacao']}"
-            ),
-            "#A7C8FF",
-        )
-        self.ambos_view.set_status_message("Executando modo Ambos...", "#A7C8FF")
-        self._etl_steps = self._build_real_ambos_steps()
-        self._open_progress_modal_manual()
-        threading.Thread(
-            target=self._run_ambos_worker,
-            args=(file_values, plano_execucao),
-            daemon=True,
-        ).start()
-
     @staticmethod
     def _normalized_messages(result: dict) -> list[str]:
         if not isinstance(result, dict):
@@ -761,14 +596,7 @@ class App(ctk.CTk):
             msgs = []
         generic_markers = (
             "modo complicacao selecionado",
-            "modo internação selecionado",
-            "modo internacao selecionado",
-            "modo internacao_eletivo selecionado",
-            "modo ambos selecionado",
             "modo complicacao iniciado",
-            "modo internacao iniciado",
-            "modo internacao_eletivo iniciado",
-            "modo ambos iniciado",
         )
         filtered: list[str] = []
         for msg in msgs:
@@ -817,165 +645,12 @@ class App(ctk.CTk):
             lines = lines[:max_error_lines] + ["..."]
         return "\n".join(lines)
 
-    def _run_ambos_worker(
-        self,
-        file_values: dict[str, str],
-        plano_execucao: dict[str, str],
-    ) -> None:
-        try:
-            if self._etl_cancelled:
-                return
-            output_dir = Path(file_values["output_dir"])
-            output_dir.mkdir(parents=True, exist_ok=True)
-
-            comp_saida_status = str(output_dir / "status_complicacao_limpo.csv")
-            comp_saida_resposta = str(output_dir / "status_resposta_complicacao_limpo.csv")
-            comp_saida_integrado = str(output_dir / "status_complicacao.csv")
-            comp_saida_dataset_status = str(output_dir / "complicacao_status.xlsx")
-            comp_saida_final = str(output_dir / "complicacao_final.xlsx")
-
-            int_saida_status = str(output_dir / "status_internacao_eletivo_limpo.csv")
-            int_saida_resposta_unificado = str(output_dir / "status_resposta_eletivo_internacao.csv")
-            int_saida_resposta = str(output_dir / "status_resposta_eletivo_internacao_limpo.csv")
-            int_saida_integrado = str(output_dir / "status_internacao_eletivo.csv")
-            int_saida_dataset_status = str(output_dir / "internacao_status.xlsx")
-            int_saida_final = str(output_dir / "internacao_final.xlsx")
-
-            self._publish_real_progress(1, "Complicação: gerando dataset status...")
-            if plano_execucao["complicacao"] == "com_resposta":
-                resultado_comp = run_complicacao_pipeline_gerar_status_dataset(
-                    arquivo_status=file_values["status"],
-                    arquivo_status_resposta_complicacao=file_values["flow_complicacao"],
-                    arquivo_dataset_origem_complicacao=file_values["complicacao"],
-                    saida_status=comp_saida_status,
-                    saida_status_resposta=comp_saida_resposta,
-                    saida_status_integrado=comp_saida_integrado,
-                    saida_dataset_status=comp_saida_dataset_status,
-                )
-            else:
-                resultado_comp = run_complicacao_pipeline_gerar_status_dataset_somente_status(
-                    arquivo_status=file_values["status"],
-                    arquivo_dataset_origem_complicacao=file_values["complicacao"],
-                    saida_status=comp_saida_status,
-                    saida_status_integrado=comp_saida_integrado,
-                    saida_dataset_status=comp_saida_dataset_status,
-                )
-            if not resultado_comp.get("ok", False):
-                detalhe = self._result_message(
-                    resultado_comp,
-                    fail_default="Falha na etapa de criação de dataset da complicação.",
-                )
-                self.after(0, lambda: self._finalize_real_progress(False, f"Complicação falhou: {detalhe}"))
-                return
-
-            if self._etl_cancelled:
-                return
-            self._publish_real_progress(2, "Complicação: orquestrando dataset...")
-            resultado_comp_orq = run_complicacao_pipeline_orquestrar(
-                arquivo_dataset_status=comp_saida_dataset_status,
-                arquivo_saida_final=comp_saida_final,
-                nome_logger=(
-                    "orquestracao_complicacao_ui"
-                    if plano_execucao["complicacao"] == "com_resposta"
-                    else "orquestracao_complicacao_somente_status_ui"
-                ),
-            )
-            if not resultado_comp_orq.get("ok", False):
-                detalhe = self._result_message(
-                    resultado_comp_orq,
-                    fail_default="Falha na etapa de orquestração da complicação.",
-                )
-                self.after(0, lambda: self._finalize_real_progress(False, f"Complicação falhou: {detalhe}"))
-                return
-
-            if self._etl_cancelled:
-                return
-            self._publish_real_progress(3, "Internação: gerando dataset status...")
-            if plano_execucao["internacao"] == "com_resposta":
-                resultado_int = run_internacao_eletivo_pipeline_gerar_status_dataset(
-                    arquivo_status=file_values["status"],
-                    arquivo_status_resposta_eletivo=file_values["flow_internacao_eletivo"],
-                    arquivo_status_resposta_internacao=file_values["flow_internacao_urgencia"],
-                    arquivo_status_resposta_unificado=int_saida_resposta_unificado,
-                    arquivo_dataset_origem_internacao=file_values["internacao"],
-                    saida_status=int_saida_status,
-                    saida_status_resposta=int_saida_resposta,
-                    saida_status_integrado=int_saida_integrado,
-                    saida_dataset_status=int_saida_dataset_status,
-                )
-            else:
-                resultado_int = run_internacao_eletivo_pipeline_gerar_status_dataset_somente_status(
-                    arquivo_status=file_values["status"],
-                    arquivo_dataset_origem_internacao=file_values["internacao"],
-                    saida_status=int_saida_status,
-                    saida_status_integrado=int_saida_integrado,
-                    saida_dataset_status=int_saida_dataset_status,
-                )
-            if not resultado_int.get("ok", False):
-                detalhe = self._result_message(
-                    resultado_int,
-                    fail_default="Falha na etapa de criação de dataset da internação.",
-                )
-                self.after(0, lambda: self._finalize_real_progress(False, f"Internação falhou: {detalhe}"))
-                return
-
-            if self._etl_cancelled:
-                return
-            self._publish_real_progress(4, "Internação: orquestrando dataset...")
-            resultado_int_orq = run_internacao_eletivo_pipeline_orquestrar(
-                arquivo_dataset_status=int_saida_dataset_status,
-                arquivo_saida_final=int_saida_final,
-                nome_logger=(
-                    "orquestracao_internacao_ui"
-                    if plano_execucao["internacao"] == "com_resposta"
-                    else "orquestracao_internacao_somente_status_ui"
-                ),
-            )
-            if not resultado_int_orq.get("ok", False):
-                detalhe = self._result_message(
-                    resultado_int_orq,
-                    fail_default="Falha na etapa de orquestração da internação.",
-                )
-                self.after(0, lambda: self._finalize_real_progress(False, f"Internação falhou: {detalhe}"))
-                return
-        except Exception as erro:
-            self.after(
-                0,
-                lambda: self._finalize_real_progress(
-                    False,
-                    f"Falha no modo Ambos: {type(erro).__name__}: {erro}",
-                ),
-            )
-            return
-
-        self.after(0, lambda: self._finalize_real_progress(True, "Modo Ambos executado com sucesso."))
-
-    @staticmethod
-    def _build_real_ambos_steps() -> list[str]:
-        return [
-            "Preparando execução...",
-            "Complicação: gerando dataset status...",
-            "Complicação: orquestrando dataset...",
-            "Internação: gerando dataset status...",
-            "Internação: orquestrando dataset...",
-            "Finalizando execução...",
-        ]
-
     @staticmethod
     def _build_real_complicacao_steps() -> list[str]:
         return [
             "Preparando execução...",
             "Complicação: gerando dataset status...",
             "Complicação: orquestrando dataset...",
-            "Finalizando execução...",
-        ]
-
-    @staticmethod
-    def _build_real_internacao_steps() -> list[str]:
-        return [
-            "Preparando execução...",
-            "Internação: gerando dataset status...",
-            "Internação: orquestrando dataset...",
             "Finalizando execução...",
         ]
 
@@ -1128,143 +803,11 @@ class App(ctk.CTk):
 
         self.after(0, lambda: self._finalize_real_progress(True, "Modo Complicação executado com sucesso."))
 
-    def _start_internacao_execution(self) -> None:
-        if self.internacao_view is None:
-            return
-
-        file_values = self.internacao_view.get_file_values()
-        if not file_values.get("output_dir", "").strip():
-            self.internacao_view.set_status_message(
-                "Selecione a Pasta de saída antes de executar o ETL.",
-                "#FFB1B1",
-            )
-            return
-        file_labels = self.internacao_view.get_file_labels()
-        plano_execucao, erro_validacao = self.internacao_controller.resolve_execution_plan(
-            file_values=file_values,
-            file_labels=file_labels,
-        )
-
-        if erro_validacao:
-            self.internacao_view.set_status_message(erro_validacao, "#FFB1B1")
-            return
-
-        if self.internacao_controller.needs_missing_response_confirmation(plano_execucao):
-            title, message = self.internacao_controller.missing_response_warning()
-            self._show_warning_popup(
-                title=title,
-                message=message,
-                on_ack=self._ack_internacao_warning,
-            )
-            return
-
-        self.ui_state.current_execution_plan = plano_execucao
-        self._current_execution_context = "internacao"
-
-        self.internacao_view.set_status_message(
-            f"Plano selecionado: Internação {plano_execucao['internacao']}",
-            "#A7C8FF",
-        )
-        self.internacao_view.set_status_message("Executando modo Internação...", "#A7C8FF")
-        self._etl_steps = self._build_real_internacao_steps()
-        self._open_progress_modal_manual()
-        threading.Thread(
-            target=self._run_internacao_worker,
-            args=(file_values, plano_execucao),
-            daemon=True,
-        ).start()
-
-    def _run_internacao_worker(
-        self,
-        file_values: dict[str, str],
-        plano_execucao: dict[str, str],
-    ) -> None:
-        try:
-            if self._etl_cancelled:
-                return
-            output_dir = Path(file_values["output_dir"])
-            output_dir.mkdir(parents=True, exist_ok=True)
-
-            int_saida_status = str(output_dir / "status_internacao_eletivo_limpo.csv")
-            int_saida_resposta_unificado = str(output_dir / "status_resposta_eletivo_internacao.csv")
-            int_saida_resposta = str(output_dir / "status_resposta_eletivo_internacao_limpo.csv")
-            int_saida_integrado = str(output_dir / "status_internacao_eletivo.csv")
-            int_saida_dataset_status = str(output_dir / "internacao_status.xlsx")
-            int_saida_final = str(output_dir / "internacao_final.xlsx")
-
-            self._publish_real_progress(1, "Internação: gerando dataset status...")
-            if plano_execucao["internacao"] == "com_resposta":
-                resultado = run_internacao_eletivo_pipeline_gerar_status_dataset(
-                    arquivo_status=file_values["status"],
-                    arquivo_status_resposta_eletivo=file_values["flow_internacao_eletivo"],
-                    arquivo_status_resposta_internacao=file_values["flow_internacao_urgencia"],
-                    arquivo_status_resposta_unificado=int_saida_resposta_unificado,
-                    arquivo_dataset_origem_internacao=file_values["internacao_dataset"],
-                    saida_status=int_saida_status,
-                    saida_status_resposta=int_saida_resposta,
-                    saida_status_integrado=int_saida_integrado,
-                    saida_dataset_status=int_saida_dataset_status,
-                )
-            else:
-                resultado = run_internacao_eletivo_pipeline_gerar_status_dataset_somente_status(
-                    arquivo_status=file_values["status"],
-                    arquivo_dataset_origem_internacao=file_values["internacao_dataset"],
-                    saida_status=int_saida_status,
-                    saida_status_integrado=int_saida_integrado,
-                    saida_dataset_status=int_saida_dataset_status,
-                )
-            if not resultado.get("ok", False):
-                detalhe = self._result_message(
-                    resultado,
-                    fail_default="Falha na etapa de criação de dataset da internação.",
-                )
-                self.after(0, lambda: self._finalize_real_progress(False, f"Internação falhou: {detalhe}"))
-                return
-
-            if self._etl_cancelled:
-                return
-            self._publish_real_progress(2, "Internação: orquestrando dataset...")
-            resultado_orq = run_internacao_eletivo_pipeline_orquestrar(
-                arquivo_dataset_status=int_saida_dataset_status,
-                arquivo_saida_final=int_saida_final,
-                nome_logger=(
-                    "orquestracao_internacao_ui"
-                    if plano_execucao["internacao"] == "com_resposta"
-                    else "orquestracao_internacao_somente_status_ui"
-                ),
-            )
-            if not resultado_orq.get("ok", False):
-                detalhe = self._result_message(
-                    resultado_orq,
-                    fail_default="Falha na etapa de orquestração da internação.",
-                )
-                self.after(0, lambda: self._finalize_real_progress(False, f"Internação falhou: {detalhe}"))
-                return
-        except Exception as erro:
-            self.after(
-                0,
-                lambda: self._finalize_real_progress(
-                    False,
-                    f"Falha no modo Internação: {type(erro).__name__}: {erro}",
-                ),
-            )
-            return
-
-        self.after(0, lambda: self._finalize_real_progress(True, "Modo Internação executado com sucesso."))
-
     def _reset_response_warning_flags(self) -> None:
-        self.ambos_controller.reset_response_warning_flags()
         self.complicacao_controller.reset_response_warning_flags()
-        self.internacao_controller.reset_response_warning_flags()
-
-    def _ack_ambos_warning(self) -> None:
-        self.ambos_controller.ack_missing_responses_confirmation()
 
     def _ack_complicacao_warning(self) -> None:
         self.complicacao_controller.ack_missing_response_confirmation()
-
-    def _ack_internacao_warning(self) -> None:
-        self.internacao_controller.ack_missing_response_confirmation()
 
     def _show_warning_popup(
         self, title: str, message: str, on_ack: Callable[[], None]
@@ -1398,12 +941,6 @@ class App(ctk.CTk):
             if self.complicacao_view is not None:
                 self.complicacao_view.set_status_message(text, color)
             return
-        if self._current_execution_context == "internacao":
-            if self.internacao_view is not None:
-                self.internacao_view.set_status_message(text, color)
-            return
-        if self.ambos_view is not None:
-            self.ambos_view.set_status_message(text, color)
 
     def _center_window(self, window: ctk.CTkToplevel, width: int, height: int) -> None:
         window.update_idletasks()

@@ -1,19 +1,38 @@
 {
   "arquivo": "src/data/arquivo_limpo/status_complicacao.csv",
-  "linhas": 36782,
+  "linhas": 15802,
   "status_normalizado": {
-    "lida": 16200,
-    "mensagem nao pode ser entregue": 8267,
-    "entregue": 6645,
-    "a meta decidiu nao entregar a mensagem": 4122,
-    "numero e parte de um experimento": 916,
-    "enviada": 602,
-    "usuario decidiu nao receber mkt messages": 30
+    "lida": 5911,
+    "mensagem nao pode ser entregue": 3698,
+    "entregue": 3017,
+    "nao enviada": 1585,
+    "a meta decidiu nao entregar a mensagem": 680,
+    "enviada": 534,
+    "numero e parte de um experimento": 318,
+    "usuario decidiu nao receber mkt messages": 59
   },
   "resposta_em_status_normalizado": {
-    "sem resposta": 24654,
-    "sim": 11051,
-    "nao": 894,
-    "resposta invalida ou automatica": 183
+    "sem resposta": 11969,
+    "sim": 3498,
+    "nao": 277,
+    "resposta invalida ou automatica": 40,
+    "ola tudo bem muito obrigada pelo seu contato nosso horario de atendimento e de terca a sabado das 9h as 19h para agilizar o atendimento por favor informe seu nome e como podemos ajuda lo a logo alguem do time da recepcao ira te atender 1f60a com carinho equipe bellitia": 1,
+    "720260512wamid hbgmntu2mjg0nja0mtq0fqiaehggqum2nuuzmum3rjbbmey4rtg0ouezqzncnemxmeqwntua jpg": 1,
+    "bom dia mas da onde que e": 1,
+    "ola 1f44b seja bem vindo a a t facilita consultoria empresarial em saude nao momento estamos realizando agendamentos mas em breve nossa equipe entrara em contato com voce fique tranquilo a sera atendido a o quanto antes 1f49a": 1,
+    "https www facebook com share r 1cnrunxycm": 1,
+    "fabricio tadashi dtaikin agradece seu contato como podemos ajudar": 1,
+    "ola seja bem vindo a primeiramente agradeco a sua procura espero atende lo a da melhor maneira agora me conta como posso lhe ajudar envie o numero referente ao seu assunto 1 sobrancelhas 2 cabelos em geral 3 micropigmentacoes 4 manicure 5 outros": 1,
+    "patricia amorim agradece seu contato como podemos ajudar": 1,
+    "pare de me encher saco": 1,
+    "e engano": 1,
+    "foi muito bem vou comecar com as fisioterapias segunda feira": 1,
+    "ola seja muito bem vinda 1f496 meu nome e nathalia sou especialista em manicure russa e esmaltacao em gel tecnicas que deixam suas unhas impecaveis com acabamento perfeito e durabilidade de ate 20 dias 2728 minhas clientes amam porque nao precisam se preocupar com retoques semanais e ficam com as unhas sempre lindas 1f485 escolha uma das opcoes abaixo para continuar 1f447 botoes de resposta rapida 0031 fe0f 20e3 quero ver valores 1f4b0 0032 fe0f 20e3 quero ver agenda disponivel 1f4c5 0033 fe0f 20e3 quero tirar uma duvida 2753": 1,
+    "720260507wamid hbgmntu4mzgxntk0mty3fqiaehggqum3qtngqjjbmee3njmwrdrenee2rdu5reyxqjbfmkea jpg": 1,
+    "que bom te ver por aqui 1f436 1f431 deixe sua mensagem que jaja te retorno ou se for urgente pode ligar obrigada": 1,
+    "1f44b ola obrigado por entrar em contato com a prudencial estamos a disposicao para te atender": 1,
+    "nao sou eu nao amiga numero errado": 1,
+    "numero errado": 1,
+    "nao fiz cirurgia": 1
   }
 }

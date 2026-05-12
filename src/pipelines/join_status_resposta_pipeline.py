@@ -2,7 +2,6 @@ from core.logger import PipelineLogger
 from core.error_codes import ERRO_INTEGRACAO
 from src.contexts.integracao_contextos import (
     CONTEXTO_INTEGRACAO_COMPLICACAO,
-    CONTEXTO_INTEGRACAO_INTERNACAO_ELETIVO,
 )
 from src.services.integracao_service import (
     integrar_com_filtro_hsm,
@@ -99,24 +98,6 @@ def run_unificar_status_resposta_complicacao_pipeline(
         logger=logger,
     )
 
-
-def run_unificar_status_resposta_internacao_eletivo_pipeline(
-    arquivo_status='src/data/arquivo_limpo/status_limpo.csv',
-    arquivo_status_resposta='src/data/arquivo_limpo/status_resposta_eletivo_internacao_limpo.csv',
-    arquivo_saida='src/data/arquivo_limpo/status.csv',
-    logger=None,
-):
-    return _run_unificar_status_resposta_pipeline(
-        arquivo_status=arquivo_status,
-        arquivo_status_resposta=arquivo_status_resposta,
-        arquivo_saida=arquivo_saida,
-        hsms_permitidos=list(CONTEXTO_INTEGRACAO_INTERNACAO_ELETIVO.hsms_permitidos),
-        colunas_limpar=list(CONTEXTO_INTEGRACAO_INTERNACAO_ELETIVO.colunas_limpar),
-        nome_logger='unificar_status_resposta_internacao_eletivo',
-        logger=logger,
-    )
-
-
 def _run_status_somente_pipeline(
     arquivo_status,
     arquivo_saida,
@@ -167,20 +148,5 @@ def run_status_somente_complicacao_pipeline(
         hsms_permitidos=list(CONTEXTO_INTEGRACAO_COMPLICACAO.hsms_permitidos),
         colunas_limpar=list(CONTEXTO_INTEGRACAO_COMPLICACAO.colunas_limpar),
         nome_logger='unificar_status_somente_complicacao',
-        logger=logger,
-    )
-
-
-def run_status_somente_internacao_eletivo_pipeline(
-    arquivo_status='src/data/arquivo_limpo/status_limpo.csv',
-    arquivo_saida='src/data/arquivo_limpo/status.csv',
-    logger=None,
-):
-    return _run_status_somente_pipeline(
-        arquivo_status=arquivo_status,
-        arquivo_saida=arquivo_saida,
-        hsms_permitidos=list(CONTEXTO_INTEGRACAO_INTERNACAO_ELETIVO.hsms_permitidos),
-        colunas_limpar=list(CONTEXTO_INTEGRACAO_INTERNACAO_ELETIVO.colunas_limpar),
-        nome_logger='unificar_status_somente_internacao_eletivo',
         logger=logger,
     )

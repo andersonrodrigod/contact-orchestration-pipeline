@@ -16,7 +16,6 @@ from src.ui.state import UIStyle
 class IngestaoView(ctk.CTkFrame):
     MODES = (
         ("complicacao", "Ingestão Complicação"),
-        ("internacao", "Ingestão Internação"),
     )
 
     def __init__(
@@ -82,7 +81,7 @@ class IngestaoView(ctk.CTkFrame):
 
         switcher = ctk.CTkFrame(card, fg_color="transparent")
         switcher.grid(row=0, column=0, padx=24, pady=(24, 8), sticky="ew")
-        switcher.grid_columnconfigure((0, 1), weight=1, uniform="ing_modes")
+        switcher.grid_columnconfigure(0, weight=1, uniform="ing_modes")
 
         for col, (mode, label) in enumerate(self.MODES):
             btn = create_primary_button(
@@ -108,7 +107,6 @@ class IngestaoView(ctk.CTkFrame):
             ("pasta_saida", "Pasta para Salvar Arquivos"),
         ]
         self._build_mode_frame(content, "complicacao", fields)
-        self._build_mode_frame(content, "internacao", fields)
 
         self.set_active_mode(self._active_mode)
 

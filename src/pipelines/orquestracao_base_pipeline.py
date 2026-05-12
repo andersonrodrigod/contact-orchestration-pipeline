@@ -13,17 +13,13 @@ def _resolver_raiz_analise(nome_logger):
     logger_norm = str(nome_logger or '').lower()
     if 'complicacao' in logger_norm:
         return f'{base}/complicacao'
-    if 'internacao' in logger_norm or 'eletivo' in logger_norm:
-        return f'{base}/internacao'
-    return base
+    return f'{base}/complicacao'
 
 
 def _resolver_contexto(nome_logger):
     logger_norm = str(nome_logger or '').lower()
     if 'complicacao' in logger_norm:
         return 'complicacao'
-    if 'internacao' in logger_norm or 'eletivo' in logger_norm:
-        return 'internacao'
     return 'complicacao'
 
 

@@ -15,8 +15,6 @@ from src.ui.state import UIStyle
 
 class ConcatenarView(ctk.CTkFrame):
     MODES = (
-        ("status", "Concatenar Status"),
-        ("status_resposta", "Concatenar Status Resposta"),
         ("livre", "Concatenação Livre"),
     )
 
@@ -36,7 +34,7 @@ class ConcatenarView(ctk.CTkFrame):
         self._on_clear_file = on_clear_file
         self._on_execute = on_execute
 
-        self._active_mode = "status"
+        self._active_mode = "livre"
         self.mode_buttons: dict[str, ctk.CTkButton] = {}
         self.mode_frames: dict[str, ctk.CTkFrame] = {}
         self.rows: dict[str, dict[str, FileSelectorRow]] = {}
@@ -81,7 +79,7 @@ class ConcatenarView(ctk.CTkFrame):
 
         switcher = ctk.CTkFrame(card, fg_color="transparent")
         switcher.grid(row=0, column=0, padx=24, pady=(24, 8), sticky="ew")
-        switcher.grid_columnconfigure((0, 1, 2), weight=1, uniform="concat_modes")
+        switcher.grid_columnconfigure(0, weight=1, uniform="concat_modes")
 
         for col, (mode, title) in enumerate(self.MODES):
             btn = create_primary_button(
@@ -103,26 +101,6 @@ class ConcatenarView(ctk.CTkFrame):
         content.grid_rowconfigure(0, weight=1)
         content.grid_columnconfigure(0, weight=1)
 
-        self._build_mode_frame(
-            parent=content,
-            mode="status",
-            fields=[
-                ("status_complicacao", "Status Complicação"),
-                ("status_internacao_eletivo", "Status Internação Eletivo"),
-                ("arquivo_saida", "Salvar arquivo concatenado"),
-            ],
-            execute_text="Executar Concatenação",
-        )
-        self._build_mode_frame(
-            parent=content,
-            mode="status_resposta",
-            fields=[
-                ("resposta_eletivo", "Status Resposta Eletivo"),
-                ("resposta_internacao", "Status Resposta Internação"),
-                ("arquivo_saida", "Salvar arquivo concatenado"),
-            ],
-            execute_text="Executar Concatenação",
-        )
         self._build_mode_frame(
             parent=content,
             mode="livre",

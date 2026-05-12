@@ -82,10 +82,10 @@ class FluxoPartesView(ctk.CTkFrame):
 
         context_switch = ctk.CTkFrame(card, fg_color="transparent")
         context_switch.grid(row=0, column=0, padx=24, pady=(20, 8), sticky="ew")
-        context_switch.grid_columnconfigure((0, 1), weight=1, uniform="context")
+        context_switch.grid_columnconfigure(0, weight=1, uniform="context")
 
         for col, (ctx_key, label) in enumerate(
-            (("complicacao", "Complicação"), ("internacao", "Internação"))
+            (("complicacao", "Complicação"),)
         ):
             btn = create_primary_button(
                 parent=context_switch,

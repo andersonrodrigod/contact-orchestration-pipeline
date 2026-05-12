@@ -3,7 +3,7 @@
 ## Objetivo
 Documentar falhas criticas encontradas no projeto e definir solucoes praticas para reduzir risco de quebra em producao.
 
-## 1) NQA calculado incorretamente (complicacao e internacao)
+## 1) NQA calculado incorretamente (complicacao)
 
 ### Erro
 - A comparacao usa `nao_quis`, mas a normalizacao gera `nao quis`.
@@ -11,7 +11,6 @@ Documentar falhas criticas encontradas no projeto e definir solucoes praticas pa
 
 ### Onde ocorre
 - `src/services/resumo_complicacao_service.py`
-- `src/services/resumo_internacao_service.py`
 
 ### Impacto
 - KPI de NQA fica errado no CSV e em todos os graficos/tabelas dependentes.
@@ -74,7 +73,6 @@ Documentar falhas criticas encontradas no projeto e definir solucoes praticas pa
 
 ### Onde ocorre
 - `src/services/resumo_complicacao_service.py`
-- `src/services/resumo_internacao_service.py`
 
 ### Impacto
 - CSV final pode ser gerado com metricas incorretas sem bloquear a execucao.

@@ -38,9 +38,7 @@ class MenuView(ctk.CTkFrame):
         botoes_frame.place(relx=0.5, rely=0.50, anchor="center")
 
         botoes = [
-            ("Modo Ambos Complicação e Internação", "frame_fluxo_completo", "ambos.png"),
             ("Modo Complicação", "frame_modo_complicacao", "complicacao.png"),
-            ("Modo Internação", "frame_modo_internacao", "internacao.png"),
             ("Concatenar Arquivos", "frame_concatenar", "concatenar.png"),
             ("União de Status e Flow de Respostas", "frame_juntar_status", "uniao.png"),
             ("Execução em Partes", "frame_fluxo_partes", "partes.png"),

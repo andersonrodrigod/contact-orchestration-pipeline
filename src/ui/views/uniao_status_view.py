@@ -16,7 +16,6 @@ from src.ui.state import UIStyle
 class UniaoStatusView(ctk.CTkFrame):
     MODES = (
         ("complicacao", "União Complicação"),
-        ("internacao", "União Internação"),
     )
 
     def __init__(
@@ -82,7 +81,7 @@ class UniaoStatusView(ctk.CTkFrame):
 
         switcher = ctk.CTkFrame(card, fg_color="transparent")
         switcher.grid(row=0, column=0, padx=24, pady=(24, 8), sticky="ew")
-        switcher.grid_columnconfigure((0, 1), weight=1, uniform="uniao_modes")
+        switcher.grid_columnconfigure(0, weight=1, uniform="uniao_modes")
 
         for col, (mode, label) in enumerate(self.MODES):
             btn = create_primary_button(
@@ -110,12 +109,6 @@ class UniaoStatusView(ctk.CTkFrame):
         self._build_mode_frame(
             parent=content,
             mode="complicacao",
-            fields=fields,
-            execute_text="Executar União",
-        )
-        self._build_mode_frame(
-            parent=content,
-            mode="internacao",
             fields=fields,
             execute_text="Executar União",
         )

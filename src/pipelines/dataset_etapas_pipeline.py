@@ -3,7 +3,6 @@ from __future__ import annotations
 from core.logger import PipelineLogger
 from src.contexts.pipeline_contextos import (
     CONTEXTO_PIPELINE_COMPLICACAO,
-    CONTEXTO_PIPELINE_INTERNACAO_ELETIVO,
 )
 from src.services.dataset_service import (
     aplicar_status_integrado_em_dataset,
@@ -42,21 +41,6 @@ def run_complicacao_pipeline_criar_dataset_base(
         arquivo_saida_dataset=arquivo_saida_dataset,
         contexto='complicacao',
     )
-
-
-def run_internacao_eletivo_pipeline_criar_dataset_base(
-    arquivo_origem_dataset=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults['arquivo_dataset_origem_internacao'],
-    arquivo_saida_dataset=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults['saida_dataset_status'],
-):
-    return _run_with_logger(
-        'criacao_dataset_base_internacao_eletivo',
-        criar_dataset_base_complicacao,
-        arquivo_complicacao=arquivo_origem_dataset,
-        arquivo_saida_dataset=arquivo_saida_dataset,
-        contexto='internacao_eletivo',
-    )
-
-
 def run_complicacao_pipeline_aplicar_status_no_dataset(
     arquivo_dataset_base=CONTEXTO_PIPELINE_COMPLICACAO.defaults['saida_dataset_status'],
     arquivo_status_integrado=CONTEXTO_PIPELINE_COMPLICACAO.defaults['saida_status_integrado'],
@@ -69,19 +53,4 @@ def run_complicacao_pipeline_aplicar_status_no_dataset(
         arquivo_status_integrado=arquivo_status_integrado,
         arquivo_saida_dataset=arquivo_saida_dataset,
         contexto='complicacao',
-    )
-
-
-def run_internacao_eletivo_pipeline_aplicar_status_no_dataset(
-    arquivo_dataset_base=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults['saida_dataset_status'],
-    arquivo_status_integrado=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults['saida_status_integrado'],
-    arquivo_saida_dataset=CONTEXTO_PIPELINE_INTERNACAO_ELETIVO.defaults['saida_dataset_status'],
-):
-    return _run_with_logger(
-        'aplicar_status_dataset_internacao_eletivo',
-        aplicar_status_integrado_em_dataset,
-        arquivo_dataset_base=arquivo_dataset_base,
-        arquivo_status_integrado=arquivo_status_integrado,
-        arquivo_saida_dataset=arquivo_saida_dataset,
-        contexto='internacao_eletivo',
     )

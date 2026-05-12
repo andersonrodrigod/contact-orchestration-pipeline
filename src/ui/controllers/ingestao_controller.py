@@ -32,10 +32,6 @@ class IngestaoController:
         file_values: dict[str, str],
     ) -> str:
         ext = cls._output_extension(file_values)
-        if mode == "internacao":
-            if kind == "status":
-                return f"status_internacao_eletivo_limpo{ext}"
-            return f"status_resposta_eletivo_internacao_limpo{ext}"
         if kind == "status":
             return f"status_complicacao_limpo{ext}"
         return f"status_resposta_complicacao_limpo{ext}"
@@ -93,12 +89,11 @@ class IngestaoController:
                 f"{file_labels.get('pasta_saida', 'pasta_saida')}."
             )
 
-        contexto = "internacao_eletivo" if mode == "internacao" else "complicacao"
         if tem_status and tem_resposta:
-            return {"tipo": "completo", "contexto": contexto, "mode": mode}, None
+            return {"tipo": "completo", "contexto": "complicacao", "mode": mode}, None
         if tem_status:
-            return {"tipo": "status", "contexto": contexto, "mode": mode}, None
-        return {"tipo": "resposta", "contexto": contexto, "mode": mode}, None
+            return {"tipo": "status", "contexto": "complicacao", "mode": mode}, None
+        return {"tipo": "resposta", "contexto": "complicacao", "mode": mode}, None
 
     def run(self, plan: dict[str, str], file_values: dict[str, str]) -> dict:
         tipo = plan["tipo"]

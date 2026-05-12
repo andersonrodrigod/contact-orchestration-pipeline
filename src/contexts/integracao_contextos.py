@@ -26,9 +26,3 @@ CONTEXTO_INTEGRACAO_COMPLICACAO = IntegracaoContexto(
     hsms_permitidos=('Pesquisa Complicacoes Cirurgicas', 'Pesquisa ComplicaÃ§Ãµes Cirurgicas'),
     colunas_limpar=COLUNAS_LIMPAR_PADRAO,
 )
-
-CONTEXTO_INTEGRACAO_INTERNACAO_ELETIVO = IntegracaoContexto(
-    nome='internacao_eletivo',
-    hsms_permitidos=('Pesquisa_Pos_cir_urg_intern', 'Pesquisa_Pos_cir_eletivo'),
-    colunas_limpar=COLUNAS_LIMPAR_PADRAO,
-)
