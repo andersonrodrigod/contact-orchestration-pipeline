@@ -62,19 +62,3 @@ def run_pipeline_contexto_com_resposta(
 
     return _montar_resultado_final(resultado_status, resultado_orquestracao)
 
-
-def run_pipeline_contexto_somente_status(
-    funcao_status_dataset,
-    kwargs_status_dataset,
-    funcao_orquestracao,
-    kwargs_orquestracao,
-):
-    resultado_status = funcao_status_dataset(**kwargs_status_dataset)
-    if not resultado_status.get('ok'):
-        return resultado_status
-
-    resultado_orquestracao = funcao_orquestracao(**kwargs_orquestracao)
-    if not resultado_orquestracao.get('ok'):
-        return resultado_orquestracao
-
-    return _montar_resultado_final(resultado_status, resultado_orquestracao)

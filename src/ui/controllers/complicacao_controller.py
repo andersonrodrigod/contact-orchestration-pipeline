@@ -13,7 +13,7 @@ class ComplicacaoController:
         file_values: dict[str, str],
         file_labels: dict[str, str],
     ) -> tuple[dict[str, str], str | None]:
-        obrigatorios = ["complicacao_dataset", "status"]
+        obrigatorios = ["complicacao_dataset", "status", "flow_complicacao"]
         faltantes_obrigatorios = [
             file_labels[k] for k in obrigatorios if not file_values.get(k, "").strip()
         ]
@@ -22,17 +22,11 @@ class ComplicacaoController:
                 "Arquivos obrigatórios ausentes: " + ", ".join(faltantes_obrigatorios) + "."
             )
 
-        tem_flow_complicacao = bool(file_values.get("flow_complicacao", "").strip())
-        plano_execucao = {
-            "complicacao": "com_resposta" if tem_flow_complicacao else "somente_status",
-        }
+        plano_execucao = {"complicacao": "com_resposta"}
         return plano_execucao, None
 
     def needs_missing_response_confirmation(self, plano_execucao: dict[str, str]) -> bool:
-        return (
-            plano_execucao.get("complicacao") == "somente_status"
-            and not self._ack_missing_resposta
-        )
+        return False
 
     def ack_missing_response_confirmation(self) -> None:
         self._ack_missing_resposta = True
@@ -40,10 +34,6 @@ class ComplicacaoController:
     @staticmethod
     def missing_response_warning() -> tuple[str, str]:
         return (
-            "Complicação sem resposta",
-            (
-                "Você está ciente que se executar nesse formato irá perder os "
-                "dados de Respostas dos clientes?\n\n"
-                "Complicação será executado em modo somente status."
-            ),
+            "Resposta obrigatoria",
+            "O fluxo de complicacao agora exige status e status_resposta.",
         )

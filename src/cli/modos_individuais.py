@@ -4,29 +4,11 @@ from src.pipelines.complicacao_orquestracao_pipeline import run_complicacao_pipe
 from src.pipelines.complicacao_status_pipeline import run_complicacao_pipeline_criar_dataset_status
 from src.pipelines.complicacao_status_pipeline import (
     run_complicacao_pipeline_enviar_status_com_resposta,
-    run_complicacao_pipeline_enviar_status_somente_status,
     run_complicacao_pipeline_gerar_status_dataset,
-    run_complicacao_pipeline_gerar_status_dataset_somente_status,
 )
-from src.pipelines.join_status_resposta_pipeline import run_status_somente_complicacao_pipeline
-from src.pipelines.status_normalizar_complicacao_pipeline import (
-    run_status_normalizar_complicacao_pipeline,
-)
-from src.services.ingestao_service import (
-    executar_ingestao_complicacao,
-    executar_ingestao_somente_status,
-)
+from src.services.ingestao_service import executar_ingestao_complicacao
 
 DEFAULTS_COMPLICACAO = CONTEXTO_PIPELINE_COMPLICACAO.defaults
-
-
-def _combinar_etapas(resultado_etapa_1, resultado_etapa_2):
-    combinado = dict(resultado_etapa_2)
-    combinado['mensagens'] = (
-        resultado_etapa_1.get('mensagens', [])
-        + resultado_etapa_2.get('mensagens', [])
-    )
-    return combinado
 
 
 def _modo_individual_bloqueado(nome_modo):
@@ -87,17 +69,6 @@ def obter_modos_individuais(permitir_execucao=False):
             ),
         )
 
-    def _run_individual_status_somente_complicacao():
-        return _executar_modo_individual(
-            'individual_status_somente_complicacao',
-            permitir_execucao,
-            lambda: executar_ingestao_somente_status(
-                arquivo_status=DEFAULTS_COMPLICACAO['arquivo_status'],
-                saida_status=DEFAULTS_COMPLICACAO['saida_status'],
-                nome_logger='ingestao_complicacao_individual_status',
-            ),
-        )
-
     def _run_individual_enviar_status_complicacao():
         return _executar_modo_individual(
             'individual_enviar_status_complicacao',
@@ -110,30 +81,6 @@ def obter_modos_individuais(permitir_execucao=False):
                 saida_status_integrado=DEFAULTS_COMPLICACAO['saida_status_integrado'],
                 executar_xlsx_adicional=True,
             ),
-        )
-
-    def _run_individual_status_filtrado_complicacao():
-        def _executar():
-            resultado_ingestao = executar_ingestao_somente_status(
-                arquivo_status=DEFAULTS_COMPLICACAO['arquivo_status'],
-                saida_status=DEFAULTS_COMPLICACAO['saida_status'],
-                nome_logger='ingestao_complicacao_individual_status_filtrado',
-            )
-            if not resultado_ingestao.get('ok'):
-                return resultado_ingestao
-
-            resultado_status = run_status_somente_complicacao_pipeline(
-                arquivo_status=DEFAULTS_COMPLICACAO['saida_status'],
-                arquivo_saida=DEFAULTS_COMPLICACAO['saida_status_integrado'],
-            )
-            if not resultado_status.get('ok'):
-                return resultado_status
-            return _combinar_etapas(resultado_ingestao, resultado_status)
-
-        return _executar_modo_individual(
-            'individual_status_filtrado_complicacao',
-            permitir_execucao,
-            _executar,
         )
 
     def _run_individual_criar_dataset_complicacao():
@@ -164,30 +111,6 @@ def obter_modos_individuais(permitir_execucao=False):
             ),
         )
 
-    def _run_individual_gerar_dataset_complicacao_somente_status():
-        return _executar_modo_individual(
-            'individual_gerar_dataset_complicacao_somente_status',
-            permitir_execucao,
-            lambda: run_complicacao_pipeline_gerar_status_dataset_somente_status(
-                arquivo_status=DEFAULTS_COMPLICACAO['arquivo_status'],
-                arquivo_dataset_origem_complicacao=DEFAULTS_COMPLICACAO['arquivo_dataset_origem_complicacao'],
-                saida_status=DEFAULTS_COMPLICACAO['saida_status'],
-                saida_status_integrado=DEFAULTS_COMPLICACAO['saida_status_integrado'],
-                saida_dataset_status=DEFAULTS_COMPLICACAO['saida_dataset_status'],
-            ),
-        )
-
-    def _run_individual_integrar_status_somente_complicacao():
-        return _executar_modo_individual(
-            'individual_integrar_status_somente_complicacao',
-            permitir_execucao,
-            lambda: run_complicacao_pipeline_enviar_status_somente_status(
-                arquivo_status=DEFAULTS_COMPLICACAO['arquivo_status'],
-                saida_status=DEFAULTS_COMPLICACAO['saida_status'],
-                saida_status_integrado=DEFAULTS_COMPLICACAO['saida_status_integrado'],
-            ),
-        )
-
     def _run_individual_orquestrar_complicacao():
         return _executar_modo_individual(
             'individual_orquestrar_complicacao',
@@ -199,35 +122,12 @@ def obter_modos_individuais(permitir_execucao=False):
             ),
         )
 
-    def _run_individual_normalizar_status_excluir_complicacao():
-        return _executar_modo_individual(
-            'individual_normalizar_status_excluir_complicacao',
-            permitir_execucao,
-            lambda: run_status_normalizar_complicacao_pipeline(
-                arquivo_status=DEFAULTS_COMPLICACAO['arquivo_status'],
-                arquivo_status_normalizado=DEFAULTS_COMPLICACAO['saida_status'],
-                arquivo_saida=DEFAULTS_COMPLICACAO['saida_status_sem_complicacao'],
-                nome_logger='status_normalizar_complicacao_pipeline',
-            ),
-        )
-
     return {
         'individual_ingestao_complicacao': _run_individual_ingestao_complicacao,
-        'individual_status_somente_complicacao': _run_individual_status_somente_complicacao,
-        'individual_status_filtrado_complicacao': _run_individual_status_filtrado_complicacao,
-        'individual_integrar_status_somente_complicacao': (
-            _run_individual_integrar_status_somente_complicacao
-        ),
         'individual_enviar_status_complicacao': _run_individual_enviar_status_complicacao,
         'individual_criar_dataset_complicacao': _run_individual_criar_dataset_complicacao,
         'individual_gerar_dataset_complicacao_com_resposta': (
             _run_individual_gerar_dataset_complicacao_com_resposta
         ),
-        'individual_gerar_dataset_complicacao_somente_status': (
-            _run_individual_gerar_dataset_complicacao_somente_status
-        ),
         'individual_orquestrar_complicacao': _run_individual_orquestrar_complicacao,
-        'individual_normalizar_status_excluir_complicacao': (
-            _run_individual_normalizar_status_excluir_complicacao
-        ),
     }

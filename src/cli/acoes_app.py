@@ -2,9 +2,7 @@ from core.logger import PipelineLogger
 from src.pipelines.complicacao_orquestracao_pipeline import run_complicacao_pipeline_orquestrar
 from src.pipelines.complicacao_status_pipeline import (
     run_complicacao_pipeline_enviar_status_com_resposta,
-    run_complicacao_pipeline_enviar_status_somente_status,
     run_complicacao_pipeline_gerar_status_dataset,
-    run_complicacao_pipeline_gerar_status_dataset_somente_status,
 )
 from src.services.ingestao_service import executar_ingestao_complicacao
 
@@ -96,20 +94,6 @@ def integrar_status_com_status_resposta_complicacao(
     )
 
 
-def integrar_status_somente_complicacao(
-    arquivo_status,
-    saida_status,
-    saida_status_integrado,
-):
-    return _executar_acao_app(
-        'integrar_status_somente_complicacao',
-        run_complicacao_pipeline_enviar_status_somente_status,
-        arquivo_status=arquivo_status,
-        saida_status=saida_status,
-        saida_status_integrado=saida_status_integrado,
-    )
-
-
 def gerar_dataset_complicacao_com_resposta(
     arquivo_status,
     arquivo_status_resposta_complicacao,
@@ -127,24 +111,6 @@ def gerar_dataset_complicacao_com_resposta(
         arquivo_dataset_origem_complicacao=arquivo_dataset_origem_complicacao,
         saida_status=saida_status,
         saida_status_resposta=saida_status_resposta,
-        saida_status_integrado=saida_status_integrado,
-        saida_dataset_status=saida_dataset_status,
-    )
-
-
-def gerar_dataset_complicacao_somente_status(
-    arquivo_status,
-    arquivo_dataset_origem_complicacao,
-    saida_status,
-    saida_status_integrado,
-    saida_dataset_status,
-):
-    return _executar_acao_app(
-        'gerar_dataset_complicacao_somente_status',
-        run_complicacao_pipeline_gerar_status_dataset_somente_status,
-        arquivo_status=arquivo_status,
-        arquivo_dataset_origem_complicacao=arquivo_dataset_origem_complicacao,
-        saida_status=saida_status,
         saida_status_integrado=saida_status_integrado,
         saida_dataset_status=saida_dataset_status,
     )

@@ -14,7 +14,6 @@ from src.ui.controllers.uniao_status_controller import UniaoStatusController
 from src.pipelines.complicacao_orquestracao_pipeline import run_complicacao_pipeline_orquestrar
 from src.pipelines.complicacao_status_pipeline import (
     run_complicacao_pipeline_gerar_status_dataset,
-    run_complicacao_pipeline_gerar_status_dataset_somente_status,
 )
 from src.pipelines.concatenar_livre_pipeline import run_unificar_arquivos_livre_pipeline
 from src.pipelines.join_status_resposta_pipeline import (
@@ -757,13 +756,13 @@ class App(ctk.CTk):
                     saida_dataset_status=comp_saida_dataset_status,
                 )
             else:
-                resultado = run_complicacao_pipeline_gerar_status_dataset_somente_status(
-                    arquivo_status=file_values["status"],
-                    arquivo_dataset_origem_complicacao=file_values["complicacao_dataset"],
-                    saida_status=comp_saida_status,
-                    saida_status_integrado=comp_saida_integrado,
-                    saida_dataset_status=comp_saida_dataset_status,
-                )
+                resultado = {
+                    "ok": False,
+                    "mensagens": [
+                        "Modo somente status removido temporariamente. "
+                        "Ele sera recriado como CLI/etapa propria no plano de refatoracao."
+                    ],
+                }
             if not resultado.get("ok", False):
                 detalhe = self._result_message(
                     resultado,
@@ -778,11 +777,7 @@ class App(ctk.CTk):
             resultado_orq = run_complicacao_pipeline_orquestrar(
                 arquivo_dataset_status=comp_saida_dataset_status,
                 arquivo_saida_final=comp_saida_final,
-                nome_logger=(
-                    "orquestracao_complicacao_ui"
-                    if plano_execucao["complicacao"] == "com_resposta"
-                    else "orquestracao_complicacao_somente_status_ui"
-                ),
+                nome_logger="orquestracao_complicacao_ui",
             )
             if not resultado_orq.get("ok", False):
                 detalhe = self._result_message(

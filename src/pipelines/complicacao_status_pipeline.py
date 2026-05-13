@@ -7,7 +7,6 @@ from src.pipelines.contexto_status_pipeline_base import (
     run_criacao_dataset_status_base,
 )
 from src.pipelines.join_status_resposta_pipeline import (
-    run_status_somente_complicacao_pipeline,
     run_unificar_status_resposta_complicacao_pipeline,
 )
 from src.services.analise_dados_fase1_service import gerar_analise_dados_fase1_csv
@@ -15,7 +14,7 @@ from src.services.analise_dados_fase2_service import gerar_analise_dados_fase2_c
 from src.services.dataset_service import criar_dataset_complicacao
 from src.services.graficos_status_enviado_service import gerar_graficos_status_enviado
 from src.services.graficos_uniao_status_resposta_service import gerar_graficos_uniao_status_resposta
-from src.services.ingestao_service import executar_ingestao_complicacao, executar_ingestao_somente_status
+from src.services.ingestao_service import executar_ingestao_complicacao
 from src.services.resumo_complicacao_service import gerar_resumo_complicacao_csv
 from src.services.tabela_resumo_complicacao_service import gerar_tabela_resumo_dia_complicacao
 
@@ -168,82 +167,6 @@ def run_complicacao_pipeline_enviar_status_com_resposta(
     return resultado
 
 
-def run_complicacao_pipeline_enviar_status_somente_status(
-    arquivo_status=CONTEXTO_PIPELINE_COMPLICACAO.defaults['arquivo_status'],
-    saida_status=CONTEXTO_PIPELINE_COMPLICACAO.defaults['saida_status'],
-    saida_status_integrado=CONTEXTO_PIPELINE_COMPLICACAO.defaults['saida_status_integrado'],
-    logger=None,
-):
-    logger_externo = logger is not None
-    if logger is None:
-        logger = PipelineLogger(
-            nome_pipeline=CONTEXTO_PIPELINE_COMPLICACAO.logger_status_somente_status
-        )
-    resultado_ingestao = executar_ingestao_somente_status(
-        arquivo_status=arquivo_status,
-        saida_status=saida_status,
-        nome_logger='ingestao_complicacao_somente_status',
-        contexto=CONTEXTO_PIPELINE_COMPLICACAO.nome,
-        logger=logger,
-    )
-    if not resultado_ingestao.get('ok'):
-        if not logger_externo:
-            logger.finalizar('FALHA_INGESTAO')
-        return resultado_ingestao
-
-    resultado_status = run_status_somente_complicacao_pipeline(
-        arquivo_status=saida_status,
-        arquivo_saida=saida_status_integrado,
-        logger=logger,
-    )
-    if not resultado_status.get('ok'):
-        if not logger_externo:
-            logger.finalizar('FALHA_INTEGRACAO')
-        return resultado_status
-
-    metricas_por_etapa = {
-        **resultado_ingestao.get('metricas_por_etapa', {}),
-        'integracao_status_resposta': {
-            'total_status': resultado_status.get('total_status', 0),
-            'com_match': resultado_status.get('com_match', 0),
-            'sem_match': resultado_status.get('sem_match', 0),
-            'descartados_status_data_invalida': resultado_status.get(
-                'descartados_status_data_invalida', 0
-            ),
-            'descartados_resposta_data_invalida': resultado_status.get(
-                'descartados_resposta_data_invalida', 0
-            ),
-        },
-    }
-    resultado = ok_result(
-        mensagens=resultado_status.get('mensagens', []),
-        metricas={
-            'total_status': resultado_status.get('total_status', 0),
-            'com_match': resultado_status.get('com_match', 0),
-            'sem_match': resultado_status.get('sem_match', 0),
-            'descartados_status_data_invalida': resultado_status.get(
-                'descartados_status_data_invalida', 0
-            ),
-            'descartados_resposta_data_invalida': resultado_status.get(
-                'descartados_resposta_data_invalida', 0
-            ),
-            'nat_data_agendamento': resultado_ingestao.get('nat_data_agendamento', 0),
-            'pct_nat_data_agendamento': resultado_ingestao.get('pct_nat_data_agendamento', 0.0),
-            'nat_dt_atendimento': resultado_ingestao.get('nat_dt_atendimento', 0),
-            'pct_nat_dt_atendimento': resultado_ingestao.get('pct_nat_dt_atendimento', 0.0),
-            'limiar_nat_data_em_uso': resultado_ingestao.get('limiar_nat_data_em_uso'),
-        },
-        arquivos={'arquivo_status_integrado': resultado_status.get('arquivo_saida')},
-        dados={
-            'qualidade_data': resultado_ingestao.get('qualidade_data', {}),
-            'metricas_por_etapa': metricas_por_etapa,
-        },
-    )
-    if not logger_externo:
-        logger.finalizar('SUCESSO')
-    return resultado
-
-
 def run_complicacao_pipeline_gerar_status_dataset(
     arquivo_status=CONTEXTO_PIPELINE_COMPLICACAO.defaults['arquivo_status'],
     arquivo_status_resposta_complicacao=CONTEXTO_PIPELINE_COMPLICACAO.defaults[
@@ -278,176 +201,6 @@ def run_complicacao_pipeline_gerar_status_dataset(
         arquivo_status_integrado=saida_status_integrado,
         arquivo_saida_dataset=saida_dataset_status,
         nome_logger=CONTEXTO_PIPELINE_COMPLICACAO.logger_criacao_dataset,
-        contexto=CONTEXTO_PIPELINE_COMPLICACAO.nome,
-        logger=logger,
-        finalizar_logger=False,
-        gerar_resumo=False,
-        raiz_analise_dados=raiz_analise_dados,
-    )
-    if not resultado_dataset.get('ok'):
-        logger.finalizar('FALHA')
-        return resultado_dataset
-
-    resultado_resumo_complicacao = gerar_resumo_complicacao_csv(
-        arquivo_origem_complicacao=arquivo_dataset_origem_complicacao,
-        raiz_analise=raiz_analise_dados,
-    )
-    logger.info(
-        'ANALISE_DADOS',
-        'Resumo complicacao gerado em: '
-        f"{resultado_resumo_complicacao.get('pasta_saida', '')}",
-    )
-    for mensagem in resultado_resumo_complicacao.get('mensagens', []):
-        logger.warning('ANALISE_DADOS', mensagem)
-    resultado_tabela_resumo = gerar_tabela_resumo_dia_complicacao(
-        arquivo_resumo_dia=(
-            f"{resultado_resumo_complicacao.get('pasta_saida', '')}/RESUMO_DIA_COMPLICACAO.csv"
-        ),
-        arquivo_resumo_geral=(
-            f"{resultado_resumo_complicacao.get('pasta_saida', '')}/RESUMO_GERAL_COMPLICACAO.csv"
-        ),
-        arquivo_origem_complicacao=arquivo_dataset_origem_complicacao,
-        pasta_saida='src/data/analise_dados/imagens/complicacao/resumo_complicacao',
-    )
-    resultado_tabela_resumo_video_abdominal = gerar_tabela_resumo_dia_complicacao(
-        arquivo_resumo_dia=(
-            f"{resultado_resumo_complicacao.get('pasta_saida', '')}/RESUMO_DIA_COMPLICACAO_VIDEO_ABDOMINAL.csv"
-        ),
-        arquivo_resumo_geral=(
-            f"{resultado_resumo_complicacao.get('pasta_saida', '')}/RESUMO_GERAL_COMPLICACAO_VIDEO_ABDOMINAL.csv"
-        ),
-        arquivo_origem_complicacao=arquivo_dataset_origem_complicacao,
-        pasta_saida='src/data/analise_dados/imagens/complicacao/resumo_complicacao',
-        sufixo_arquivo='video_abdominal',
-        subtitulo='TIPO: VIDEO ABDOMINAL',
-    )
-    logger.info(
-        'GRAFICOS',
-        (
-            "Tabela de resumo (Dia de Internacao) gerada em: "
-            f"{resultado_tabela_resumo.get('arquivo_png', '')}"
-        ),
-    )
-    logger.info(
-        'GRAFICOS',
-        (
-            "Tabela de resumo (Dia de Internacao - VIDEO ABDOMINAL) gerada em: "
-            f"{resultado_tabela_resumo_video_abdominal.get('arquivo_png', '')}"
-        ),
-    )
-
-    resultado_analise_fase2 = gerar_analise_dados_fase2_csv(
-        arquivo_dataset_status=saida_dataset_status,
-        raiz_analise=raiz_analise_dados,
-        nome_execucao=nome_execucao_analise_fase2,
-        nome_processo='envio_status',
-    )
-    logger.info(
-        'ANALISE_DADOS',
-        f"CSVs da Fase 2 gerados em: {resultado_analise_fase2.get('pasta_saida', '')}",
-    )
-    resultado_graficos_fase2 = gerar_graficos_status_enviado(
-        contexto='complicacao',
-        raiz_analise_contexto=raiz_analise_dados,
-        pastas_origem_csv=resultado_analise_fase2.get('pastas_saida', []),
-    )
-    logger.info(
-        'GRAFICOS',
-        (
-            "Graficos da Fase 2 (status_enviado) gerados em: "
-            f"{resultado_graficos_fase2.get('pasta_base_saida', '')}"
-        ),
-    )
-
-    metricas_por_etapa = {
-        **resultado_status.get('metricas_por_etapa', {}),
-        'criacao_dataset_status': {
-            'total_linhas': resultado_dataset.get('total_linhas', 0),
-        },
-        'resumo_complicacao': {
-            'pasta_analise': resultado_resumo_complicacao.get('pasta_saida', ''),
-            'arquivos_gerados': resultado_resumo_complicacao.get('arquivos_gerados', []),
-        },
-        'envio_status_metricas': {
-            'pasta_analise_dados_fase2': resultado_analise_fase2.get('pasta_saida', ''),
-        },
-    }
-    resultado = ok_result(
-        mensagens=(
-            resultado_status.get('mensagens', [])
-            + resultado_dataset.get('mensagens', [])
-            + resultado_resumo_complicacao.get('mensagens', [])
-            + resultado_tabela_resumo.get('mensagens', [])
-            + resultado_tabela_resumo_video_abdominal.get('mensagens', [])
-            + [
-                'Resumo complicacao gerado em: '
-                f"{resultado_resumo_complicacao.get('pasta_saida', '')}",
-                f"Tabela resumo dia gerada em: {resultado_tabela_resumo.get('arquivo_png', '')}",
-                "Tabela resumo dia VIDEO ABDOMINAL gerada em: "
-                f"{resultado_tabela_resumo_video_abdominal.get('arquivo_png', '')}",
-                f"Analise de dados Fase 2 gerada em: {resultado_analise_fase2.get('pasta_saida', '')}",
-                f"Manifests de graficos Fase 2: {', '.join(resultado_graficos_fase2.get('manifests', []))}",
-            ]
-        ),
-        metricas={
-            'total_status': resultado_status.get('total_status', 0),
-            'com_match': resultado_status.get('com_match', 0),
-            'sem_match': resultado_status.get('sem_match', 0),
-            'descartados_status_data_invalida': resultado_status.get(
-                'descartados_status_data_invalida', 0
-            ),
-            'descartados_resposta_data_invalida': resultado_status.get(
-                'descartados_resposta_data_invalida', 0
-            ),
-            'nat_data_agendamento': resultado_status.get('nat_data_agendamento', 0),
-            'pct_nat_data_agendamento': resultado_status.get('pct_nat_data_agendamento', 0.0),
-            'nat_dt_atendimento': resultado_status.get('nat_dt_atendimento', 0),
-            'pct_nat_dt_atendimento': resultado_status.get('pct_nat_dt_atendimento', 0.0),
-            'limiar_nat_data_em_uso': resultado_status.get('limiar_nat_data_em_uso'),
-            'total_linhas': resultado_dataset.get('total_linhas', 0),
-        },
-        arquivos={'arquivo_status_dataset': resultado_dataset.get('arquivo_saida')},
-        dados={
-            'qualidade_data': resultado_status.get('qualidade_data', {}),
-            'metricas_por_etapa': metricas_por_etapa,
-            'resumo_complicacao': resultado_resumo_complicacao,
-            'tabela_resumo_dia_complicacao': resultado_tabela_resumo,
-            'tabela_resumo_dia_complicacao_video_abdominal': resultado_tabela_resumo_video_abdominal,
-            'analise_dados_fase2': resultado_analise_fase2,
-            'graficos_status_enviado': resultado_graficos_fase2,
-        },
-    )
-    logger.finalizar('SUCESSO')
-    return resultado
-
-
-def run_complicacao_pipeline_gerar_status_dataset_somente_status(
-    arquivo_status=CONTEXTO_PIPELINE_COMPLICACAO.defaults['arquivo_status'],
-    arquivo_dataset_origem_complicacao=CONTEXTO_PIPELINE_COMPLICACAO.defaults[
-        'arquivo_dataset_origem_complicacao'
-    ],
-    saida_status=CONTEXTO_PIPELINE_COMPLICACAO.defaults['saida_status'],
-    saida_status_integrado=CONTEXTO_PIPELINE_COMPLICACAO.defaults['saida_status_integrado'],
-    saida_dataset_status=CONTEXTO_PIPELINE_COMPLICACAO.defaults['saida_dataset_status'],
-    raiz_analise_dados='src/data/analise_dados/complicacao',
-    nome_execucao_analise_fase2=None,
-):
-    logger = PipelineLogger(nome_pipeline=CONTEXTO_PIPELINE_COMPLICACAO.logger_status_somente_status)
-    resultado_status = run_complicacao_pipeline_enviar_status_somente_status(
-        arquivo_status=arquivo_status,
-        saida_status=saida_status,
-        saida_status_integrado=saida_status_integrado,
-        logger=logger,
-    )
-    if not resultado_status.get('ok'):
-        logger.finalizar('FALHA')
-        return resultado_status
-
-    resultado_dataset = run_complicacao_pipeline_criar_dataset_status(
-        arquivo_origem_dataset=arquivo_dataset_origem_complicacao,
-        arquivo_status_integrado=saida_status_integrado,
-        arquivo_saida_dataset=saida_dataset_status,
-        nome_logger=CONTEXTO_PIPELINE_COMPLICACAO.logger_criacao_dataset_somente_status,
         contexto=CONTEXTO_PIPELINE_COMPLICACAO.nome,
         logger=logger,
         finalizar_logger=False,

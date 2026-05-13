@@ -3,7 +3,6 @@ from __future__ import annotations
 from pathlib import Path
 
 from src.services.ingestao_service import (
-    executar_ingestao_somente_status,
     executar_normalizacao_padronizacao,
 )
 from src.services.normalizacao_services import (
@@ -114,11 +113,13 @@ class IngestaoController:
             )
 
         if tipo == "status":
-            return executar_ingestao_somente_status(
-                arquivo_status=file_values["arquivo_status"],
-                saida_status=saida_status,
-                contexto=contexto,
-            )
+            return {
+                "ok": False,
+                "mensagens": [
+                    "Normalizacao somente status foi removida temporariamente. "
+                    "Ela sera recriada como etapa/CLI propria no plano de refatoracao."
+                ],
+            }
 
         resultado = self._normalizar_status_resposta_somente(
             arquivo_status_resposta=file_values["arquivo_status_resposta"],
