@@ -1,26 +1,21 @@
 import argparse
 
 from core.error_codes import anexar_codigo_erro
-from src.cli.modos_individuais import obter_modos_individuais
-from src.cli.modos_principais import MODOS_AGREGADOS, MODOS_PRINCIPAIS
+from src.cli.modos_principais import (
+    MODOS_PRINCIPAIS,
+    obter_escolhas_modo,
+    obter_registro_modos as obter_registro_modos_cli,
+)
 from src.services.observabilidade_service import registrar_historico_execucao
 from src.utils.resumo_execucao import imprimir_resumo_execucao
 
 
-ALLOW_MODOS_INDIVIDUAIS = True
-
-
 def _obter_registro_modos():
-    modos_individuais = obter_modos_individuais(
-        permitir_execucao=ALLOW_MODOS_INDIVIDUAIS
-    )
-    modo_funcao = dict(MODOS_PRINCIPAIS)
-    modo_funcao.update(modos_individuais)
-    return modo_funcao, modos_individuais
+    return obter_registro_modos_cli()
 
 
 def run_pipeline(modo='complicacao_com_resposta'):
-    modo_funcao, _ = _obter_registro_modos()
+    modo_funcao = _obter_registro_modos()
     funcao_modo = modo_funcao.get(modo)
     if funcao_modo:
         return funcao_modo()
@@ -40,10 +35,8 @@ def _anexar_codigo_erro_recursivo(resultado):
 
 
 if __name__ == '__main__':
-    modo_funcao, modos_individuais = _obter_registro_modos()
-    escolhas_modo = list(MODOS_PRINCIPAIS.keys()) + MODOS_AGREGADOS + list(modos_individuais.keys())
     parser = argparse.ArgumentParser()
-    parser.add_argument('--modo', choices=escolhas_modo, default='complicacao_com_resposta')
+    parser.add_argument('--modo', choices=obter_escolhas_modo(), default='complicacao_com_resposta')
     args = parser.parse_args()
     resultado = run_pipeline(args.modo)
 

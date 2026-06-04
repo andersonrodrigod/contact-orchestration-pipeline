@@ -1,12 +1,16 @@
 from core.logger import PipelineLogger
 from core.error_codes import ERRO_INTEGRACAO
+from src.contexts.pipeline_contextos import CONTEXTO_PIPELINE_COMPLICACAO
 from src.contexts.integracao_contextos import (
     CONTEXTO_INTEGRACAO_COMPLICACAO,
 )
 from src.services.integracao_service import (
     integrar_com_filtro_hsm,
     integrar_somente_status_com_filtro_hsm,
-)
+    )
+
+
+DEFAULTS_COMPLICACAO = CONTEXTO_PIPELINE_COMPLICACAO.defaults
 
 
 def _resolver_logger_pipeline(nome_logger, logger=None):
@@ -83,9 +87,9 @@ def _run_unificar_status_resposta_pipeline(
 
 
 def run_unificar_status_resposta_complicacao_pipeline(
-    arquivo_status='src/data/arquivo_limpo/status_limpo.csv',
-    arquivo_status_resposta='src/data/arquivo_limpo/status_resposta_complicacao_limpo.csv',
-    arquivo_saida='src/data/arquivo_limpo/status.csv',
+    arquivo_status=DEFAULTS_COMPLICACAO['saida_status'],
+    arquivo_status_resposta=DEFAULTS_COMPLICACAO['saida_status_resposta'],
+    arquivo_saida=DEFAULTS_COMPLICACAO['saida_status_integrado'],
     logger=None,
 ):
     return _run_unificar_status_resposta_pipeline(
@@ -138,8 +142,8 @@ def _run_status_somente_pipeline(
 
 
 def run_status_somente_complicacao_pipeline(
-    arquivo_status='src/data/arquivo_limpo/status_limpo.csv',
-    arquivo_saida='src/data/arquivo_limpo/status.csv',
+    arquivo_status=DEFAULTS_COMPLICACAO['saida_status'],
+    arquivo_saida=DEFAULTS_COMPLICACAO['saida_status_integrado'],
     logger=None,
 ):
     return _run_status_somente_pipeline(

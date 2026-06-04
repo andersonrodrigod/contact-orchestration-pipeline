@@ -11,10 +11,14 @@ O projeto roda por `main.py` e escreve logs em `logs/`.
 
 ## Modos de execucao
 - `complicacao_com_resposta` (padrao).
-- `complicacao_somente_status`.
 - `complicacao_gerar_status_dataset`.
 - `complicacao_orquestracao`.
 - `preflight_complicacao`.
+- `complicacao_ingestao`.
+- `complicacao_integrar_status_resposta`.
+- `complicacao_criar_dataset_status`.
+- `complicacao_gerar_dataset_status`.
+- `complicacao_orquestrar`.
 
 ## Entradas padrao
 - `src/data/status.csv`
@@ -36,10 +40,14 @@ python main.py
 Forcar modo:
 ```bash
 python main.py --modo complicacao_com_resposta
-python main.py --modo complicacao_somente_status
 python main.py --modo complicacao_gerar_status_dataset
 python main.py --modo complicacao_orquestracao
 python main.py --modo preflight_complicacao
+python main.py --modo complicacao_ingestao
+python main.py --modo complicacao_integrar_status_resposta
+python main.py --modo complicacao_criar_dataset_status
+python main.py --modo complicacao_gerar_dataset_status
+python main.py --modo complicacao_orquestrar
 ```
 
 ## Documentacao da UI

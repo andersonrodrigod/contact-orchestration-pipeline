@@ -30,7 +30,7 @@ Ordem em que os arquivos reagem:
    - `complicacao_com_resposta` aponta para `run_pipeline_complicacao_com_resposta`.
 
 3. `src/cli/modos_individuais.py`
-   - Carrega comandos menores quando `ALLOW_MODOS_INDIVIDUAIS` esta ligado.
+   - Registra comandos menores de etapa, como ingestao, integracao, dataset e orquestracao.
    - E importante porque expande a superficie publica da CLI.
 
 4. `src/pipelines/complicacao_pipeline.py`
@@ -210,7 +210,7 @@ Arquivos:
 Tarefas:
 
 - Criar uma funcao unica para montar registro de comandos.
-- Evitar duplicidade entre modos principais e individuais.
+- Evitar duplicidade entre modos principais e comandos de etapa.
 - Garantir que cada modo retorne sempre o mesmo formato de resultado.
 - Testar cada modo sem executar a pipeline completa, usando stubs.
 
@@ -507,7 +507,9 @@ Mexer em uma fase por vez. Para cada fase:
 - `python -m pytest`
 - `python -m unittest discover -s tests -p "test*.py"`
 - `python main.py --modo complicacao_com_resposta`
-- `python main.py --modo complicacao_somente_status`
+- `python main.py --modo complicacao_ingestao`
+- `python main.py --modo complicacao_integrar_status_resposta`
+- `python main.py --modo complicacao_criar_dataset_status`
 - `python main.py --modo complicacao_orquestracao`
 
 ## Decisao pratica para o proximo passo

@@ -1,10 +1,13 @@
 from core.logger import PipelineLogger
+from src.contexts.pipeline_contextos import CONTEXTO_PIPELINE_COMPLICACAO
+
+DEFAULTS_COMPLICACAO = CONTEXTO_PIPELINE_COMPLICACAO.defaults
 
 
 def run_status_normalizar_complicacao_pipeline(
-    arquivo_status='src/data/status.csv',
-    arquivo_status_normalizado='src/data/arquivo_limpo/status_complicacao_limpo.csv',
-    arquivo_saida='src/data/arquivo_limpo/status_sem_complicacao.csv',
+    arquivo_status=DEFAULTS_COMPLICACAO['arquivo_status'],
+    arquivo_status_normalizado=DEFAULTS_COMPLICACAO['saida_status'],
+    arquivo_saida=DEFAULTS_COMPLICACAO['saida_status_sem_complicacao'],
     nome_logger='ingestao_individual_excluir_complicacao',
 ):
     logger = PipelineLogger(nome_pipeline=nome_logger)
