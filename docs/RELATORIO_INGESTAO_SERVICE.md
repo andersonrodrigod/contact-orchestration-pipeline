@@ -311,18 +311,15 @@ O que ela faz:
 
 1. prepara mensagens iniciais;
 2. cria logger se nenhum logger foi recebido;
-3. resolve `limiar_nat_data`;
-4. resolve `modo_estrito_alias_resposta`;
-5. resolve `janela_corte_alias_resposta_ciclos`;
-6. loga parametros de entrada e saida;
-7. cria estado inicial;
-8. le status e status_resposta;
-9. valida colunas de origem;
-10. se a validacao falhar, retorna erro sem salvar;
-11. padroniza status e status_resposta;
-12. normaliza tipos e mede qualidade de datas;
-13. limpa texto nas colunas alvo;
-14. cria `DT ENVIO`;
+3. loga parametros de entrada e saida;
+4. cria estado inicial;
+5. le status e status_resposta;
+6. valida colunas de origem;
+7. se a validacao falhar, retorna erro sem salvar;
+8. padroniza status e status_resposta;
+9. normaliza tipos;
+10. limpa texto nas colunas alvo;
+11. cria `DT ENVIO`;
 15. valida colunas de data depois das transformacoes;
 16. monta resultado final;
 17. se resultado nao for ok, bloqueia salvamento;

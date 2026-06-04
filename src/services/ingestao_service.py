@@ -39,16 +39,12 @@ def _validar_colunas_origem_normalizacao(
     logger,
     df_status,
     df_status_resposta,
-    modo_estrito_alias_resposta,
-    janela_corte_alias_resposta_ciclos,
 ):
     # Validacao antes de renomear colunas. Aqui o codigo ainda olha para os
     # nomes originais e aliases possiveis do arquivo recebido.
     resultado_colunas_origem = validar_colunas_origem_para_padronizacao(
         df_status,
         df_status_resposta,
-        modo_estrito_alias_resposta=modo_estrito_alias_resposta,
-        janela_corte_alias_resposta_ciclos=janela_corte_alias_resposta_ciclos,
     )
     return resultado_colunas_origem
 
@@ -107,8 +103,6 @@ def executar_normalizacao_padronizacao(
     limiar_nat_data=None,
     contexto=None,
     permitir_override_limiar=True,
-    modo_estrito_alias_resposta=None,
-    janela_corte_alias_resposta_ciclos=None,
     mensagens_iniciais=None,
     logger=None,
     finalizar_logger=True,
@@ -144,8 +138,6 @@ def executar_normalizacao_padronizacao(
             logger,
             df_status,
             df_status_resposta,
-            modo_estrito_alias_resposta,
-            janela_corte_alias_resposta_ciclos,
         )
         if not resultado_colunas_origem['ok']:
             resultado_final = {
@@ -249,8 +241,6 @@ def executar_ingestao_complicacao(
     saida_status_resposta='src/data/arquivo_limpo/status_resposta_complicacao_limpo.csv',
     limiar_nat_data=None,
     permitir_override_limiar=True,
-    modo_estrito_alias_resposta=None,
-    janela_corte_alias_resposta_ciclos=None,
     executar_xlsx_adicional=False,
     logger=None,
 ):
@@ -271,8 +261,6 @@ def executar_ingestao_complicacao(
         limiar_nat_data=limiar_nat_data,
         contexto='complicacao',
         permitir_override_limiar=permitir_override_limiar,
-        modo_estrito_alias_resposta=modo_estrito_alias_resposta,
-        janela_corte_alias_resposta_ciclos=janela_corte_alias_resposta_ciclos,
         mensagens_iniciais=['Modo complicacao selecionado.'],
         logger=logger,
         finalizar_logger=not logger_externo,

@@ -1,18 +1,11 @@
 import re
 import pandas as pd
-from src.config.governanca_config import (
-    resolver_janela_corte_alias_resposta,
-    resolver_modo_estrito_data_atendimento,
-    resolver_modo_estrito_alias_resposta,
-)
 from src.config.schemas import (
     COLUNAS_OBRIGATORIAS_DATASET_ORIGEM,
     COLUNAS_STATUS_RESPOSTA_OBRIGATORIAS_PADRONIZACAO,
     COLUNAS_STATUS_OBRIGATORIAS_PADRONIZACAO,
 )
 from src.services.schema_resposta_service import (
-    aliases_data_atendimento_legado_presentes,
-    aliases_resposta_legado_presentes,
     colunas_data_atendimento_presentes,
     diagnosticar_coluna_resposta,
     tem_coluna_data_atendimento,
@@ -20,38 +13,13 @@ from src.services.schema_resposta_service import (
 )
 
 
-def _tem_coluna_data_atendimento(df):
-    return tem_coluna_data_atendimento(df)
-
-
-def _tem_coluna_resposta(df):
-    return tem_coluna_resposta(df)
-
-
 def validar_colunas_origem_para_padronizacao(
     df_status,
     df_status_resposta,
-    modo_estrito_alias_resposta=None,
-    janela_corte_alias_resposta_ciclos=None,
-    modo_estrito_data_atendimento=None,
 ):
-    modo_estrito_alias_resposta, _ = resolver_modo_estrito_alias_resposta(
-        modo_estrito_alias_resposta
-    )
-    janela_corte_alias_resposta_ciclos, _ = resolver_janela_corte_alias_resposta(
-        janela_corte_alias_resposta_ciclos
-    )
-    modo_estrito_data_atendimento, _ = resolver_modo_estrito_data_atendimento(
-        modo_estrito_data_atendimento
-    )
     resultado = {
         'ok': True,
         'mensagens': [],
-        'warnings_alias_resposta_legado': 0,
-        'aliases_legados_presentes': [],
-        'modo_estrito_alias_resposta': modo_estrito_alias_resposta,
-        'modo_estrito_data_atendimento': modo_estrito_data_atendimento,
-        'janela_corte_alias_resposta_ciclos': janela_corte_alias_resposta_ciclos,
     }
 
     colunas_status_obrigatorias = COLUNAS_STATUS_OBRIGATORIAS_PADRONIZACAO
@@ -59,12 +27,12 @@ def validar_colunas_origem_para_padronizacao(
     faltando_status_resposta = []
     for coluna in COLUNAS_STATUS_RESPOSTA_OBRIGATORIAS_PADRONIZACAO:
         if coluna == 'resposta':
-            if not _tem_coluna_resposta(df_status_resposta):
+            if not tem_coluna_resposta(df_status_resposta):
                 faltando_status_resposta.append('resposta (ou alias legado Resposta/RESPOSTA)')
             continue
         if coluna not in df_status_resposta.columns:
             faltando_status_resposta.append(coluna)
-    if not _tem_coluna_data_atendimento(df_status_resposta):
+    if not tem_coluna_data_atendimento(df_status_resposta):
         faltando_status_resposta.append('dat_atendimento ou DT_ATENDIMENTO')
 
     if faltando_status:
@@ -87,25 +55,12 @@ def validar_colunas_origem_para_padronizacao(
         diagnostico_resposta = diagnosticar_coluna_resposta(df_status_resposta)
         aliases_presentes = diagnostico_resposta['aliases_presentes']
         qtd_linhas_conflito = diagnostico_resposta['qtd_linhas_conflito']
-        aliases_legados = aliases_resposta_legado_presentes(df_status_resposta)
-        aliases_data_legado = aliases_data_atendimento_legado_presentes(df_status_resposta)
-        resultado['aliases_legados_presentes'] = aliases_legados
 
         colunas_data_presentes = colunas_data_atendimento_presentes(df_status_resposta)
         resultado['mensagens'].append(
             'Diagnostico data atendimento no status_resposta: '
             f'aliases_presentes={colunas_data_presentes}.'
         )
-        if len(aliases_data_legado) > 0:
-            resultado['mensagens'].append(
-                'Aviso de deprecacao: alias legado de data de atendimento detectado no status_resposta. '
-                f'aliases_legados={aliases_data_legado}.'
-            )
-            if modo_estrito_data_atendimento:
-                resultado['ok'] = False
-                resultado['mensagens'].append(
-                    'Modo estrito de data de atendimento habilitado: execucao bloqueada devido a alias legado.'
-                )
 
         resultado['mensagens'].append(
             'Diagnostico coluna resposta no status_resposta: '
@@ -116,18 +71,6 @@ def validar_colunas_origem_para_padronizacao(
                 'Aviso: conflito detectado entre aliases de resposta no status_resposta. '
                 f'linhas_com_valores_distintos={qtd_linhas_conflito}.'
             )
-        if len(aliases_legados) > 0:
-            resultado['warnings_alias_resposta_legado'] = 1
-            resultado['mensagens'].append(
-                'Aviso de deprecacao: aliases legados de resposta detectados no status_resposta. '
-                f'aliases_legados={aliases_legados}. '
-                f'Criterio de corte: 0 warning por {janela_corte_alias_resposta_ciclos} ciclos consecutivos.'
-            )
-            if modo_estrito_alias_resposta:
-                resultado['ok'] = False
-                resultado['mensagens'].append(
-                    'Modo estrito de alias de resposta habilitado: execucao bloqueada devido a alias legado.'
-                )
 
     return resultado
 
