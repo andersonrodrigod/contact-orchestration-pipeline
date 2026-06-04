@@ -55,8 +55,6 @@ Pontos para revisar depois:
   e usado fora do preflight.
 - `src/pipelines/preflight_pipeline.py`: ainda usa limiar e metricas de qualidade;
   decidir se o preflight deve continuar com essa responsabilidade.
-- `src/pipelines/contexto_pipeline_core.py`: ainda procura metricas `nat_*`,
-  `pct_nat_*` e `limiar_nat_data_em_uso` quando existirem.
 - `src/pipelines/complicacao_status_pipeline.py`: ainda repassa metricas antigas
   com defaults, mesmo que a ingestao nao as retorne mais.
 - `src/services/observabilidade_service.py`: ainda coleta `qualidade_data`,
@@ -112,7 +110,6 @@ Arquivos alterados:
 - `src/services/ingestao_service.py`
 - `src/pipelines/complicacao_status_pipeline.py`
 - `src/pipelines/complicacao_pipeline.py`
-- `src/pipelines/contexto_pipeline_core.py`
 - `src/cli/modos_principais.py`
 - `src/cli/modos_individuais.py`
 - `src/cli/acoes_app.py`

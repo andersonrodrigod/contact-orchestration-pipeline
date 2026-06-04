@@ -36,37 +36,32 @@ Ordem em que os arquivos reagem:
 4. `src/pipelines/complicacao_pipeline.py`
    - Primeiro coordenador real do dominio.
    - Busca defaults em `CONTEXTO_PIPELINE_COMPLICACAO`.
-   - Decide se a execucao tera status/resposta, somente status ou so orquestracao.
+   - Executa a etapa de status/dataset e depois a orquestracao.
 
 5. `src/contexts/pipeline_contextos.py`
    - Guarda os caminhos padrao e nomes de loggers do contexto de complicacao.
    - Deve virar a fonte unica de configuracao do fluxo.
 
-6. `src/pipelines/contexto_pipeline_core.py`
-   - Executa a etapa de status/dataset.
-   - Depois executa a orquestracao.
-   - Junta metricas, mensagens e arquivos em um resultado final.
-
-7. `src/pipelines/complicacao_status_pipeline.py`
+6. `src/pipelines/complicacao_status_pipeline.py`
    - Primeiro arquivo grande do fluxo de dados.
    - Orquestra ingestao, uniao status/resposta, dataset, resumo, tabelas, analises e graficos.
 
-8. `src/services/ingestao_service.py`
+7. `src/services/ingestao_service.py`
    - Primeira leitura real dos arquivos.
    - Le `status.csv` e `status_resposta.csv`.
    - Valida colunas, padroniza nomes, normaliza tipos, limpa texto e salva arquivos limpos.
 
-9. `src/utils/arquivos.py`
+8. `src/utils/arquivos.py`
    - Faz a leitura e escrita fisica de CSV/XLSX.
    - Deve ser protegido cedo porque qualquer erro aqui afeta todas as etapas.
 
-10. `src/services/validacao_service.py`
+9. `src/services/validacao_service.py`
     - Confere contrato minimo das colunas de entrada.
 
-11. `src/services/padronizacao_service.py`
+10. `src/services/padronizacao_service.py`
     - Padroniza colunas de status e resposta.
 
-12. `src/services/schema_resposta_service.py`
+11. `src/services/schema_resposta_service.py`
     - Garante o contrato canonico da resposta.
 
 13. `src/services/normalizacao_services.py`
@@ -243,13 +238,12 @@ Resultado esperado:
 Arquivos:
 
 - `src/pipelines/complicacao_pipeline.py`
-- `src/pipelines/contexto_pipeline_core.py`
 
 Tarefas:
 
-- Transformar kwargs soltos em objetos/estruturas simples de parametros.
+- Manter a sequencia status/dataset -> orquestracao no coordenador principal.
 - Padronizar retorno de erro entre status/dataset e orquestracao.
-- Dar nomes claros para as duas macroetapas: `preparar_dataset_status` e `executar_orquestracao`.
+- Evitar agregacao de metricas antigas no resultado final do fluxo completo.
 - Testar a ordem de chamada sem ler arquivos reais.
 
 Resultado esperado:
