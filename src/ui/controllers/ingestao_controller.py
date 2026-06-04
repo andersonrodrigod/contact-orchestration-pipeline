@@ -10,7 +10,7 @@ from src.services.normalizacao_services import (
     limpar_texto_colunas_alvo,
     normalizar_tipos_dataframe,
 )
-from src.services.padronizacao_service import padronizar_colunas_status_resposta
+from src.services.schema_resposta_service import normalizar_schema_status_resposta
 from src.utils.arquivos import ler_arquivo_csv, salvar_dataframe
 
 
@@ -51,7 +51,7 @@ class IngestaoController:
         saida_status_resposta: str,
     ) -> dict:
         df = ler_arquivo_csv(arquivo_status_resposta)
-        df = padronizar_colunas_status_resposta(df)
+        df = normalizar_schema_status_resposta(df)
         df = normalizar_tipos_dataframe(df, colunas_data=["DT_ATENDIMENTO"])
         df = limpar_texto_colunas_alvo(
             df,

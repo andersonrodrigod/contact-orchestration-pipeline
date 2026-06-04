@@ -6,6 +6,7 @@ from pathlib import Path
 import pandas as pd
 
 from src.services.status_service import integrar_status_com_resposta
+from src.services.schema_chave_service import COLUNA_CHAVE_PRINCIPAL
 from src.utils.arquivos import ler_arquivo_csv
 
 
@@ -25,7 +26,7 @@ class StatusServiceTests(unittest.TestCase):
         if pasta and pasta.exists():
             shutil.rmtree(pasta, ignore_errors=True)
 
-    def test_integracao_preserva_linha_status_com_data_invalida(self):
+    def test_integracao_usa_chave_parametro_em_vez_de_data(self):
         base = self._criar_pasta_tmp_teste()
         try:
             arq_status = base / 'status.csv'
@@ -35,13 +36,13 @@ class StatusServiceTests(unittest.TestCase):
             df_status = pd.DataFrame(
                 [
                     {
-                        'Contato': 'ana',
-                        'DT ENVIO': '10/03/2026',
+                        'Contato': 'ana_hospital_procedimento_46114_SENHA001',
+                        'DT ENVIO': 'data ruim',
                         'Status': 'ENVIADA',
                     },
                     {
-                        'Contato': 'bruno',
-                        'DT ENVIO': 'data ruim',
+                        'Contato': 'bruno_hospital_procedimento_46114_SENHA002',
+                        'DT ENVIO': 'outra data ruim',
                         'Status': 'ENVIADA',
                     },
                 ]
@@ -49,8 +50,8 @@ class StatusServiceTests(unittest.TestCase):
             df_resposta = pd.DataFrame(
                 [
                     {
-                        'nom_contato': 'ana',
-                        'DT_ATENDIMENTO': '10/03/2026',
+                        'nom_contato': 'ana_hospital_procedimento_46112_SENHA001',
+                        'DT_ATENDIMENTO': '01/01/2026',
                         'resposta': 'Sim',
                     }
                 ]
@@ -69,12 +70,15 @@ class StatusServiceTests(unittest.TestCase):
             self.assertEqual(resultado['total_status'], 2)
             self.assertEqual(resultado['com_match'], 1)
             self.assertEqual(resultado['sem_match'], 1)
-            self.assertEqual(resultado['descartados_status_data_invalida'], 1)
+            self.assertEqual(resultado['descartados_status_data_invalida'], 0)
+            self.assertEqual(resultado['descartados_resposta_data_invalida'], 0)
 
             df_saida = ler_arquivo_csv(str(arq_saida))
             self.assertEqual(len(df_saida), 2)
-            self.assertEqual(df_saida.loc[1, 'Contato'], 'bruno')
-            self.assertEqual(df_saida.loc[1, 'DT ENVIO'], '')
+            self.assertEqual(df_saida.loc[0, 'RESPOSTA'], 'Sim')
+            self.assertEqual(df_saida.loc[0, COLUNA_CHAVE_PRINCIPAL], 'SENHA001')
+            self.assertEqual(df_saida.loc[1, 'Contato'], 'bruno_hospital_procedimento_46114_SENHA002')
+            self.assertEqual(df_saida.loc[1, 'DT ENVIO'], 'outra data ruim')
             self.assertEqual(df_saida.loc[1, 'RESPOSTA'], 'Sem resposta')
         finally:
             self._limpar_pasta_tmp_teste(base)

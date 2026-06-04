@@ -197,8 +197,8 @@ Ponto de ajuste possivel:
 
 O que faz:
 
-- chama `padronizar_colunas_status`;
-- chama `padronizar_colunas_status_resposta`;
+- chama `normalizar_schema_status`;
+- chama `normalizar_schema_status_resposta`;
 - chama `garantir_contrato_resposta_canonica`;
 - retorna os dois DataFrames padronizados.
 
@@ -511,8 +511,8 @@ Ideia:
 ## O que eu nao mexeria primeiro
 
 - `validar_colunas_origem_para_padronizacao`;
-- `padronizar_colunas_status`;
-- `padronizar_colunas_status_resposta`;
+- `normalizar_schema_status`;
+- `normalizar_schema_status_resposta`;
 - `garantir_contrato_resposta_canonica`;
 - `normalizar_tipos_dataframe`.
 

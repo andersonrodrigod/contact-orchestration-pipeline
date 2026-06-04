@@ -3,32 +3,30 @@ import unittest
 import pandas as pd
 
 from src.services.dataset_metricas_service import aplicar_contagens_status
+from src.services.schema_chave_service import COLUNA_CHAVE_PRINCIPAL
 
 
 class DatasetMetricasServiceTests(unittest.TestCase):
-    def test_aplicar_contagens_status_com_chave_canonica_no_join(self):
-        df_saida = pd.DataFrame(
-            [
-                {
-                    'CHAVE STATUS': '  JOSÉ   DA SILVA  ',
-                }
-            ]
-        )
+    def test_aplicar_contagens_status_com_chave_principal_no_join(self):
+        df_saida = pd.DataFrame([{COLUNA_CHAVE_PRINCIPAL: 'SENHA001'}])
         df_status_full = pd.DataFrame(
             [
                 {
+                    COLUNA_CHAVE_PRINCIPAL: 'SENHA001',
                     'Contato': 'jose da silva',
                     'Telefone': '11 9999-0001',
                     'Status': 'Lida',
                     'RESPOSTA': 'Sim',
                 },
                 {
-                    'Contato': 'José da Silva',
+                    COLUNA_CHAVE_PRINCIPAL: 'SENHA001',
+                    'Contato': 'Jose da Silva',
                     'Telefone': '11 9999-0002',
                     'Status': 'LIDA',
                     'RESPOSTA': '',
                 },
                 {
+                    COLUNA_CHAVE_PRINCIPAL: 'SENHA001',
                     'Contato': 'JOSE DA SILVA',
                     'Telefone': '(11) 9999-0002',
                     'Status': 'Enviada',

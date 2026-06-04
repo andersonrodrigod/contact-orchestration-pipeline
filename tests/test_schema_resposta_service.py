@@ -10,6 +10,7 @@ from src.services.schema_resposta_service import (
     garantir_contrato_resposta_canonica,
     normalizar_coluna_data_atendimento,
     normalizar_coluna_resposta,
+    normalizar_schema_status_resposta,
     tem_coluna_data_atendimento,
     tem_coluna_resposta,
 )
@@ -73,6 +74,23 @@ class SchemaRespostaServiceTests(unittest.TestCase):
         df = pd.DataFrame({'RESPOSTA': ['Sim']})
         with self.assertRaisesRegex(ValueError, 'coluna obrigatoria ausente'):
             garantir_contrato_resposta_canonica(df, contexto='teste')
+
+    def test_normaliza_schema_status_resposta_remove_aliases(self):
+        df = pd.DataFrame(
+            {
+                'nom_contato': ['usuario_1'],
+                'dat_atendimento': ['01/01/2026'],
+                'RESPOSTA': ['Sim'],
+            }
+        )
+
+        saida = normalizar_schema_status_resposta(df.copy())
+
+        self.assertIn(COLUNA_DATA_ATENDIMENTO_CANONICA, saida.columns)
+        self.assertIn(COLUNA_RESPOSTA_CANONICA, saida.columns)
+        self.assertNotIn('dat_atendimento', saida.columns)
+        self.assertNotIn('RESPOSTA', saida.columns)
+        self.assertEqual(saida.loc[0, COLUNA_RESPOSTA_CANONICA], 'Sim')
 
 
 if __name__ == '__main__':

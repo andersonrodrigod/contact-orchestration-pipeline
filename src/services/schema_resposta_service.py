@@ -127,3 +127,8 @@ def normalizar_coluna_data_atendimento(df, remover_alias=True):
     if 'dat_atendimento' in df.columns:
         df = df.rename(columns={'dat_atendimento': COLUNA_DATA_ATENDIMENTO_CANONICA})
     return df
+
+
+def normalizar_schema_status_resposta(df):
+    df = normalizar_coluna_data_atendimento(df, remover_alias=True)
+    return normalizar_coluna_resposta(df, criar_vazia=True, remover_alias=True)

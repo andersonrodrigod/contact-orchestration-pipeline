@@ -58,7 +58,7 @@ Ordem em que os arquivos reagem:
 9. `src/services/validacao_service.py`
     - Confere contrato minimo das colunas de entrada.
 
-10. `src/services/padronizacao_service.py`
+10. `src/services/schema_status_service.py` e `src/services/schema_resposta_service.py`
     - Padroniza colunas de status e resposta.
 
 11. `src/services/schema_resposta_service.py`
@@ -281,7 +281,8 @@ Arquivos:
 
 - `src/services/ingestao_service.py`
 - `src/services/validacao_service.py`
-- `src/services/padronizacao_service.py`
+- `src/services/schema_status_service.py`
+- `src/services/schema_resposta_service.py`
 - `src/services/schema_resposta_service.py`
 - `src/services/normalizacao_services.py`
 - `src/utils/arquivos.py`

@@ -5,6 +5,7 @@ from src.services.schema_resposta_service import (
     garantir_contrato_resposta_canonica,
     normalizar_coluna_resposta,
 )
+from src.services.schema_chave_service import COLUNA_CHAVE_PRINCIPAL
 from src.services.texto_service import limpar_valor_texto, normalizar_texto_serie, simplificar_texto
 
 
@@ -99,8 +100,8 @@ def _normalizar_status_para_contagens(df_status_full):
         contexto='dataset_metricas.status_pos_padronizacao',
     )
 
-    df_status['Contato'] = normalizar_texto_serie(
-        df_status.get('Contato', pd.Series(dtype=str))
+    df_status['__CHAVE_CONTAGEM'] = normalizar_texto_serie(
+        df_status[COLUNA_CHAVE_PRINCIPAL]
     ).apply(simplificar_texto)
     df_status['Telefone'] = normalizar_texto_serie(df_status.get('Telefone', pd.Series(dtype=str))).apply(
         normalizar_telefone
@@ -113,7 +114,7 @@ def _normalizar_status_para_contagens(df_status_full):
 
 
 def _validar_colunas_obrigatorias_status(df_status_full):
-    colunas_obrigatorias_status = ['Contato', 'Telefone', 'Status']
+    colunas_obrigatorias_status = [COLUNA_CHAVE_PRINCIPAL, 'Telefone', 'Status']
     faltando_status = [c for c in colunas_obrigatorias_status if c not in df_status_full.columns]
     if len(faltando_status) > 0:
         return {
@@ -129,21 +130,21 @@ def preparar_contagens_status(df_status_full):
         return validacao_status
 
     df_status = _normalizar_status_para_contagens(df_status_full)
-    df_status_join = df_status[['Contato', '__STATUS_MAPEADO', '__RESPOSTA_LIDA']]
+    df_status_join = df_status[['__CHAVE_CONTAGEM', '__STATUS_MAPEADO', '__RESPOSTA_LIDA']]
     df_status_join = df_status_join[
-        (df_status_join['Contato'] != '')
+        (df_status_join['__CHAVE_CONTAGEM'] != '')
         & df_status_join['__STATUS_MAPEADO'].notna()
         & (df_status_join['__STATUS_MAPEADO'] != '')
     ]
     if len(df_status_join) == 0:
         return {
             'ok': False,
-            'mensagens': ['Nenhuma correspondencia encontrada para CHAVE STATUS no arquivo status.'],
+            'mensagens': [f'Nenhuma correspondencia encontrada para {COLUNA_CHAVE_PRINCIPAL} no arquivo status.'],
         }
 
     qt_telefones = (
-        df_status[(df_status['Contato'] != '') & (df_status['Telefone'] != '')]
-        .groupby('Contato')['Telefone']
+        df_status[(df_status['__CHAVE_CONTAGEM'] != '') & (df_status['Telefone'] != '')]
+        .groupby('__CHAVE_CONTAGEM')['Telefone']
         .nunique()
     )
 
@@ -156,8 +157,7 @@ def preparar_contagens_status(df_status_full):
 
 
 def aplicar_contagens_status(df_saida, df_status_full, contagens_preparadas=None):
-    colunas_obrigatorias_saida = ['CHAVE STATUS']
-    faltando_saida = [c for c in colunas_obrigatorias_saida if c not in df_saida.columns]
+    faltando_saida = [] if COLUNA_CHAVE_PRINCIPAL in df_saida.columns else [COLUNA_CHAVE_PRINCIPAL]
     if len(faltando_saida) > 0:
         return {
             'ok': False,
@@ -171,14 +171,14 @@ def aplicar_contagens_status(df_saida, df_status_full, contagens_preparadas=None
 
     df_base = df_saida.copy()
     df_base['__ROW_ID'] = df_base.index
-    df_base['__CHAVE_STATUS_NORM'] = normalizar_texto_serie(df_base['CHAVE STATUS']).apply(
+    df_base['__CHAVE_STATUS_NORM'] = normalizar_texto_serie(df_base[COLUNA_CHAVE_PRINCIPAL]).apply(
         simplificar_texto
     )
-    # Contagem por CHAVE STATUS (sem depender de TELEFONE ENVIADO)
+    # Contagem por CHAVE PRINCIPAL (sem depender de TELEFONE ENVIADO)
     df_join_chave = df_base.merge(
         contagens_preparadas['df_status_join'],
         left_on='__CHAVE_STATUS_NORM',
-        right_on='Contato',
+        right_on='__CHAVE_CONTAGEM',
         how='left',
     )
     df_join_chave_ok = df_join_chave[
@@ -187,7 +187,7 @@ def aplicar_contagens_status(df_saida, df_status_full, contagens_preparadas=None
     if len(df_join_chave_ok) == 0:
         return {
             'ok': False,
-            'mensagens': ['Nenhuma correspondencia encontrada para CHAVE STATUS no arquivo status.'],
+            'mensagens': [f'Nenhuma correspondencia encontrada para {COLUNA_CHAVE_PRINCIPAL} no arquivo status.'],
         }
 
     _preencher_contagens_status_mapeado(df_saida, df_join_chave_ok)

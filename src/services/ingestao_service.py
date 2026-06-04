@@ -9,11 +9,12 @@ from src.services.normalizacao_services import (
     limpar_texto_colunas_alvo,
     normalizar_tipos_dataframe,
 )
-from src.services.padronizacao_service import (
-    padronizar_colunas_status,
-    padronizar_colunas_status_resposta,
+from src.services.schema_resposta_service import (
+    garantir_contrato_resposta_canonica,
+    normalizar_schema_status_resposta,
 )
-from src.services.schema_resposta_service import garantir_contrato_resposta_canonica
+from src.services.schema_chave_service import adicionar_chave_principal
+from src.services.schema_status_service import normalizar_schema_status
 from src.services.validacao_service import (
     validar_colunas_origem_para_padronizacao,
     validar_padronizacao_colunas_data,
@@ -53,8 +54,13 @@ def _aplicar_padronizacao_status_e_resposta(df_status, df_status_resposta):
     # Padroniza os dois DataFrames para o contrato interno esperado pelas
     # proximas etapas. No status_resposta tambem garante a coluna canonica
     # de resposta depois da padronizacao.
-    df_status = padronizar_colunas_status(df_status)
-    df_status_resposta = padronizar_colunas_status_resposta(df_status_resposta)
+    df_status = normalizar_schema_status(df_status)
+    df_status_resposta = normalizar_schema_status_resposta(df_status_resposta)
+    df_status = adicionar_chave_principal(df_status, ['CHAVE', 'Contato'])
+    df_status_resposta = adicionar_chave_principal(
+        df_status_resposta,
+        ['CHAVE', 'nom_contato'],
+    )
     garantir_contrato_resposta_canonica(
         df_status_resposta,
         contexto='ingestao.status_resposta_pos_padronizacao',

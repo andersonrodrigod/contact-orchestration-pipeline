@@ -215,7 +215,7 @@ def _criar_aba_disparo(df_usuarios_orquestrados, df_usuarios_base):
             df[coluna] = ''
 
     status_chave = normalizar_texto_serie(df['STATUS CHAVE']).str.upper()
-    df = df[status_chave.isin(['OK_PRINCIPAL', 'OK_FALLBACK'])]
+    df = df[status_chave == 'OK_PRINCIPAL']
     processos = normalizar_texto_serie(df['PROCESSO']).str.upper()
     df = df[processos.isin(PROCESSOS_PERMITIDOS_DISPARO)]
 
