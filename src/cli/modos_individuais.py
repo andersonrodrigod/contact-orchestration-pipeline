@@ -107,19 +107,3 @@ def obter_modos_etapas():
         'complicacao_gerar_dataset_status': _run_complicacao_gerar_dataset_status,
         'complicacao_orquestrar': _run_complicacao_orquestrar,
     }
-
-
-def obter_aliases_modos_etapas(modos_etapas):
-    return {
-        'individual_ingestao_complicacao': modos_etapas['complicacao_ingestao'],
-        'individual_enviar_status_complicacao': modos_etapas[
-            'complicacao_integrar_status_resposta'
-        ],
-        'individual_criar_dataset_complicacao': modos_etapas[
-            'complicacao_criar_dataset_status'
-        ],
-        'individual_gerar_dataset_complicacao_com_resposta': modos_etapas[
-            'complicacao_gerar_dataset_status'
-        ],
-        'individual_orquestrar_complicacao': modos_etapas['complicacao_orquestrar'],
-    }

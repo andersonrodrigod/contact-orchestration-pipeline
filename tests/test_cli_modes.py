@@ -23,29 +23,17 @@ class CliModesTests(unittest.TestCase):
             self.assertIn(modo, modos)
             self.assertTrue(callable(modos[modo]))
 
-    def test_aliases_individuais_apontam_para_clis_de_etapa(self):
+    def test_aliases_individuais_nao_estao_no_contrato_cli(self):
         modos = obter_registro_modos()
 
-        self.assertIs(
-            modos['individual_ingestao_complicacao'],
-            modos['complicacao_ingestao'],
-        )
-        self.assertIs(
-            modos['individual_enviar_status_complicacao'],
-            modos['complicacao_integrar_status_resposta'],
-        )
-        self.assertIs(
-            modos['individual_criar_dataset_complicacao'],
-            modos['complicacao_criar_dataset_status'],
-        )
-        self.assertIs(
-            modos['individual_gerar_dataset_complicacao_com_resposta'],
-            modos['complicacao_gerar_dataset_status'],
-        )
-        self.assertIs(
-            modos['individual_orquestrar_complicacao'],
-            modos['complicacao_orquestrar'],
-        )
+        for modo in [
+            'individual_ingestao_complicacao',
+            'individual_enviar_status_complicacao',
+            'individual_criar_dataset_complicacao',
+            'individual_gerar_dataset_complicacao_com_resposta',
+            'individual_orquestrar_complicacao',
+        ]:
+            self.assertNotIn(modo, modos)
 
     def test_somente_status_e_allow_nao_estao_no_contrato_cli(self):
         modos = obter_registro_modos()
