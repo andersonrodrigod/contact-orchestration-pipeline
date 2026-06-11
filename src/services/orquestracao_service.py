@@ -43,7 +43,8 @@ COLUNAS_DISPARO = [
     'PROXIMO TELEFONE DISPONIVEL',
     'PROCESSO',
     'ACAO',
-    'CHAVE RELATORIO',
+    'CHAVE_SENHA',
+    'CHAVE RELATORIO'
 ]
 
 
@@ -172,11 +173,11 @@ def aplicar_classificacao_processo_acao(df):
 
 
 def orquestrar_usuarios_respondidos(df_usuarios, df_usuarios_respondidos):
-    if 'CHAVE RELATORIO' not in df_usuarios.columns or 'CHAVE RELATORIO' not in df_usuarios_respondidos.columns:
+    if 'CHAVE_SENHA' not in df_usuarios.columns or 'CHAVE_SENHA' not in df_usuarios_respondidos.columns:
         return df_usuarios, pd.DataFrame(columns=df_usuarios.columns)
 
-    chave_usuarios = normalizar_texto_serie(df_usuarios['CHAVE RELATORIO'])
-    chave_respondidos = normalizar_texto_serie(df_usuarios_respondidos['CHAVE RELATORIO'])
+    chave_usuarios = normalizar_texto_serie(df_usuarios['CHAVE_SENHA'])
+    chave_respondidos = normalizar_texto_serie(df_usuarios_respondidos['CHAVE_SENHA'])
     set_respondidos = set(chave_respondidos[chave_respondidos != ''])
 
     mask_resolvidos = chave_usuarios.isin(set_respondidos)
@@ -195,7 +196,7 @@ def _criar_aba_disparo(df_usuarios_orquestrados, df_usuarios_base):
         'STATUS CHAVE',
         'PROCESSO',
         'ACAO',
-        'CHAVE RELATORIO',
+        'CHAVE_SENHA',
         'TELEFONE 1',
         'TELEFONE 2',
         'TELEFONE 3',
@@ -244,12 +245,12 @@ def _criar_aba_disparo(df_usuarios_orquestrados, df_usuarios_base):
     df_disparo['TELEFONE DISPARO'] = normalizar_texto_serie(df_disparo['TELEFONE DISPARO']).apply(
         normalizar_telefone
     )
-    df_disparo = df_disparo.drop_duplicates(subset=['CHAVE RELATORIO'])
+    df_disparo = df_disparo.drop_duplicates(subset=['CHAVE_SENHA'])
 
-    if 'CHAVE RELATORIO' not in df_usuarios_base.columns:
-        df_usuarios_base['CHAVE RELATORIO'] = ''
-    chaves_base = set(normalizar_texto_serie(df_usuarios_base['CHAVE RELATORIO']))
-    chaves_disparo = normalizar_texto_serie(df_disparo['CHAVE RELATORIO'])
+    if 'CHAVE_SENHA' not in df_usuarios_base.columns:
+        df_usuarios_base['CHAVE_SENHA'] = ''
+    chaves_base = set(normalizar_texto_serie(df_usuarios_base['CHAVE_SENHA']))
+    chaves_disparo = normalizar_texto_serie(df_disparo['CHAVE_SENHA'])
     df_disparo['VALIDACAO CHAVE'] = chaves_disparo.apply(
         lambda chave: 'OK' if chave in chaves_base else 'NAO ENCONTRADO'
     )

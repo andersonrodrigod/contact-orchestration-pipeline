@@ -2,7 +2,10 @@ import unittest
 
 import pandas as pd
 
-from src.services.validacao_service import validar_colunas_origem_para_padronizacao
+from src.services.validacao_service import (
+    validar_colunas_origem_dataset_complicacao,
+    validar_colunas_origem_para_padronizacao,
+)
 
 
 class ValidacaoServiceTests(unittest.TestCase):
@@ -103,6 +106,58 @@ class ValidacaoServiceTests(unittest.TestCase):
         self.assertFalse(resultado['ok'])
         self.assertIn('Arquivo status_resposta com estrutura alterada.', mensagens)
         self.assertIn('resposta (ou alias legado Resposta/RESPOSTA)', mensagens)
+
+    def test_validacao_dataset_exige_senha_como_chave(self):
+        colunas = [
+            'BASE',
+            'COD USUARIO',
+            'USUARIO',
+            'TELEFONE 1',
+            'TELEFONE 2',
+            'TELEFONE 3',
+            'TELEFONE 4',
+            'TELEFONE 5',
+            'PRESTADOR',
+            'PROCEDIMENTO',
+            'TP ATENDIMENTO',
+            'DT INTERNACAO',
+            'DT ENVIO',
+            'SENHA',
+            'STATUS',
+            'P1',
+        ]
+
+        resultado = validar_colunas_origem_dataset_complicacao(colunas, contexto='complicacao')
+
+        self.assertTrue(resultado['ok'])
+        self.assertEqual(resultado['colunas_faltando'], [])
+
+    def test_validacao_dataset_nao_aceita_chave_no_lugar_de_senha(self):
+        colunas = [
+            'BASE',
+            'COD USUARIO',
+            'USUARIO',
+            'TELEFONE 1',
+            'TELEFONE 2',
+            'TELEFONE 3',
+            'TELEFONE 4',
+            'TELEFONE 5',
+            'PRESTADOR',
+            'PROCEDIMENTO',
+            'TP ATENDIMENTO',
+            'DT INTERNACAO',
+            'DT ENVIO',
+            'CHAVE',
+            'STATUS',
+            'P1',
+        ]
+
+        resultado = validar_colunas_origem_dataset_complicacao(colunas, contexto='complicacao')
+        mensagens = '\n'.join(resultado['mensagens'])
+
+        self.assertFalse(resultado['ok'])
+        self.assertIn('SENHA', resultado['colunas_faltando'])
+        self.assertIn('Colunas faltando', mensagens)
 
 
 if __name__ == '__main__':

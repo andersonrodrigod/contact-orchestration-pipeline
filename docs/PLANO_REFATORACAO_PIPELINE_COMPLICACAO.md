@@ -69,7 +69,7 @@ Ordem em que os arquivos reagem:
 
 14. `src/pipelines/join_status_resposta_pipeline.py`
     - Une status com status_resposta.
-    - Gera a base integrada `status_complicacao.csv`.
+    - Gera a base integrada `status.csv`.
 
 15. `src/services/integracao_service.py`
     - Contem a regra de integracao/match entre status e resposta.

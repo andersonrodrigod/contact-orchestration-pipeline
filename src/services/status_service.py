@@ -3,15 +3,15 @@ from src.services.schema_resposta_service import (
     normalizar_coluna_resposta,
 )
 from src.services.schema_chave_service import (
-    COLUNA_CHAVE_PRINCIPAL,
-    adicionar_chave_principal,
+    COLUNA_CHAVE_SENHA,
+    adicionar_chave_senha,
 )
 from src.utils.arquivos import ler_arquivo_csv, salvar_dataframe
 
 
 def integrar_status_com_resposta(
     arquivo_status='src/data/arquivo_limpo/status_limpo.csv',
-    arquivo_status_resposta='src/data/arquivo_limpo/status_resposta_complicacao_limpo.csv',
+    arquivo_status_resposta='src/data/arquivo_limpo/status_resposta_limpo.csv',
     arquivo_saida='src/data/arquivo_limpo/status.csv',
     colunas_limpar=None,
 ):
@@ -40,18 +40,18 @@ def integrar_status_com_resposta(
     df_status['Contato'] = df_status['Contato'].astype(str).str.strip()
     df_resposta['nom_contato'] = df_resposta['nom_contato'].astype(str).str.strip()
 
-    df_status = adicionar_chave_principal(df_status, ['CHAVE', 'Contato'])
-    df_resposta = adicionar_chave_principal(df_resposta, ['CHAVE', 'nom_contato'])
-    df_resposta = df_resposta[df_resposta[COLUNA_CHAVE_PRINCIPAL] != ''].copy()
+    df_status = adicionar_chave_senha(df_status, ['SENHA', COLUNA_CHAVE_SENHA, 'Contato'])
+    df_resposta = adicionar_chave_senha(df_resposta, ['SENHA', COLUNA_CHAVE_SENHA, 'nom_contato'])
+    df_resposta = df_resposta[df_resposta[COLUNA_CHAVE_SENHA] != ''].copy()
 
     df_resposta = (
-        df_resposta.sort_values(COLUNA_CHAVE_PRINCIPAL)
-        .drop_duplicates(subset=[COLUNA_CHAVE_PRINCIPAL], keep='last')
+        df_resposta.sort_values(COLUNA_CHAVE_SENHA)
+        .drop_duplicates(subset=[COLUNA_CHAVE_SENHA], keep='last')
     )
 
     df_merge = df_status.merge(
-        df_resposta[['nom_contato', COLUNA_CHAVE_PRINCIPAL, 'resposta']],
-        on=COLUNA_CHAVE_PRINCIPAL,
+        df_resposta[['nom_contato', COLUNA_CHAVE_SENHA, 'resposta']],
+        on=COLUNA_CHAVE_SENHA,
         how='left',
     )
 

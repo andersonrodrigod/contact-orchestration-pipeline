@@ -1,4 +1,4 @@
-COLUNA_CHAVE_PRINCIPAL = 'CHAVE PRINCIPAL'
+COLUNA_CHAVE_SENHA = 'CHAVE_SENHA'
 
 
 def extrair_chave_principal_valor(valor):
@@ -8,7 +8,7 @@ def extrair_chave_principal_valor(valor):
     return texto.rsplit('_', 1)[-1].strip()
 
 
-def adicionar_chave_principal(df, colunas_origem, coluna_destino=COLUNA_CHAVE_PRINCIPAL):
+def _adicionar_chave_extraida(df, colunas_origem, coluna_destino):
     df_resultado = df.copy()
     origem = next((col for col in colunas_origem if col in df_resultado.columns), None)
     if origem is None:
@@ -18,3 +18,7 @@ def adicionar_chave_principal(df, colunas_origem, coluna_destino=COLUNA_CHAVE_PR
 
     df_resultado[coluna_destino] = df_resultado[origem].apply(extrair_chave_principal_valor)
     return df_resultado
+
+
+def adicionar_chave_senha(df, colunas_origem, coluna_destino=COLUNA_CHAVE_SENHA):
+    return _adicionar_chave_extraida(df, colunas_origem, coluna_destino=coluna_destino)

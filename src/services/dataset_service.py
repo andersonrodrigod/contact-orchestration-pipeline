@@ -27,8 +27,8 @@ from src.services.schema_resposta_service import (
     normalizar_coluna_resposta,
 )
 from src.services.schema_chave_service import (
-    COLUNA_CHAVE_PRINCIPAL,
-    adicionar_chave_principal,
+    COLUNA_CHAVE_SENHA,
+    adicionar_chave_senha,
 )
 from src.services.validacao_service import validar_colunas_origem_dataset_complicacao
 from src.utils.arquivos import ler_arquivo_csv, salvar_dataframe
@@ -40,9 +40,9 @@ STATUS_CHAVE_SEM_MATCH = 'SEM_MATCH'
 
 
 def _ordenar_por_chave_principal(df):
-    if COLUNA_CHAVE_PRINCIPAL not in df.columns:
+    if COLUNA_CHAVE_SENHA not in df.columns:
         return df
-    return df.sort_values(COLUNA_CHAVE_PRINCIPAL, ascending=True, na_position='last')
+    return df.sort_values(COLUNA_CHAVE_SENHA, ascending=True, na_position='last')
 
 
 def _carregar_status_para_lookup(arquivo_status_integrado):
@@ -62,11 +62,11 @@ def _carregar_status_para_lookup(arquivo_status_integrado):
     )
     if 'Telefone' not in df_status.columns:
         df_status['Telefone'] = ''
-    df_status = adicionar_chave_principal(df_status, ['CHAVE', COLUNA_CHAVE_PRINCIPAL, 'Contato'])
+    df_status = adicionar_chave_senha(df_status, ['SENHA', COLUNA_CHAVE_SENHA, 'CHAVE', 'Contato'])
 
     df_status['Contato'] = _normalizar_texto_serie(df_status['Contato'])
-    df_status[COLUNA_CHAVE_PRINCIPAL] = _normalizar_texto_serie(
-        df_status[COLUNA_CHAVE_PRINCIPAL]
+    df_status[COLUNA_CHAVE_SENHA] = _normalizar_texto_serie(
+        df_status[COLUNA_CHAVE_SENHA]
     )
     df_status['Telefone'] = _normalizar_texto_serie(df_status['Telefone']).apply(normalizar_telefone)
     df_status['DT ENVIO'] = _normalizar_texto_serie(df_status['DT ENVIO'])
@@ -75,12 +75,12 @@ def _carregar_status_para_lookup(arquivo_status_integrado):
     df_status['resposta'] = _normalizar_texto_serie(df_status['resposta']).apply(_limpar_valor_texto)
 
     df_status = df_status.sort_values(
-        [COLUNA_CHAVE_PRINCIPAL, '__ORDEM_ORIGINAL'],
+        [COLUNA_CHAVE_SENHA, '__ORDEM_ORIGINAL'],
         ascending=[True, True],
         na_position='last',
     )
-    df_status_por_contato = df_status[df_status[COLUNA_CHAVE_PRINCIPAL] != ''].drop_duplicates(
-        subset=[COLUNA_CHAVE_PRINCIPAL],
+    df_status_por_contato = df_status[df_status[COLUNA_CHAVE_SENHA] != ''].drop_duplicates(
+        subset=[COLUNA_CHAVE_SENHA],
         keep='last',
     ).copy()
 
@@ -172,12 +172,12 @@ def _enriquecer_dataset_com_status(
     if 'CHAVE RELATORIO' not in df_saida.columns:
         df_saida['CHAVE RELATORIO'] = ''
     df_saida['CHAVE RELATORIO'] = _normalizar_texto_serie(df_saida['CHAVE RELATORIO'])
-    df_saida = adicionar_chave_principal(
+    df_saida = adicionar_chave_senha(
         df_saida,
-        ['SENHA', 'CHAVE', COLUNA_CHAVE_PRINCIPAL, 'CHAVE RELATORIO'],
+        ['SENHA', COLUNA_CHAVE_SENHA],
     )
-    df_saida[COLUNA_CHAVE_PRINCIPAL] = _normalizar_texto_serie(
-        df_saida[COLUNA_CHAVE_PRINCIPAL]
+    df_saida[COLUNA_CHAVE_SENHA] = _normalizar_texto_serie(
+        df_saida[COLUNA_CHAVE_SENHA]
     )
 
     df_status_por_contato = df_status_por_contato.copy()
@@ -198,12 +198,12 @@ def _enriquecer_dataset_com_status(
         if col_status_tel not in df_saida.columns:
             df_saida[col_status_tel] = ''
 
-    # Match principal: CHAVE PRINCIPAL -> CHAVE PRINCIPAL
-    mapa_principal = df_status_por_contato.set_index(COLUNA_CHAVE_PRINCIPAL)
-    mask_principal = df_saida[COLUNA_CHAVE_PRINCIPAL].isin(mapa_principal.index)
+    # Match principal: CHAVE_SENHA -> CHAVE_SENHA
+    mapa_principal = df_status_por_contato.set_index(COLUNA_CHAVE_SENHA)
+    mask_principal = df_saida[COLUNA_CHAVE_SENHA].isin(mapa_principal.index)
     idx_principal = df_saida.index[mask_principal]
     if len(idx_principal) > 0:
-        chave = df_saida.loc[idx_principal, COLUNA_CHAVE_PRINCIPAL]
+        chave = df_saida.loc[idx_principal, COLUNA_CHAVE_SENHA]
         df_saida.loc[idx_principal, 'ULTIMO STATUS DE ENVIO'] = chave.map(mapa_principal['Status']).fillna('')
         df_saida.loc[idx_principal, 'DT ENVIO'] = chave.map(mapa_principal['DT ENVIO']).fillna('')
         df_saida.loc[idx_principal, 'RESPOSTA'] = chave.map(mapa_principal['resposta']).fillna('')
@@ -211,7 +211,7 @@ def _enriquecer_dataset_com_status(
         df_saida.loc[idx_principal, 'TELEFONE ENVIADO'] = chave.map(mapa_principal['Telefone']).fillna('')
         df_saida.loc[idx_principal, 'CHAVE STATUS'] = df_saida.loc[
             idx_principal,
-            COLUNA_CHAVE_PRINCIPAL,
+            COLUNA_CHAVE_SENHA,
         ]
         df_saida.loc[idx_principal, 'STATUS CHAVE'] = STATUS_CHAVE_OK_PRINCIPAL
 
@@ -221,7 +221,7 @@ def _enriquecer_dataset_com_status(
     if total_match == 0:
         return {
             'ok': False,
-            'mensagens': ['Nenhum match encontrado por CHAVE PRINCIPAL.'],
+            'mensagens': ['Nenhum match encontrado por CHAVE_SENHA.'],
             'total_dataset': total_dataset,
             'total_match': total_match,
             'total_sem_match': total_sem_match,
@@ -243,17 +243,17 @@ def _enriquecer_dataset_com_status(
     df_saida.loc[match_telefone_any, 'STATUS TELEFONE'] = 'OK'
     df_saida.loc[~match_telefone_any, 'STATUS TELEFONE'] = 'ERROR'
 
-    # Marcacao historica por chave: quais telefones ja foram enviados para cada CHAVE PRINCIPAL.
+    # Marcacao historica por chave: quais telefones ja foram enviados para cada CHAVE_SENHA.
     mapa_chave_telefones = (
         df_status_full[
-            (df_status_full[COLUNA_CHAVE_PRINCIPAL] != '')
+            (df_status_full[COLUNA_CHAVE_SENHA] != '')
             & (df_status_full['Telefone'] != '')
         ]
-        .groupby(COLUNA_CHAVE_PRINCIPAL)['Telefone']
+        .groupby(COLUNA_CHAVE_SENHA)['Telefone']
         .apply(lambda s: set(s.astype(str)))
         .to_dict()
     )
-    chave_principal_norm = _normalizar_texto_serie(df_saida[COLUNA_CHAVE_PRINCIPAL])
+    chave_principal_norm = _normalizar_texto_serie(df_saida[COLUNA_CHAVE_SENHA])
     for i, coluna_tel in enumerate(colunas_tel_existentes, start=1):
         coluna_status_tel = f'TELEFONE STATUS {i}'
         tel_dataset_norm = _normalizar_texto_serie(df_saida[coluna_tel]).apply(normalizar_telefone)
@@ -387,7 +387,7 @@ def _montar_df_final_complicacao(df_base):
         'TP ATENDIMENTO': 'TP ATENDIMENTO',
         'DT INTERNACAO': 'DT INTERNACAO',
         'DT ENVIO': 'DT ENVIO',
-        'SENHA': COLUNA_CHAVE_PRINCIPAL,
+        'SENHA': COLUNA_CHAVE_SENHA,
         'CHAVE': 'CHAVE RELATORIO',
         'STATUS': 'ULTIMO STATUS DE ENVIO',
     }
@@ -396,9 +396,9 @@ def _montar_df_final_complicacao(df_base):
         if coluna_origem in df_base.columns:
             df_final[coluna_destino] = df_base[coluna_origem]
 
-    df_final = adicionar_chave_principal(
+    df_final = adicionar_chave_senha(
         df_final,
-        [COLUNA_CHAVE_PRINCIPAL, 'CHAVE', 'CHAVE RELATORIO'],
+        [COLUNA_CHAVE_SENHA],
     )
 
     for coluna in COLUNAS_FINAIS_DATASET:
@@ -778,4 +778,5 @@ def aplicar_status_integrado_em_dataset(
             ],
             'codigo_erro': ERRO_CRIACAO_DATASET,
         }
+
 

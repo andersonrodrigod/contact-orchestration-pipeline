@@ -6,7 +6,7 @@ from pathlib import Path
 import pandas as pd
 
 from src.services.status_service import integrar_status_com_resposta
-from src.services.schema_chave_service import COLUNA_CHAVE_PRINCIPAL
+from src.services.schema_chave_service import COLUNA_CHAVE_SENHA
 from src.utils.arquivos import ler_arquivo_csv
 
 
@@ -76,7 +76,7 @@ class StatusServiceTests(unittest.TestCase):
             df_saida = ler_arquivo_csv(str(arq_saida))
             self.assertEqual(len(df_saida), 2)
             self.assertEqual(df_saida.loc[0, 'RESPOSTA'], 'Sim')
-            self.assertEqual(df_saida.loc[0, COLUNA_CHAVE_PRINCIPAL], 'SENHA001')
+            self.assertEqual(df_saida.loc[0, COLUNA_CHAVE_SENHA], 'SENHA001')
             self.assertEqual(df_saida.loc[1, 'Contato'], 'bruno_hospital_procedimento_46114_SENHA002')
             self.assertEqual(df_saida.loc[1, 'DT ENVIO'], 'outra data ruim')
             self.assertEqual(df_saida.loc[1, 'RESPOSTA'], 'Sem resposta')

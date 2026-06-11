@@ -13,7 +13,7 @@ from src.services.schema_resposta_service import (
     garantir_contrato_resposta_canonica,
     normalizar_schema_status_resposta,
 )
-from src.services.schema_chave_service import adicionar_chave_principal
+from src.services.schema_chave_service import adicionar_chave_senha
 from src.services.schema_status_service import normalizar_schema_status
 from src.services.validacao_service import (
     validar_colunas_origem_para_padronizacao,
@@ -26,6 +26,22 @@ from src.utils.arquivos import ler_arquivo_csv, salvar_dataframe
 # existe porque status e status_resposta chegam com contratos diferentes.
 COLUNAS_TEXTO_ALVO_STATUS = ['HSM', 'Status', 'Respondido', 'RESPOSTA']
 COLUNAS_TEXTO_ALVO_STATUS_RESPOSTA = ['HSM', 'Status', 'Respondido', 'resposta']
+COLUNAS_VALORES_PRESERVADOS_STATUS = [
+    'HSM',
+    'Status',
+    'Respondido',
+    'Data agendamento',
+    'Contato',
+    'Telefone',
+    'CHAVE_SENHA',
+    'DT ENVIO',
+]
+COLUNAS_VALORES_PRESERVADOS_STATUS_RESPOSTA = [
+    'nom_contato',
+    'resposta',
+    'DT_ATENDIMENTO',
+    'CHAVE_SENHA',
+]
 
 
 def _ler_arquivos_status(arquivo_status, arquivo_status_resposta):
@@ -56,10 +72,10 @@ def _aplicar_padronizacao_status_e_resposta(df_status, df_status_resposta):
     # de resposta depois da padronizacao.
     df_status = normalizar_schema_status(df_status)
     df_status_resposta = normalizar_schema_status_resposta(df_status_resposta)
-    df_status = adicionar_chave_principal(df_status, ['CHAVE', 'Contato'])
-    df_status_resposta = adicionar_chave_principal(
+    df_status = adicionar_chave_senha(df_status, ['SENHA', 'Contato'])
+    df_status_resposta = adicionar_chave_senha(
         df_status_resposta,
-        ['CHAVE', 'nom_contato'],
+        ['SENHA', 'nom_contato'],
     )
     garantir_contrato_resposta_canonica(
         df_status_resposta,
@@ -79,6 +95,15 @@ def _normalizar_tipos_data(
         df_status_resposta, colunas_data=['DT_ATENDIMENTO']
     )
     return df_status, df_status_resposta
+
+
+def _limpar_valores_colunas_nao_necessarias(df, colunas_preservadas):
+    df_resultado = df.copy()
+    preservadas = set(colunas_preservadas)
+    for coluna in df_resultado.columns:
+        if coluna not in preservadas:
+            df_resultado[coluna] = ''
+    return df_resultado
 
 
 def _montar_resultado_normalizacao(
@@ -103,9 +128,9 @@ def _montar_resultado_normalizacao(
 
 def executar_normalizacao_padronizacao(
     arquivo_status='src/data/status.csv',
-    arquivo_status_resposta='src/data/status_resposta_complicacao.csv',
+    arquivo_status_resposta='src/data/status_resposta.csv',
     saida_status='src/data/arquivo_limpo/status_limpo.csv',
-    saida_status_resposta='src/data/arquivo_limpo/status_resposta_complicacao_limpo.csv',
+    saida_status_resposta='src/data/arquivo_limpo/status_resposta_limpo.csv',
     limiar_nat_data=None,
     contexto=None,
     permitir_override_limiar=True,
@@ -214,7 +239,18 @@ def executar_normalizacao_padronizacao(
         etapa_atual = 'FORMATAR_DT_ATENDIMENTO'
         formatar_coluna_data_br(df_status_resposta, 'DT_ATENDIMENTO')
 
-        # 9) Ultima etapa: escreve os arquivos limpos no disco.
+        # 9) Mantem o contrato de colunas, mas apaga valores fora do necessario para execucao.
+        etapa_atual = 'LIMPEZA_VALORES_NAO_NECESSARIOS'
+        df_status = _limpar_valores_colunas_nao_necessarias(
+            df_status,
+            COLUNAS_VALORES_PRESERVADOS_STATUS,
+        )
+        df_status_resposta = _limpar_valores_colunas_nao_necessarias(
+            df_status_resposta,
+            COLUNAS_VALORES_PRESERVADOS_STATUS_RESPOSTA,
+        )
+
+        # 10) Ultima etapa: escreve os arquivos limpos no disco.
         etapa_atual = 'SALVAR_ARQUIVOS'
         salvar_dataframe(df_status, saida_status)
         salvar_dataframe(df_status_resposta, saida_status_resposta)
@@ -242,9 +278,9 @@ def executar_normalizacao_padronizacao(
 
 def executar_ingestao_complicacao(
     arquivo_status='src/data/status.csv',
-    arquivo_status_resposta_complicacao='src/data/status_resposta_complicacao.csv',
+    arquivo_status_resposta_complicacao='src/data/status_resposta.csv',
     saida_status='src/data/arquivo_limpo/status_limpo.csv',
-    saida_status_resposta='src/data/arquivo_limpo/status_resposta_complicacao_limpo.csv',
+    saida_status_resposta='src/data/arquivo_limpo/status_resposta_limpo.csv',
     limiar_nat_data=None,
     permitir_override_limiar=True,
     executar_xlsx_adicional=False,

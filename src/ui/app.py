@@ -227,7 +227,7 @@ class App(ctk.CTk):
                     ext = ".xlsx"
                     break
 
-        return f"status_complicacao{ext}"
+        return f"status{ext}"
 
     @staticmethod
     def _clear_file_concatenar(self, mode: str, key: str) -> None:
@@ -738,9 +738,9 @@ class App(ctk.CTk):
             output_dir = Path(file_values["output_dir"])
             output_dir.mkdir(parents=True, exist_ok=True)
 
-            comp_saida_status = str(output_dir / "status_complicacao_limpo.csv")
-            comp_saida_resposta = str(output_dir / "status_resposta_complicacao_limpo.csv")
-            comp_saida_integrado = str(output_dir / "status_complicacao.csv")
+            comp_saida_status = str(output_dir / "status_limpo.csv")
+            comp_saida_resposta = str(output_dir / "status_resposta_limpo.csv")
+            comp_saida_integrado = str(output_dir / "status.csv")
             comp_saida_dataset_status = str(output_dir / "complicacao_status.xlsx")
             comp_saida_final = str(output_dir / "complicacao_final.xlsx")
 

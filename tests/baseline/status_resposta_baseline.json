@@ -1,5 +1,5 @@
 {
-  "arquivo": "src/data/arquivo_limpo/status_resposta_complicacao_limpo.csv",
+  "arquivo": "src/data/arquivo_limpo/status_resposta_limpo.csv",
   "linhas": 7999,
   "resposta_normalizado": {
     "<vazio>": 4382,

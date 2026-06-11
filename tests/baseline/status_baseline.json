@@ -1,5 +1,5 @@
 {
-  "arquivo": "src/data/arquivo_limpo/status_complicacao.csv",
+  "arquivo": "src/data/arquivo_limpo/status.csv",
   "linhas": 15802,
   "status_normalizado": {
     "lida": 5911,

@@ -87,12 +87,12 @@ class FluxoPartesController:
     @staticmethod
     def default_output_filename(context: str, action: str, key: str) -> str:
         if key == "saida_status":
-            return "status_complicacao_limpo.csv"
+            return "status_limpo.csv"
         if key == "saida_status_resposta":
-            return "status_resposta_complicacao_limpo.csv"
+            return "status_resposta_limpo.csv"
         if key == "arquivo_saida":
             if action == "uniao_status":
-                return "status_complicacao.csv"
+                return "status.csv"
             return "arquivo_saida.csv"
         if key == "arquivo_saida_dataset":
             if action == "criar_dataset":

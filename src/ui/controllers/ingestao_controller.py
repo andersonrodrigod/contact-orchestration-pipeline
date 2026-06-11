@@ -32,8 +32,8 @@ class IngestaoController:
     ) -> str:
         ext = cls._output_extension(file_values)
         if kind == "status":
-            return f"status_complicacao_limpo{ext}"
-        return f"status_resposta_complicacao_limpo{ext}"
+            return f"status_limpo{ext}"
+        return f"status_resposta_limpo{ext}"
 
     @classmethod
     def build_output_path(
