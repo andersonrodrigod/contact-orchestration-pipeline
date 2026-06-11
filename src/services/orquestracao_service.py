@@ -2,6 +2,7 @@ import pandas as pd
 import warnings
 from core.error_codes import ERRO_ORQUESTRACAO
 
+from src.services.disparo_dia_service import gerar_arquivos_disparo_dia
 from src.services.normalizacao_services import normalizar_telefone
 from src.services.texto_service import normalizar_texto_serie
 
@@ -319,6 +320,8 @@ def gerar_dataset_final(arquivo_dataset_entrada, arquivo_dataset_saida):
         for aba, df in planilhas.items():
             df.to_excel(writer, sheet_name=aba[:31], index=False)
 
+    resultado_disparo_dia = gerar_arquivos_disparo_dia(arquivo_dataset_saida)
+
     if len(planilhas['usuarios']) == 0:
         mensagens.append('Aba usuarios foi gerada vazia.')
     if len(planilhas['usuarios_respondidos']) == 0:
@@ -336,5 +339,7 @@ def gerar_dataset_final(arquivo_dataset_entrada, arquivo_dataset_saida):
         'total_usuarios': len(planilhas['usuarios']),
         'total_usuarios_resolvidos': len(planilhas['usuarios_resolvidos']),
         'total_disparo': len(planilhas['disparo']),
+        'arquivos_disparo_dia': resultado_disparo_dia.get('arquivos', {}),
+        'totais_disparo_dia': resultado_disparo_dia.get('totais', {}),
         'mensagens': mensagens,
     }
