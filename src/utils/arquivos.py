@@ -16,6 +16,15 @@ def _limpar_colunas_excel(df):
     return df.loc[:, colunas_manter].copy()
 
 
+def _limpar_linhas_excel(df):
+    mask_linha_vazia = df.fillna('').astype(str).apply(
+        lambda coluna: coluna.str.strip().eq('')
+    ).all(axis=1)
+    if not mask_linha_vazia.any():
+        return df
+    return df.loc[~mask_linha_vazia].copy()
+
+
 def _delimitador_mais_provavel(caminho_arquivo):
     encodings = ['utf-8-sig', 'utf-8', 'cp1252', 'latin1']
     for encoding in encodings:
@@ -36,7 +45,8 @@ def ler_arquivo_csv(caminho_arquivo, separador=';'):
     caminho_texto = str(caminho_arquivo).lower()
     if caminho_texto.endswith('.xlsx') or caminho_texto.endswith('.xls'):
         df = pd.read_excel(caminho_arquivo, dtype=str, keep_default_na=False)
-        return _limpar_colunas_excel(df)
+        df = _limpar_colunas_excel(df)
+        return _limpar_linhas_excel(df)
 
     encodings = ['utf-8-sig', 'utf-8', 'cp1252', 'latin1']
     delimitador_provavel = _delimitador_mais_provavel(caminho_arquivo)
