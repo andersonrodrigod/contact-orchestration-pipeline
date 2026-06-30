@@ -35,6 +35,7 @@ class DisparoDiaServiceTests(unittest.TestCase):
                     'PROCEDIMENTO': 'Cirurgia A',
                     'PRESTADOR': 'Hospital A',
                     'DT INTERNACAO': '08/05/2026',
+                    'STATUS CHAVE': 'SEM_MATCH',
                 },
                 {
                     'TELEFONE 1': '11999990007',
@@ -43,6 +44,7 @@ class DisparoDiaServiceTests(unittest.TestCase):
                     'PROCEDIMENTO': 'Cirurgia B',
                     'PRESTADOR': 'Hospital B',
                     'DT INTERNACAO': '07/05/2026',
+                    'STATUS CHAVE': 'SEM_MATCH',
                 },
                 {
                     'TELEFONE 1': '11999990011',
@@ -51,6 +53,7 @@ class DisparoDiaServiceTests(unittest.TestCase):
                     'PROCEDIMENTO': 'Cirurgia C',
                     'PRESTADOR': 'Hospital C',
                     'DT INTERNACAO': '11/05/2026',
+                    'STATUS CHAVE': 'SEM_MATCH',
                 },
                 {
                     'TELEFONE 1': '11999990013',
@@ -59,6 +62,39 @@ class DisparoDiaServiceTests(unittest.TestCase):
                     'PROCEDIMENTO': 'Cirurgia D',
                     'PRESTADOR': 'Hospital D',
                     'DT INTERNACAO': '13/05/2026',
+                    'STATUS CHAVE': 'SEM_MATCH',
+                },
+                {
+                    'TELEFONE 1': '11999990025',
+                    'CHAVE RELATORIO': 'rel_25_ok',
+                    'USUARIO': 'Usuario ja enviado',
+                    'PROCEDIMENTO': 'Cirurgia E',
+                    'PRESTADOR': 'Hospital E',
+                    'DT INTERNACAO': '25/05/2026',
+                    'STATUS CHAVE': 'OK_PRINCIPAL',
+                },
+                {
+                    'TELEFONE 1': '',
+                    'TELEFONE 2': '11999990026',
+                    'CHAVE RELATORIO': 'rel_tel2',
+                    'USUARIO': 'Usuario telefone dois',
+                    'PROCEDIMENTO': 'Cirurgia F',
+                    'PRESTADOR': 'Hospital F',
+                    'DT INTERNACAO': '08/05/2026',
+                    'STATUS CHAVE': 'SEM_MATCH',
+                },
+                {
+                    'TELEFONE 1': '',
+                    'TELEFONE 2': '',
+                    'TELEFONE 3': '',
+                    'TELEFONE 4': '',
+                    'TELEFONE 5': '',
+                    'CHAVE RELATORIO': 'rel_sem_tel',
+                    'USUARIO': 'Usuario sem telefone',
+                    'PROCEDIMENTO': 'Cirurgia G',
+                    'PRESTADOR': 'Hospital G',
+                    'DT INTERNACAO': '08/05/2026',
+                    'STATUS CHAVE': 'SEM_MATCH',
                 },
             ]
         )
@@ -73,6 +109,7 @@ class DisparoDiaServiceTests(unittest.TestCase):
                     'PROCEDIMENTO': 'Cirurgia E',
                     'PRESTADOR': 'Hospital E',
                     'DT INTERNACAO': '10/05/2026',
+                    'DT ENVIO': '10/06/2026',
                     'VALIDACAO FINAL': 'OK',
                     'PROCESSO': 'MUDAR_CONTATO_ENVIADO',
                 },
@@ -83,6 +120,18 @@ class DisparoDiaServiceTests(unittest.TestCase):
                     'PROCEDIMENTO': 'Cirurgia F',
                     'PRESTADOR': 'Hospital F',
                     'DT INTERNACAO': '10/05/2026',
+                    'DT ENVIO': '09/06/2026',
+                    'VALIDACAO FINAL': 'OK',
+                    'PROCESSO': 'SEGUNDO_ENVIO',
+                },
+                {
+                    'TELEFONE DISPARO': '11888880005',
+                    'CHAVE RELATORIO': 'disp_segundo_recente',
+                    'USUARIO': 'Disparo segundo envio recente',
+                    'PROCEDIMENTO': 'Cirurgia F2',
+                    'PRESTADOR': 'Hospital F2',
+                    'DT INTERNACAO': '10/05/2026',
+                    'DT ENVIO': '10/06/2026',
                     'VALIDACAO FINAL': 'OK',
                     'PROCESSO': 'SEGUNDO_ENVIO',
                 },
@@ -93,6 +142,7 @@ class DisparoDiaServiceTests(unittest.TestCase):
                     'PROCEDIMENTO': 'Cirurgia G',
                     'PRESTADOR': 'Hospital G',
                     'DT INTERNACAO': '11/05/2026',
+                    'DT ENVIO': '11/06/2026',
                     'VALIDACAO FINAL': 'OK',
                     'PROCESSO': 'MUDAR_CONTATO_ENVIADO',
                 },
@@ -103,13 +153,14 @@ class DisparoDiaServiceTests(unittest.TestCase):
                     'PROCEDIMENTO': 'Cirurgia H',
                     'PRESTADOR': 'Hospital H',
                     'DT INTERNACAO': '10/05/2026',
+                    'DT ENVIO': '10/06/2026',
                     'VALIDACAO FINAL': 'NAO ENCONTRADO',
                     'PROCESSO': 'MUDAR_CONTATO_ENVIADO',
                 },
             ]
         )
 
-    def test_segunda_usuarios_pega_hoje_e_anterior_e_disparo_so_validacao_ok(self):
+    def test_usuarios_pega_sem_match_ate_mes_anterior_e_disparo_so_validacao_ok(self):
         saida = montar_disparo_dia(
             self._df_usuarios(),
             self._df_disparo(),
@@ -118,8 +169,11 @@ class DisparoDiaServiceTests(unittest.TestCase):
 
         self.assertEqual(
             set(saida['Nome']),
-            {'rel_8', 'rel_7', 'disp_ok', 'disp_segundo', 'disp_dia_hoje'},
+            {'rel_8', 'rel_7', 'rel_tel2', 'disp_ok', 'disp_dia_hoje'},
         )
+        telefone_por_nome = dict(zip(saida['Nome'], saida['Telefone']))
+        self.assertEqual(telefone_por_nome['rel_tel2'], '11999990026')
+        self.assertNotIn('rel_sem_tel', set(saida['Nome']))
 
     def test_dia_comum_disparo_aplica_filtros_com_and(self):
         saida = montar_disparo_dia(
@@ -128,7 +182,21 @@ class DisparoDiaServiceTests(unittest.TestCase):
             data_referencia=date(2026, 6, 11),
         )
 
-        self.assertEqual(set(saida['Nome']), {'rel_11', 'disp_ok'})
+        self.assertEqual(
+            set(saida['Nome']),
+            {'rel_8', 'rel_7', 'rel_11', 'rel_tel2', 'disp_ok', 'disp_segundo'},
+        )
+
+    def test_usuarios_nao_pega_match_nem_data_futura(self):
+        saida = montar_disparo_dia(
+            self._df_usuarios(),
+            self._df_disparo(),
+            data_referencia=date(2026, 6, 25),
+        )
+
+        nomes = set(saida['Nome'])
+        self.assertIn('rel_13', nomes)
+        self.assertNotIn('rel_25_ok', nomes)
 
     def test_sexta_gera_arquivo_dia_seguinte_somente_com_usuarios(self):
         base = self._criar_pasta_tmp_teste()
