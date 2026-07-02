@@ -32,21 +32,17 @@ class MenuView(ctk.CTkFrame):
             font=ctk.CTkFont(size=40, weight="bold"),
             text_color="#eaf0ff",
         )
-        titulo.place(relx=0.5, rely=0.065, anchor="center")
+        titulo.place(relx=0.5, rely=0.18, anchor="center")
 
         botoes_frame = ctk.CTkFrame(self, fg_color="transparent")
-        botoes_frame.place(relx=0.5, rely=0.50, anchor="center")
+        botoes_frame.place(relx=0.5, rely=0.52, anchor="center")
 
         botoes = [
-            ("Modo Complicação", "frame_modo_complicacao", "complicacao.png"),
-            ("Concatenar Arquivos", "frame_concatenar", "concatenar.png"),
-            ("União de Status e Flow de Respostas", "frame_juntar_status", "uniao.png"),
-            ("Execução em Partes", "frame_fluxo_partes", "partes.png"),
-            ("Limpeza de Dados", "frame_limpeza_dados", "limpeza.png"),
-            ("Utilitário", "frame_utilitario", "utils.png"),
-            ("Configurações", "frame_configuracoes", "configuracao.png"),
+            ("Gerar Disparo Complicação", "frame_modo_complicacao", "complicacao.png"),
         ]
 
+        item_width = 820
+        button_width = 814
         btn_height = 65
         icon_height = int(btn_height * 0.81)
         left_icon_width = int((30 * (4 / 3)) * 1.2)
@@ -59,15 +55,15 @@ class MenuView(ctk.CTkFrame):
             item_frame = ctk.CTkFrame(
                 botoes_frame,
                 fg_color="transparent",
-                width=800,
+                width=item_width,
                 height=72,
             )
-            item_frame.pack(pady=(40, 0) if idx == 0 else 0)
+            item_frame.pack(pady=0)
             item_frame.pack_propagate(False)
 
             sombra = ctk.CTkFrame(
                 item_frame,
-                width=800,
+                width=item_width,
                 height=65,
                 corner_radius=self._style.btn_corner_radius,
                 fg_color=self._style.btn_shadow_color,
@@ -78,7 +74,7 @@ class MenuView(ctk.CTkFrame):
                 parent=item_frame,
                 style=self._style,
                 text="",
-                width=794,
+                width=button_width,
                 height=btn_height,
                 font_size=24,
                 command=lambda d=destino: self._on_navigate(d),
@@ -111,7 +107,7 @@ class MenuView(ctk.CTkFrame):
                 fg_color="transparent",
                 bg_color="transparent",
             )
-            right_icon_label.place(x=770, y=32, anchor="e")
+            right_icon_label.place(x=item_width - 30, y=32, anchor="e")
 
             overlays = (left_icon_label, text_label, right_icon_label)
 

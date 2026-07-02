@@ -27,7 +27,7 @@ class ComplicacaoView(FileModeBaseView):
         super().__init__(
             parent=parent,
             style=style,
-            title="Modo Complicação",
+            title="Gerar Disparo Complicação",
             fields=fields,
             card_shadow_height=458,
             card_height=454,
@@ -36,4 +36,5 @@ class ComplicacaoView(FileModeBaseView):
             on_execute=on_execute,
             on_select_file=on_select_file,
             on_clear_file=on_clear_file,
+            execute_button_text="Gerar Disparo",
         )

@@ -648,8 +648,8 @@ class App(ctk.CTk):
     def _build_real_complicacao_steps() -> list[str]:
         return [
             "Preparando execução...",
-            "Complicação: gerando dataset status...",
-            "Complicação: orquestrando dataset...",
+            "Disparo Complicação: gerando dataset status...",
+            "Disparo Complicação: orquestrando dataset...",
             "Finalizando execução...",
         ]
 
@@ -688,7 +688,7 @@ class App(ctk.CTk):
         file_values = self.complicacao_view.get_file_values()
         if not file_values.get("output_dir", "").strip():
             self.complicacao_view.set_status_message(
-                "Selecione a Pasta de saída antes de executar o ETL.",
+                "Selecione a Pasta de saída antes de gerar o disparo.",
                 "#FFB1B1",
             )
             return
@@ -715,10 +715,10 @@ class App(ctk.CTk):
         self._current_execution_context = "complicacao"
 
         self.complicacao_view.set_status_message(
-            f"Plano selecionado: Complicação {plano_execucao['complicacao']}",
+            f"Plano selecionado: Gerar Disparo Complicação {plano_execucao['complicacao']}",
             "#A7C8FF",
         )
-        self.complicacao_view.set_status_message("Executando modo Complicação...", "#A7C8FF")
+        self.complicacao_view.set_status_message("Gerando disparo de complicação...", "#A7C8FF")
         self._etl_steps = self._build_real_complicacao_steps()
         self._open_progress_modal_manual()
         threading.Thread(
@@ -744,7 +744,7 @@ class App(ctk.CTk):
             comp_saida_dataset_status = str(output_dir / "complicacao_status.xlsx")
             comp_saida_final = str(output_dir / "complicacao_final.xlsx")
 
-            self._publish_real_progress(1, "Complicação: gerando dataset status...")
+            self._publish_real_progress(1, "Disparo Complicação: gerando dataset status...")
             if plano_execucao["complicacao"] == "com_resposta":
                 resultado = run_complicacao_pipeline_gerar_status_dataset(
                     arquivo_status=file_values["status"],
@@ -768,12 +768,12 @@ class App(ctk.CTk):
                     resultado,
                     fail_default="Falha na etapa de criação de dataset da complicação.",
                 )
-                self.after(0, lambda: self._finalize_real_progress(False, f"Complicação falhou: {detalhe}"))
+                self.after(0, lambda: self._finalize_real_progress(False, f"Disparo Complicação falhou: {detalhe}"))
                 return
 
             if self._etl_cancelled:
                 return
-            self._publish_real_progress(2, "Complicação: orquestrando dataset...")
+            self._publish_real_progress(2, "Disparo Complicação: orquestrando dataset...")
             resultado_orq = run_complicacao_pipeline_orquestrar(
                 arquivo_dataset_status=comp_saida_dataset_status,
                 arquivo_saida_final=comp_saida_final,
@@ -784,19 +784,19 @@ class App(ctk.CTk):
                     resultado_orq,
                     fail_default="Falha na etapa de orquestração da complicação.",
                 )
-                self.after(0, lambda: self._finalize_real_progress(False, f"Complicação falhou: {detalhe}"))
+                self.after(0, lambda: self._finalize_real_progress(False, f"Disparo Complicação falhou: {detalhe}"))
                 return
         except Exception as erro:
             self.after(
                 0,
                 lambda: self._finalize_real_progress(
                     False,
-                    f"Falha no modo Complicação: {type(erro).__name__}: {erro}",
+                    f"Falha ao gerar disparo de complicação: {type(erro).__name__}: {erro}",
                 ),
             )
             return
 
-        self.after(0, lambda: self._finalize_real_progress(True, "Modo Complicação executado com sucesso."))
+        self.after(0, lambda: self._finalize_real_progress(True, "Disparo Complicação gerado com sucesso."))
 
     def _reset_response_warning_flags(self) -> None:
         self.complicacao_controller.reset_response_warning_flags()

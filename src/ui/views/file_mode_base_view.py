@@ -23,6 +23,7 @@ class FileModeBaseView(ctk.CTkFrame):
         on_execute: Callable[[], None],
         on_select_file: Callable[[str], None],
         on_clear_file: Callable[[str], None],
+        execute_button_text: str = "Executar ETL",
     ) -> None:
         super().__init__(parent, fg_color="transparent")
         self._style = style
@@ -35,6 +36,7 @@ class FileModeBaseView(ctk.CTkFrame):
         self._on_execute = on_execute
         self._on_select_file = on_select_file
         self._on_clear_file = on_clear_file
+        self._execute_button_text = execute_button_text
 
         self.rows: dict[str, FileSelectorRow] = {}
         self.exec_status_label: ctk.CTkLabel | None = None
@@ -95,7 +97,7 @@ class FileModeBaseView(ctk.CTkFrame):
             parent=card,
             style=self._style,
             row=len(self._fields) + 1,
-            text="Executar ETL",
+            text=self._execute_button_text,
             width=360,
             height=56,
             font_size=34,
