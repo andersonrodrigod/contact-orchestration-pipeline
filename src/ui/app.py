@@ -9,8 +9,12 @@ from typing import Callable
 from src.ui.controllers.concatenar_controller import ConcatenarController
 from src.ui.controllers.complicacao_controller import ComplicacaoController
 from src.ui.controllers.fluxo_partes_controller import FluxoPartesController
+from src.ui.controllers.gerar_planilha_complicacao_controller import (
+    GerarPlanilhaComplicacaoController,
+)
 from src.ui.controllers.ingestao_controller import IngestaoController
 from src.ui.controllers.uniao_status_controller import UniaoStatusController
+from src.features.gerar_planilha_complicacao.pipeline import executar_pipeline as executar_gerar_planilha_complicacao
 from src.pipelines.complicacao_orquestracao_pipeline import run_complicacao_pipeline_orquestrar
 from src.pipelines.complicacao_status_pipeline import (
     run_complicacao_pipeline_gerar_status_dataset,
@@ -24,6 +28,7 @@ from src.ui.state import UIStyle, UIRuntimeState
 from src.ui.views.concatenar_view import ConcatenarView
 from src.ui.views.complicacao_view import ComplicacaoView
 from src.ui.views.fluxo_partes_view import FluxoPartesView
+from src.ui.views.gerar_planilha_complicacao_view import GerarPlanilhaComplicacaoView
 from src.ui.views.ingestao_view import IngestaoView
 from src.ui.views.menu_view import MenuView
 from src.ui.views.progress_modal import ProgressModal
@@ -57,6 +62,7 @@ class App(ctk.CTk):
         self.concatenar_controller = ConcatenarController()
         self.complicacao_controller = ComplicacaoController()
         self.fluxo_partes_controller = FluxoPartesController()
+        self.gerar_planilha_complicacao_controller = GerarPlanilhaComplicacaoController()
         self.ingestao_controller = IngestaoController()
         self.uniao_status_controller = UniaoStatusController()
         self.pipeline_runner = PipelineRunner()
@@ -68,6 +74,7 @@ class App(ctk.CTk):
         self.concatenar_view: ConcatenarView | None = None
         self.complicacao_view: ComplicacaoView | None = None
         self.fluxo_partes_view: FluxoPartesView | None = None
+        self.gerar_planilha_complicacao_view: GerarPlanilhaComplicacaoView | None = None
         self.ingestao_view: IngestaoView | None = None
         self.uniao_status_view: UniaoStatusView | None = None
         self.progress_modal: ProgressModal | None = None
@@ -92,6 +99,7 @@ class App(ctk.CTk):
         self.container.grid_columnconfigure(0, weight=1)
 
         self._create_menu_frame()
+        self._create_frame_gerar_planilha_complicacao()
         self._create_frame_modo_complicacao()
         self._create_frame_fluxo_partes()
         self._create_frame_juntar_status()
@@ -578,6 +586,38 @@ class App(ctk.CTk):
             self._reset_response_warning_flags()
             self.complicacao_view.clear_status_message()
 
+    def _select_file_gerar_planilha_complicacao(self, key: str) -> None:
+        if self.gerar_planilha_complicacao_view is None:
+            return
+        labels = self.gerar_planilha_complicacao_view.get_file_labels()
+        if key == "output_dir":
+            path = filedialog.askdirectory(title="Selecionar pasta de saída")
+        elif key == "arquivo_telefones":
+            path = filedialog.askopenfilename(
+                title=f"Selecionar arquivo - {labels.get(key, key)}",
+                filetypes=[
+                    ("CSV", "*.csv"),
+                    ("Todos os arquivos", "*.*"),
+                ],
+            )
+        else:
+            path = filedialog.askopenfilename(
+                title=f"Selecionar arquivo - {labels.get(key, key)}",
+                filetypes=[
+                    ("Excel", "*.xlsx;*.xls"),
+                    ("Todos os arquivos", "*.*"),
+                ],
+            )
+        if path:
+            self.gerar_planilha_complicacao_view.set_file_value(key, path)
+            self.gerar_planilha_complicacao_view.clear_status_message()
+
+    def _clear_file_gerar_planilha_complicacao(self, key: str) -> None:
+        if self.gerar_planilha_complicacao_view is None:
+            return
+        self.gerar_planilha_complicacao_view.clear_file_value(key)
+        self.gerar_planilha_complicacao_view.clear_status_message()
+
     def _clear_file_complicacao(self, key: str) -> None:
         if self.complicacao_view is None:
             return
@@ -650,6 +690,15 @@ class App(ctk.CTk):
             "Preparando execução...",
             "Disparo Complicação: gerando dataset status...",
             "Disparo Complicação: orquestrando dataset...",
+            "Finalizando execução...",
+        ]
+
+    @staticmethod
+    def _build_gerar_planilha_complicacao_steps() -> list[str]:
+        return [
+            "Preparando execução...",
+            "Validando arquivos...",
+            "Gerando planilha de complicação...",
             "Finalizando execução...",
         ]
 
@@ -726,6 +775,82 @@ class App(ctk.CTk):
             args=(file_values, plano_execucao),
             daemon=True,
         ).start()
+
+    def _start_gerar_planilha_complicacao_execution(self) -> None:
+        if self.gerar_planilha_complicacao_view is None:
+            return
+
+        file_values = self.gerar_planilha_complicacao_view.get_file_values()
+        file_labels = self.gerar_planilha_complicacao_view.get_file_labels()
+        plano_execucao, erro_validacao = (
+            self.gerar_planilha_complicacao_controller.resolve_execution_request(
+                file_values=file_values,
+                file_labels=file_labels,
+            )
+        )
+        if erro_validacao:
+            self.gerar_planilha_complicacao_view.set_status_message(erro_validacao, "#FFB1B1")
+            return
+
+        self.ui_state.current_execution_plan = {k: str(v) for k, v in plano_execucao.items()}
+        self._current_execution_context = "gerar_planilha_complicacao"
+        self.gerar_planilha_complicacao_view.set_status_message(
+            "Gerando planilha de complicação...",
+            "#A7C8FF",
+        )
+        self._etl_steps = self._build_gerar_planilha_complicacao_steps()
+        self._open_progress_modal_manual()
+        threading.Thread(
+            target=self._run_gerar_planilha_complicacao_worker,
+            args=(plano_execucao,),
+            daemon=True,
+        ).start()
+
+    def _run_gerar_planilha_complicacao_worker(self, plano_execucao: dict[str, Path]) -> None:
+        try:
+            if self._etl_cancelled:
+                return
+
+            output_dir = plano_execucao["output_dir"]
+            self._publish_real_progress(1, "Validando arquivos...")
+            output_dir.mkdir(parents=True, exist_ok=True)
+
+            self._publish_real_progress(2, "Gerando planilha de complicação...")
+            resultado = executar_gerar_planilha_complicacao(
+                arquivo=plano_execucao["arquivo_base"],
+                arquivo_telefones=plano_execucao["arquivo_telefones"],
+                arquivo_utilidade=plano_execucao["arquivo_utilidade"],
+                arquivo_saida=plano_execucao["arquivo_saida"],
+                arquivo_excluidos=plano_execucao["arquivo_excluidos"],
+            )
+        except Exception as erro:
+            self.after(
+                0,
+                lambda: self._finalize_real_progress(
+                    False,
+                    f"Falha ao gerar planilha de complicação: {type(erro).__name__}: {erro}",
+                ),
+            )
+            return
+
+        if not resultado.get("ok", False):
+            detalhe = self._result_message(
+                resultado,
+                fail_default="Falha ao gerar planilha de complicação.",
+            )
+            self.after(0, lambda: self._finalize_real_progress(False, detalhe))
+            return
+
+        mensagem = (
+            "Planilha Complicação gerada com sucesso.\n"
+            f"Saída: {resultado.get('arquivo_saida', plano_execucao['arquivo_saida'])}\n"
+            f"Excluídos: {resultado.get('arquivo_excluidos', plano_execucao['arquivo_excluidos'])}"
+        )
+        avisos = self._normalized_messages(resultado)
+        if avisos:
+            mensagem = mensagem + "\n" + "\n".join(avisos[:3])
+
+        self.after(0, lambda: self._finalize_real_progress(True, mensagem))
 
     def _run_complicacao_worker(
         self,
@@ -936,6 +1061,10 @@ class App(ctk.CTk):
             if self.complicacao_view is not None:
                 self.complicacao_view.set_status_message(text, color)
             return
+        if self._current_execution_context == "gerar_planilha_complicacao":
+            if self.gerar_planilha_complicacao_view is not None:
+                self.gerar_planilha_complicacao_view.set_status_message(text, color)
+            return
 
     def _center_window(self, window: ctk.CTkToplevel, width: int, height: int) -> None:
         window.update_idletasks()
@@ -990,6 +1119,17 @@ class App(ctk.CTk):
             on_execute=self._start_fluxo_partes_execution,
         )
         self.frames["frame_fluxo_partes"] = self.fluxo_partes_view
+
+    def _create_frame_gerar_planilha_complicacao(self) -> None:
+        self.gerar_planilha_complicacao_view = GerarPlanilhaComplicacaoView(
+            parent=self.container,
+            style=self.style,
+            on_back=lambda: self.show_frame("menu_frame"),
+            on_select_file=self._select_file_gerar_planilha_complicacao,
+            on_clear_file=self._clear_file_gerar_planilha_complicacao,
+            on_execute=self._start_gerar_planilha_complicacao_execution,
+        )
+        self.frames["frame_gerar_planilha_complicacao"] = self.gerar_planilha_complicacao_view
 
     def _create_frame_juntar_status(self) -> None:
         self.uniao_status_view = UniaoStatusView(

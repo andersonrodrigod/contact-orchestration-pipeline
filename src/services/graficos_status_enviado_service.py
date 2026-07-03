@@ -165,11 +165,11 @@ def _registrar_ignorado(manifest, grafico_id, arquivo_csv, motivo):
 
 def gerar_graficos_status_enviado(
     contexto,
-    raiz_analise_contexto="src/data/analise_dados/complicacao",
+    raiz_analise_contexto="data/disparo_complicacao/relatorios/analise_dados/complicacao",
     pastas_origem_csv=None,
 ):
     pastas_origem = _coletar_pastas_origem(raiz_analise_contexto, pastas_origem_csv)
-    pasta_base_imagens = Path("src/data/analise_dados/imagens") / contexto / "status_enviado"
+    pasta_base_imagens = Path("data/disparo_complicacao/relatorios/analise_dados/imagens") / contexto / "status_enviado"
     pasta_base_imagens.mkdir(parents=True, exist_ok=True)
 
     manifests = []

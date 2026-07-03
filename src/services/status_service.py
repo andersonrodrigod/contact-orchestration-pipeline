@@ -10,9 +10,9 @@ from src.utils.arquivos import ler_arquivo_csv, salvar_dataframe
 
 
 def integrar_status_com_resposta(
-    arquivo_status='src/data/arquivo_limpo/status_limpo.csv',
-    arquivo_status_resposta='src/data/arquivo_limpo/status_resposta_limpo.csv',
-    arquivo_saida='src/data/arquivo_limpo/status.csv',
+    arquivo_status='data/disparo_complicacao/saida/status_limpo.csv',
+    arquivo_status_resposta='data/disparo_complicacao/saida/status_resposta_limpo.csv',
+    arquivo_saida='data/disparo_complicacao/saida/status.csv',
     colunas_limpar=None,
 ):
     df_status = ler_arquivo_csv(arquivo_status)

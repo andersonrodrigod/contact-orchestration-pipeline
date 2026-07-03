@@ -231,7 +231,7 @@ def _montar_arquivos_resumo(metricas_dia, metricas_geral, pasta_saida, sufixo=""
 
 def gerar_resumo_complicacao_csv(
     arquivo_origem_complicacao,
-    raiz_analise='src/data/analise_dados/complicacao',
+    raiz_analise='data/disparo_complicacao/relatorios/analise_dados/complicacao',
 ):
     df = ler_arquivo_csv(arquivo_origem_complicacao)
     mapa_colunas, faltando = _resolver_colunas(df)

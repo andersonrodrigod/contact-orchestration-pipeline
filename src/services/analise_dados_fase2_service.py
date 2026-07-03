@@ -272,7 +272,7 @@ def _gerar_metricas_qt_telefones(df, pasta_saida):
 
 def gerar_analise_dados_fase2_csv(
     arquivo_dataset_status,
-    raiz_analise='src/data/analise_dados',
+    raiz_analise='data/disparo_complicacao/relatorios/analise_dados/complicacao',
     nome_execucao=None,
     nome_processo='envio_status',
 ):

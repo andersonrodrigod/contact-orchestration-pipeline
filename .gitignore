@@ -9,3 +9,9 @@ dist/
 *.spec
 .pytest_cache/
 src/data/analise_dados/imagens/
+data/disparo_complicacao/relatorios/**
+!data/disparo_complicacao/relatorios/
+!data/disparo_complicacao/relatorios/.gitkeep
+data/gerar_planilha_complicacao/relatorios/**
+!data/gerar_planilha_complicacao/relatorios/
+!data/gerar_planilha_complicacao/relatorios/.gitkeep

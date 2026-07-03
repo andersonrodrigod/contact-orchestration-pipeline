@@ -27,7 +27,7 @@ def run_complicacao_pipeline_enviar_status_com_resposta(
     saida_status=CONTEXTO_PIPELINE_COMPLICACAO.defaults['saida_status'],
     saida_status_resposta=CONTEXTO_PIPELINE_COMPLICACAO.defaults['saida_status_resposta'],
     saida_status_integrado=CONTEXTO_PIPELINE_COMPLICACAO.defaults['saida_status_integrado'],
-    raiz_analise_dados='src/data/analise_dados/complicacao',
+    raiz_analise_dados='data/disparo_complicacao/relatorios/analise_dados/complicacao',
     nome_execucao_analise=None,
     executar_xlsx_adicional=False,
     logger=None,
@@ -179,7 +179,7 @@ def run_complicacao_pipeline_gerar_status_dataset(
     saida_status_resposta=CONTEXTO_PIPELINE_COMPLICACAO.defaults['saida_status_resposta'],
     saida_status_integrado=CONTEXTO_PIPELINE_COMPLICACAO.defaults['saida_status_integrado'],
     saida_dataset_status=CONTEXTO_PIPELINE_COMPLICACAO.defaults['saida_dataset_status'],
-    raiz_analise_dados='src/data/analise_dados/complicacao',
+    raiz_analise_dados='data/disparo_complicacao/relatorios/analise_dados/complicacao',
     nome_execucao_analise_fase2=None,
 ):
     logger = PipelineLogger(nome_pipeline=CONTEXTO_PIPELINE_COMPLICACAO.logger_status_com_resposta)
@@ -230,7 +230,7 @@ def run_complicacao_pipeline_gerar_status_dataset(
             f"{resultado_resumo_complicacao.get('pasta_saida', '')}/RESUMO_GERAL_COMPLICACAO.csv"
         ),
         arquivo_origem_complicacao=arquivo_dataset_origem_complicacao,
-        pasta_saida='src/data/analise_dados/imagens/complicacao/resumo_complicacao',
+        pasta_saida='data/disparo_complicacao/relatorios/analise_dados/imagens/complicacao/resumo_complicacao',
     )
     resultado_tabela_resumo_video_abdominal = gerar_tabela_resumo_dia_complicacao(
         arquivo_resumo_dia=(
@@ -240,7 +240,7 @@ def run_complicacao_pipeline_gerar_status_dataset(
             f"{resultado_resumo_complicacao.get('pasta_saida', '')}/RESUMO_GERAL_COMPLICACAO_VIDEO_ABDOMINAL.csv"
         ),
         arquivo_origem_complicacao=arquivo_dataset_origem_complicacao,
-        pasta_saida='src/data/analise_dados/imagens/complicacao/resumo_complicacao',
+        pasta_saida='data/disparo_complicacao/relatorios/analise_dados/imagens/complicacao/resumo_complicacao',
         sufixo_arquivo='video_abdominal',
         subtitulo='TIPO: VIDEO ABDOMINAL',
     )
@@ -353,7 +353,7 @@ def run_complicacao_pipeline_criar_dataset_status(
     logger=None,
     finalizar_logger=True,
     gerar_resumo=True,
-    raiz_analise_dados='src/data/analise_dados/complicacao',
+    raiz_analise_dados='data/disparo_complicacao/relatorios/analise_dados/complicacao',
 ):
     resultado_dataset = run_criacao_dataset_status_base(
         arquivo_origem_dataset=arquivo_origem_dataset,
@@ -388,7 +388,7 @@ def run_complicacao_pipeline_criar_dataset_status(
             f"{resultado_resumo_complicacao.get('pasta_saida', '')}/RESUMO_GERAL_COMPLICACAO.csv"
         ),
         arquivo_origem_complicacao=arquivo_origem_dataset,
-        pasta_saida='src/data/analise_dados/imagens/complicacao/resumo_complicacao',
+        pasta_saida='data/disparo_complicacao/relatorios/analise_dados/imagens/complicacao/resumo_complicacao',
     )
     resultado_tabela_resumo_video_abdominal = gerar_tabela_resumo_dia_complicacao(
         arquivo_resumo_dia=(
@@ -398,7 +398,7 @@ def run_complicacao_pipeline_criar_dataset_status(
             f"{resultado_resumo_complicacao.get('pasta_saida', '')}/RESUMO_GERAL_COMPLICACAO_VIDEO_ABDOMINAL.csv"
         ),
         arquivo_origem_complicacao=arquivo_origem_dataset,
-        pasta_saida='src/data/analise_dados/imagens/complicacao/resumo_complicacao',
+        pasta_saida='data/disparo_complicacao/relatorios/analise_dados/imagens/complicacao/resumo_complicacao',
         sufixo_arquivo='video_abdominal',
         subtitulo='TIPO: VIDEO ABDOMINAL',
     )

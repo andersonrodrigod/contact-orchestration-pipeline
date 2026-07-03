@@ -14,9 +14,36 @@ from src.pipelines.join_status_resposta_pipeline import (
 from src.pipelines.status_normalizar_complicacao_pipeline import (
     run_status_normalizar_complicacao_pipeline,
 )
+from src.pipelines.orquestracao_base_pipeline import _resolver_raiz_analise
+from src.services.analise_dados_fase1_service import gerar_analise_dados_fase1_csv
+from src.services.analise_dados_fase2_service import gerar_analise_dados_fase2_csv
+from src.services.analise_dados_fase3_orquestracao_service import (
+    gerar_analise_dados_fase3_orquestracao,
+)
 
 
 class PathsConfigTests(unittest.TestCase):
+    def test_defaults_de_complicacao_usam_pastas_data_separadas(self):
+        entradas = [
+            DEFAULTS_COMPLICACAO['arquivo_status'],
+            DEFAULTS_COMPLICACAO['arquivo_status_resposta_complicacao'],
+            DEFAULTS_COMPLICACAO['arquivo_dataset_origem_complicacao'],
+        ]
+        saidas = [
+            DEFAULTS_COMPLICACAO['saida_status'],
+            DEFAULTS_COMPLICACAO['saida_status_resposta'],
+            DEFAULTS_COMPLICACAO['saida_status_integrado'],
+            DEFAULTS_COMPLICACAO['saida_dataset_status'],
+            DEFAULTS_COMPLICACAO['saida_dataset_final'],
+            DEFAULTS_COMPLICACAO['saida_status_sem_complicacao'],
+        ]
+
+        for caminho in entradas:
+            self.assertTrue(caminho.startswith('data/disparo_complicacao/entrada/'))
+        for caminho in saidas:
+            self.assertTrue(caminho.startswith('data/disparo_complicacao/saida/'))
+        self.assertFalse(any(caminho.startswith('src/data/') for caminho in entradas + saidas))
+
     def test_contexto_complicacao_usa_defaults_centrais(self):
         self.assertIs(CONTEXTO_PIPELINE_COMPLICACAO.defaults, DEFAULTS_COMPLICACAO)
 
@@ -115,6 +142,22 @@ class PathsConfigTests(unittest.TestCase):
             assinatura.parameters['arquivo_saida'].default,
             DEFAULTS_COMPLICACAO['saida_status_integrado'],
         )
+
+    def test_defaults_de_analise_nao_usam_src_data(self):
+        funcoes = [
+            gerar_analise_dados_fase1_csv,
+            gerar_analise_dados_fase2_csv,
+            gerar_analise_dados_fase3_orquestracao,
+        ]
+
+        for funcao in funcoes:
+            with self.subTest(funcao=funcao.__name__):
+                raiz_analise = inspect.signature(funcao).parameters['raiz_analise'].default
+                self.assertTrue(raiz_analise.startswith('data/'))
+                self.assertFalse(raiz_analise.startswith('src/data/'))
+
+        self.assertTrue(_resolver_raiz_analise('complicacao').startswith('data/'))
+        self.assertFalse(_resolver_raiz_analise('complicacao').startswith('src/data/'))
 
 
 if __name__ == '__main__':

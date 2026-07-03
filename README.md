@@ -21,16 +21,35 @@ O projeto roda por `main.py` e escreve logs em `logs/`.
 - `complicacao_orquestrar`.
 
 ## Entradas padrao
-- `src/data/status.csv`
-- `src/data/status_resposta.csv`
-- `src/data/complicacao.xlsx`
+- `data/disparo_complicacao/entrada/status.csv`
+- `data/disparo_complicacao/entrada/status_resposta.csv`
+- `data/disparo_complicacao/entrada/complicacao.xlsx`
 
 ## Saidas padrao
-- `src/data/arquivo_limpo/status_limpo.csv`
-- `src/data/arquivo_limpo/status_resposta_limpo.csv`
-- `src/data/arquivo_limpo/status.csv`
-- `src/data/arquivo_limpo/complicacao_status.xlsx`
-- `src/data/arquivo_limpo/complicacao_final.xlsx`
+- `data/disparo_complicacao/saida/status_limpo.csv`
+- `data/disparo_complicacao/saida/status_resposta_limpo.csv`
+- `data/disparo_complicacao/saida/status.csv`
+- `data/disparo_complicacao/saida/complicacao_status.xlsx`
+- `data/disparo_complicacao/saida/complicacao_final.xlsx`
+
+## Organizacao de dados
+- `data/disparo_complicacao/`: arquivos usados e gerados pelo fluxo atual de disparo da complicacao.
+- `data/gerar_planilha_complicacao/`: arquivos usados e gerados pela feature que gera a planilha de complicacao antes do disparo.
+
+### Gerar planilha de complicacao
+Entradas esperadas:
+- `data/gerar_planilha_complicacao/entrada/complicacao_mes.xlsx`
+- `data/gerar_planilha_complicacao/entrada/telefones.csv`
+- `data/gerar_planilha_complicacao/entrada/utilidade_complicacao.xlsx`
+
+Saidas:
+- `data/gerar_planilha_complicacao/saida/complicacao.xlsx`
+- `data/gerar_planilha_complicacao/relatorios/linhas_excluidas.xlsx`
+
+Execucao:
+```bash
+python scripts/gerar_planilha_complicacao.py
+```
 
 ## Execucao
 ```bash

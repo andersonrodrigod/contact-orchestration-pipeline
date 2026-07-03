@@ -226,7 +226,7 @@ def _backup_para_lixeira(pasta_destino, pasta_lixeira):
 
 def gerar_analise_dados_fase3_orquestracao(
     arquivo_dataset_orquestrado,
-    raiz_analise='src/data/analise_dados',
+    raiz_analise='data/disparo_complicacao/relatorios/analise_dados/complicacao',
     nome_execucao=None,
     nome_processo='orquestracao',
     pipeline_nome='complicacao_orquestracao_pipeline',

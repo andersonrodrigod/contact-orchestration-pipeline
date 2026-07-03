@@ -38,6 +38,7 @@ class MenuView(ctk.CTkFrame):
         botoes_frame.place(relx=0.5, rely=0.52, anchor="center")
 
         botoes = [
+            ("Gerar Planilha Complicação", "frame_gerar_planilha_complicacao", "utils.png"),
             ("Gerar Disparo Complicação", "frame_modo_complicacao", "complicacao.png"),
         ]
 

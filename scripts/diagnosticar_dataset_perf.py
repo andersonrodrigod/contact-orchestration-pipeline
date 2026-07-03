@@ -36,11 +36,11 @@ def log(etapa, inicio=None, extra=""):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--origem", default="src/data/COMPLICACAO MAIO.xlsx")
-    parser.add_argument("--status", default="src/data/arquivo_limpo/status_complicacao.csv")
+    parser.add_argument("--origem", default="data/disparo_complicacao/entrada/complicacao.xlsx")
+    parser.add_argument("--status", default="data/disparo_complicacao/saida/status.csv")
     parser.add_argument(
         "--saida",
-        default="src/data/arquivo_limpo/diagnostico_complicacao_status.xlsx",
+        default="data/disparo_complicacao/relatorios/diagnostico_complicacao_status.xlsx",
     )
     args = parser.parse_args()
 

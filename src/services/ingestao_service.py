@@ -127,10 +127,10 @@ def _montar_resultado_normalizacao(
 
 
 def executar_normalizacao_padronizacao(
-    arquivo_status='src/data/status.csv',
-    arquivo_status_resposta='src/data/status_resposta.csv',
-    saida_status='src/data/arquivo_limpo/status_limpo.csv',
-    saida_status_resposta='src/data/arquivo_limpo/status_resposta_limpo.csv',
+    arquivo_status='data/disparo_complicacao/entrada/status.csv',
+    arquivo_status_resposta='data/disparo_complicacao/entrada/status_resposta.csv',
+    saida_status='data/disparo_complicacao/saida/status_limpo.csv',
+    saida_status_resposta='data/disparo_complicacao/saida/status_resposta_limpo.csv',
     limiar_nat_data=None,
     contexto=None,
     permitir_override_limiar=True,
@@ -277,10 +277,10 @@ def executar_normalizacao_padronizacao(
 
 
 def executar_ingestao_complicacao(
-    arquivo_status='src/data/status.csv',
-    arquivo_status_resposta_complicacao='src/data/status_resposta.csv',
-    saida_status='src/data/arquivo_limpo/status_limpo.csv',
-    saida_status_resposta='src/data/arquivo_limpo/status_resposta_limpo.csv',
+    arquivo_status='data/disparo_complicacao/entrada/status.csv',
+    arquivo_status_resposta_complicacao='data/disparo_complicacao/entrada/status_resposta.csv',
+    saida_status='data/disparo_complicacao/saida/status_limpo.csv',
+    saida_status_resposta='data/disparo_complicacao/saida/status_resposta_limpo.csv',
     limiar_nat_data=None,
     permitir_override_limiar=True,
     executar_xlsx_adicional=False,

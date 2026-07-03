@@ -299,11 +299,11 @@ _PLOTTERS = {
 
 def gerar_graficos_uniao_status_resposta(
     contexto,
-    raiz_analise_contexto="src/data/analise_dados/complicacao",
+    raiz_analise_contexto="data/disparo_complicacao/relatorios/analise_dados/complicacao",
     pasta_origem_csv=None,
 ):
     pasta_origem = Path(pasta_origem_csv) if pasta_origem_csv else Path(raiz_analise_contexto) / "uniao_status_resposta"
-    pasta_imagens = Path("src/data/analise_dados/imagens") / contexto / "uniao_status_resposta"
+    pasta_imagens = Path("data/disparo_complicacao/relatorios/analise_dados/imagens") / contexto / "uniao_status_resposta"
     pasta_imagens.mkdir(parents=True, exist_ok=True)
 
     manifest = {

@@ -376,10 +376,10 @@ def _gerar_grafico_pizza_funil(
 
 
 def gerar_tabela_resumo_dia_complicacao(
-    arquivo_resumo_dia="src/data/analise_dados/complicacao/resumo_complicacao/RESUMO_DIA_COMPLICACAO.csv",
-    arquivo_resumo_geral="src/data/analise_dados/complicacao/resumo_complicacao/RESUMO_GERAL_COMPLICACAO.csv",
-    arquivo_origem_complicacao="src/data/complicacao.xlsx",
-    pasta_saida="src/data/analise_dados/imagens/complicacao/resumo_complicacao",
+    arquivo_resumo_dia="data/disparo_complicacao/relatorios/analise_dados/complicacao/resumo_complicacao/RESUMO_DIA_COMPLICACAO.csv",
+    arquivo_resumo_geral="data/disparo_complicacao/relatorios/analise_dados/complicacao/resumo_complicacao/RESUMO_GERAL_COMPLICACAO.csv",
+    arquivo_origem_complicacao="data/disparo_complicacao/entrada/complicacao.xlsx",
+    pasta_saida="data/disparo_complicacao/relatorios/analise_dados/imagens/complicacao/resumo_complicacao",
     sufixo_arquivo="",
     subtitulo="",
 ):

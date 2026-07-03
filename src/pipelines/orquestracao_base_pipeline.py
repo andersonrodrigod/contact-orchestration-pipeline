@@ -9,7 +9,7 @@ from src.utils.arquivos import validar_arquivos_existem
 
 
 def _resolver_raiz_analise(nome_logger):
-    base = 'src/data/analise_dados'
+    base = 'data/disparo_complicacao/relatorios/analise_dados'
     logger_norm = str(nome_logger or '').lower()
     if 'complicacao' in logger_norm:
         return f'{base}/complicacao'

@@ -1,0 +1,1 @@
+"""Features isoladas do projeto."""

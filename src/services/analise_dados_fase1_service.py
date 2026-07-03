@@ -146,7 +146,7 @@ def gerar_analise_dados_fase1_csv(
     arquivo_status_integrado,
     com_match,
     sem_match,
-    raiz_analise='src/data/analise_dados',
+    raiz_analise='data/disparo_complicacao/relatorios/analise_dados/complicacao',
     nome_execucao=None,
     nome_processo='uniao_status_resposta',
     respostas_canonicas=None,
