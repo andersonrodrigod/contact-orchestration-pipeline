@@ -62,14 +62,35 @@ def _serie_telefone_saida(df, coluna_telefone):
 def _serie_dia_mes(df, coluna):
     if coluna not in df.columns:
         return pd.Series(pd.NA, index=df.index, dtype='Int64')
-    datas = pd.to_datetime(df[coluna], errors='coerce', dayfirst=True)
+    datas = _serie_data(df, coluna)
     return datas.dt.day.astype('Int64')
 
 
 def _serie_data(df, coluna):
     if coluna not in df.columns:
         return pd.Series(pd.NaT, index=df.index, dtype='datetime64[ns]')
-    return pd.to_datetime(df[coluna], errors='coerce', dayfirst=True)
+
+    serie = df[coluna]
+    texto = serie.astype(str).str.strip()
+    datas = pd.Series(pd.NaT, index=df.index, dtype='datetime64[ns]')
+
+    mask_iso = texto.str.match(r'^\d{4}-\d{1,2}-\d{1,2}(?:[\sT]|$)', na=False)
+    if mask_iso.any():
+        datas.loc[mask_iso] = pd.to_datetime(
+            serie.loc[mask_iso],
+            errors='coerce',
+            dayfirst=False,
+        )
+
+    mask_restante = ~mask_iso
+    if mask_restante.any():
+        datas.loc[mask_restante] = pd.to_datetime(
+            serie.loc[mask_restante],
+            errors='coerce',
+            dayfirst=True,
+        )
+
+    return datas
 
 
 def _montar_saida(df, coluna_telefone):
@@ -89,14 +110,11 @@ def _montar_saida(df, coluna_telefone):
 
 def _filtrar_usuarios_dia(df_usuarios, data_referencia):
     status_chave = _serie_texto(df_usuarios, 'STATUS CHAVE').str.upper()
-    datas_internacao = _serie_data(df_usuarios, 'DT INTERNACAO')
-    data_limite = pd.Timestamp(data_referencia) - pd.DateOffset(months=1)
-    telefone_disponivel = _primeiro_valor_preenchido(df_usuarios, COLUNAS_TELEFONE_USUARIOS)
+    dias_internacao = _serie_dia_mes(df_usuarios, 'DT INTERNACAO')
     mask = (
         (status_chave == 'SEM_MATCH')
-        & datas_internacao.notna()
-        & (datas_internacao <= data_limite)
-        & (telefone_disponivel != '')
+        & dias_internacao.notna()
+        & (dias_internacao <= data_referencia.day)
     )
     return df_usuarios[mask].copy()
 
@@ -111,24 +129,24 @@ def _filtrar_disparo_dia(df_disparo, data_referencia):
     validacao_final = _serie_texto(df_disparo, 'VALIDACAO FINAL').str.upper()
     processo = _serie_texto(df_disparo, 'PROCESSO').str.upper()
     mask_validacao_ok = validacao_final == 'OK'
+    dias_internacao = _serie_dia_mes(df_disparo, 'DT INTERNACAO')
+    mask_dia_autorizado = dias_internacao.notna() & (dias_internacao <= data_referencia.day)
 
     dt_envio = _serie_data(df_disparo, 'DT ENVIO')
     limite_segundo_envio = pd.Timestamp(data_referencia) - pd.Timedelta(hours=48)
     mask_segundo_envio = (
         mask_validacao_ok
+        & mask_dia_autorizado
         & (processo == 'SEGUNDO_ENVIO')
         & dt_envio.notna()
         & (dt_envio <= limite_segundo_envio)
     )
 
-    mask_demais_processos = mask_validacao_ok & (processo != 'SEGUNDO_ENVIO')
-    if data_referencia.weekday() != 0:
-        dias_internacao = _serie_dia_mes(df_disparo, 'DT INTERNACAO')
-        mask_demais_processos = (
-            mask_demais_processos
-            & dias_internacao.notna()
-            & (dias_internacao != data_referencia.day)
-        )
+    mask_demais_processos = (
+        mask_validacao_ok
+        & mask_dia_autorizado
+        & (processo != 'SEGUNDO_ENVIO')
+    )
 
     mask = mask_segundo_envio | mask_demais_processos
     return df_disparo[mask].copy()
