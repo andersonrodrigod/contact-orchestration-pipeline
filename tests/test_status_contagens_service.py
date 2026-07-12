@@ -2,11 +2,11 @@ import unittest
 
 import pandas as pd
 
-from src.services.dataset_metricas_service import aplicar_contagens_status
+from src.services.status_contagens_service import aplicar_contagens_status
 from src.services.schema_chave_service import COLUNA_CHAVE_SENHA
 
 
-class DatasetMetricasServiceTests(unittest.TestCase):
+class StatusContagensServiceTests(unittest.TestCase):
     def test_aplicar_contagens_status_com_chave_principal_no_join(self):
         df_saida = pd.DataFrame([{COLUNA_CHAVE_SENHA: 'SENHA001'}])
         df_status_full = pd.DataFrame(

@@ -63,9 +63,6 @@ def _run_unificar_status_resposta_pipeline(
         resumo_filtro = resultado['resumo_filtro']
         logger.info('FILTRO_HSM', f"status antes={resumo_filtro['total_antes']}")
         logger.info('FILTRO_HSM', f"status depois={resumo_filtro['total_depois']}")
-        logger.info('MATCH', f"total_status={resultado['total_status']}")
-        logger.info('MATCH', f"com_match={resultado['com_match']}")
-        logger.info('MATCH', f"sem_match={resultado['sem_match']}")
         return _finalizar_sucesso_pipeline(
             logger,
             logger_externo,
@@ -114,7 +111,6 @@ def _run_status_somente_pipeline(
         resumo_filtro = resultado['resumo_filtro']
         logger.info('FILTRO_HSM', f"status antes={resumo_filtro['total_antes']}")
         logger.info('FILTRO_HSM', f"status depois={resumo_filtro['total_depois']}")
-        logger.info('RESULTADO', f"total_status={resultado['total_status']}")
         return _finalizar_sucesso_pipeline(
             logger,
             logger_externo,

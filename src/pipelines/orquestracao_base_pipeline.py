@@ -1,26 +1,7 @@
-from core.logger import PipelineLogger
 from core.error_codes import ERRO_ORQUESTRACAO, ERRO_VALIDACAO_ARQUIVOS
-from src.services.analise_dados_fase3_orquestracao_service import (
-    gerar_analise_dados_fase3_orquestracao,
-)
-from src.services.graficos_orquestracao_service import gerar_graficos_orquestracao
+from core.logger import PipelineLogger
 from src.services.orquestracao_service import gerar_dataset_final
 from src.utils.arquivos import validar_arquivos_existem
-
-
-def _resolver_raiz_analise(nome_logger):
-    base = 'data/disparo_complicacao/relatorios/analise_dados'
-    logger_norm = str(nome_logger or '').lower()
-    if 'complicacao' in logger_norm:
-        return f'{base}/complicacao'
-    return f'{base}/complicacao'
-
-
-def _resolver_contexto(nome_logger):
-    logger_norm = str(nome_logger or '').lower()
-    if 'complicacao' in logger_norm:
-        return 'complicacao'
-    return 'complicacao'
 
 
 def executar_orquestracao_pipeline(arquivo_dataset_entrada, arquivo_dataset_saida, nome_logger):
@@ -45,55 +26,10 @@ def executar_orquestracao_pipeline(arquivo_dataset_entrada, arquivo_dataset_said
             arquivo_dataset_entrada=arquivo_dataset_entrada,
             arquivo_dataset_saida=arquivo_dataset_saida,
         )
-        if resultado.get('ok'):
-            resultado_analise_fase3 = gerar_analise_dados_fase3_orquestracao(
-                arquivo_dataset_orquestrado=arquivo_dataset_saida,
-                raiz_analise=_resolver_raiz_analise(nome_logger),
-                nome_processo='orquestracao',
-                pipeline_nome=nome_logger,
-            )
-            for mensagem in resultado_analise_fase3.get('mensagens', []):
-                logger.warning('ANALISE_DADOS', mensagem)
-            resultado_graficos_fase3 = gerar_graficos_orquestracao(
-                contexto=_resolver_contexto(nome_logger),
-                raiz_analise_contexto=_resolver_raiz_analise(nome_logger),
-                pastas_origem_csv=resultado_analise_fase3.get('pastas_saida', []),
-            )
-            logger.info(
-                'GRAFICOS',
-                (
-                    "Graficos da Fase 3 (orquestracao) gerados em: "
-                    f"{resultado_graficos_fase3.get('pasta_base_saida', '')}"
-                ),
-            )
-            resultado['metricas_por_etapa'] = {
-                'orquestracao': {
-                    'total_usuarios': resultado.get('total_usuarios', 0),
-                    'total_usuarios_resolvidos': resultado.get('total_usuarios_resolvidos', 0),
-                    'total_disparo': resultado.get('total_disparo', 0),
-                    'pasta_analise_dados_fase3': resultado_analise_fase3.get('pasta_saida', ''),
-                }
-            }
-            resultado['dados'] = resultado.get('dados', {})
-            resultado['dados']['analise_dados_fase3'] = resultado_analise_fase3
-            resultado['dados']['graficos_orquestracao'] = resultado_graficos_fase3
-            resultado['mensagens'] = (
-                resultado.get('mensagens', [])
-                + resultado_analise_fase3.get('mensagens', [])
-                + [
-                    f"Analise de dados Fase 3 gerada em: {resultado_analise_fase3.get('pasta_saida', '')}",
-                    f"Manifests de graficos Fase 3: {', '.join(resultado_graficos_fase3.get('manifests', []))}",
-                ]
-            )
-        elif not resultado.get('codigo_erro'):
+        if not resultado.get('ok') and not resultado.get('codigo_erro'):
             resultado['codigo_erro'] = ERRO_ORQUESTRACAO
+
         logger.info('RESULTADO', f"ok={resultado.get('ok', False)}")
-        logger.info('RESULTADO', f"total_usuarios={resultado.get('total_usuarios', 0)}")
-        logger.info(
-            'RESULTADO',
-            f"total_usuarios_resolvidos={resultado.get('total_usuarios_resolvidos', 0)}",
-        )
-        logger.info('RESULTADO', f"total_disparo={resultado.get('total_disparo', 0)}")
         for mensagem in resultado.get('mensagens', []):
             logger.info('RESULTADO', mensagem)
         logger.finalizar('SUCESSO' if resultado.get('ok') else 'FALHA')

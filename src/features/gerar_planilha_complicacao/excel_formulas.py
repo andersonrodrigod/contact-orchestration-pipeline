@@ -50,6 +50,11 @@ FORMULAS_BASE = [
         "letra": "AR",
         "formula": lambda linha: f'=PROCX(F{linha},\'P4\'!R:R,\'P4\'!E:E,"")',
     },
+    {
+        "coluna": "LIGACAO EFETIVADA",
+        "letra": "AZ",
+        "formula": lambda linha: f'=PROCX(AF{linha},\'P1\'!B:B,\'P1\'!C:C,"")',
+    },
 ]
 
 

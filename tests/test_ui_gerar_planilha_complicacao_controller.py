@@ -54,4 +54,4 @@ def test_controller_monta_plano_com_caminhos_de_saida():
 
     assert erro is None
     assert plano["arquivo_saida"] == base / "complicacao.xlsx"
-    assert plano["arquivo_excluidos"] == base / "linhas_excluidas.xlsx"
+    assert "arquivo_excluidos" not in plano

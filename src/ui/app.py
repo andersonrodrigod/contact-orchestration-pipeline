@@ -821,7 +821,6 @@ class App(ctk.CTk):
                 arquivo_telefones=plano_execucao["arquivo_telefones"],
                 arquivo_utilidade=plano_execucao["arquivo_utilidade"],
                 arquivo_saida=plano_execucao["arquivo_saida"],
-                arquivo_excluidos=plano_execucao["arquivo_excluidos"],
             )
         except Exception as erro:
             self.after(
@@ -843,8 +842,7 @@ class App(ctk.CTk):
 
         mensagem = (
             "Planilha Complicação gerada com sucesso.\n"
-            f"Saída: {resultado.get('arquivo_saida', plano_execucao['arquivo_saida'])}\n"
-            f"Excluídos: {resultado.get('arquivo_excluidos', plano_execucao['arquivo_excluidos'])}"
+            f"Saída: {resultado.get('arquivo_saida', plano_execucao['arquivo_saida'])}"
         )
         avisos = self._normalized_messages(resultado)
         if avisos:

@@ -2,7 +2,6 @@ import unittest
 from unittest.mock import patch
 
 from core.pipeline_result import error_result, ok_result
-from src.contracts.preflight_contracts import build_preflight_result
 from src.pipelines.complicacao_pipeline import run_complicacao_pipeline
 
 
@@ -21,25 +20,7 @@ class PipelineContractsTests(unittest.TestCase):
         self.assertIn('mensagens', resultado)
         self.assertEqual(resultado.get('codigo_erro'), 'E999')
 
-    def test_build_preflight_result_contrato(self):
-        resultado = build_preflight_result(
-            ok=False,
-            contexto='complicacao',
-            bloqueios=['arquivo ausente'],
-            avisos=['coluna opcional ausente'],
-            metricas={'linhas_status': 10},
-            detalhes={'origem': 'teste'},
-            codigo_erro='E101',
-        )
-        self.assertFalse(resultado.get('ok'))
-        self.assertEqual(resultado.get('codigo_erro'), 'E101')
-        self.assertIn('mensagens', resultado)
-        self.assertIn('bloqueios', resultado)
-        self.assertIn('avisos', resultado)
-        self.assertIn('detalhes', resultado)
-        self.assertEqual(resultado.get('contexto'), 'complicacao')
-
-    def test_complicacao_pipeline_nao_agrega_metricas_antigas(self):
+    def test_complicacao_pipeline_agrega_apenas_contrato_operacional(self):
         chamadas = []
 
         def _status_dataset(**kwargs):
@@ -48,10 +29,6 @@ class PipelineContractsTests(unittest.TestCase):
                 'ok': True,
                 'mensagens': ['status ok'],
                 'arquivo_status_dataset': 'status_dataset.csv',
-                'total_status': 10,
-                'com_match': 7,
-                'sem_match': 3,
-                'metricas_por_etapa': {'status': {'total': 10}},
             }
 
         def _orquestracao(**kwargs):
@@ -60,7 +37,6 @@ class PipelineContractsTests(unittest.TestCase):
                 'ok': True,
                 'mensagens': ['orquestracao ok'],
                 'arquivo_saida': 'saida.csv',
-                'total_usuarios': 5,
             }
 
         with patch(
@@ -80,10 +56,7 @@ class PipelineContractsTests(unittest.TestCase):
         self.assertEqual(resultado.get('mensagens'), ['status ok', 'orquestracao ok'])
         self.assertEqual(resultado.get('arquivo_status_dataset'), 'status_dataset.csv')
         self.assertEqual(resultado.get('arquivo_saida'), 'saida.csv')
-        self.assertNotIn('total_status', resultado)
-        self.assertNotIn('com_match', resultado)
-        self.assertNotIn('sem_match', resultado)
-        self.assertNotIn('metricas_por_etapa', resultado)
+        self.assertEqual(set(resultado), {'ok', 'mensagens', 'arquivo_status_dataset', 'arquivo_saida'})
 
 
 if __name__ == '__main__':

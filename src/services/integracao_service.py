@@ -91,11 +91,6 @@ def integrar_somente_status_com_filtro_hsm(
         return {
             'ok': True,
             'arquivo_saida': arquivo_saida,
-            'total_status': len(df_status),
-            'com_match': 0,
-            'sem_match': len(df_status),
-            'descartados_status_data_invalida': 0,
-            'descartados_resposta_data_invalida': 0,
             'resumo_filtro': resumo_filtro,
         }
     finally:

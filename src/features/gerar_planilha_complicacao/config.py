@@ -43,24 +43,26 @@
     "P2",  # AP
     "P3",  # AQ
     "P4",  # AR
-    "OBSERVAÇÕES DO CLIENTE",  # AS
-    "RP1",  # AT
-    "RP1 Nº",  # AU
-    "TENTATIVA",  # AV
-    "DATA ULTIMA TENTATIVA",  # AW
-    "TELEFONE TENTADO",  # AX
-    "ESPECIALISTA",  # AY
-    "TIPO",  # AZ
-    "UF",  # BA
-    "DISTRITO",  # BB
-    "TELEFONE 1",  # BC
-    "TELEFONE 2",  # BD
-    "TELEFONE 3",  # BE
-    "TELEFONE 4",  # BF
-    "TELEFONE 5",  # BG
-    "CD_PESSOA",  # BH
-    "DUPLICADO",  # BI
-    "STATUS ENVIADO"  # BJ
+    "OBSERVACAO DO CLIENTE",  # AS
+    "OPERADOR RP1",  # AT
+    "CONTATO RP1",  # AU
+    "DATA CONTATO RP1",  # AV
+    "OBSERVAÇÕES DO CLIENTE RP1",  # AW
+    "RP1 Nº",  # AX
+    "RP1",  # AY
+    "LIGACAO EFETIVADA",  # AZ
+    "ESPECIALISTA",  # BA
+    "TIPO",  # BB
+    "UF",  # BC
+    "DISTRITO",  # BD
+    "TELEFONE 1",  # BE
+    "TELEFONE 2",  # BF
+    "TELEFONE 3",  # BG
+    "TELEFONE 4",  # BH
+    "TELEFONE 5",  # BI
+    "CD_PESSOA",  # BJ
+    "DUPLICADO",  # BK
+    "STATUS ENVIADO"  # BL
 ]
 
 COLUNAS_PESQUISA = [

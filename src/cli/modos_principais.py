@@ -4,7 +4,6 @@ from src.pipelines.complicacao_pipeline import (
     run_pipeline_complicacao_com_resposta,
 )
 from src.cli.modos_individuais import obter_modos_etapas
-from src.pipelines.preflight_pipeline import run_preflight_complicacao
 
 
 MODOS_PRINCIPAIS = {
@@ -12,7 +11,6 @@ MODOS_PRINCIPAIS = {
     'complicacao': run_pipeline_complicacao_com_resposta,
     'complicacao_gerar_status_dataset': run_complicacao_pipeline_gerar_status_dataset,
     'complicacao_orquestracao': run_pipeline_complicacao_orquestracao,
-    'preflight_complicacao': run_preflight_complicacao,
 }
 
 MODOS_AGREGADOS = []

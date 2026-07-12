@@ -48,7 +48,6 @@ class GerarPlanilhaComplicacaoController:
             "arquivo_utilidade": arquivo_utilidade,
             "output_dir": output_dir,
             "arquivo_saida": output_dir / "complicacao.xlsx",
-            "arquivo_excluidos": output_dir / "linhas_excluidas.xlsx",
         }, None
 
     @staticmethod

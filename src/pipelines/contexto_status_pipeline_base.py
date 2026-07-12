@@ -79,7 +79,6 @@ def run_criacao_dataset_status_base(
             return resultado
 
         logger.info('SAIDA', f"arquivo_saida={resultado.get('arquivo_saida', '')}")
-        logger.info('SAIDA', f"total_linhas={resultado.get('total_linhas', 0)}")
         if not logger_externo and finalizar_logger:
             logger.finalizar('SUCESSO')
         return resultado

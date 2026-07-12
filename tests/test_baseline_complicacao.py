@@ -15,6 +15,8 @@ class BaselineComplicacaoTests(unittest.TestCase):
         baseline_resposta = json.loads(
             Path('tests/baseline/status_resposta_baseline.json').read_text(encoding='utf-8')
         )
+        if not Path(baseline_status['arquivo']).exists() or not Path(baseline_resposta['arquivo']).exists():
+            self.skipTest('Arquivos gerados de baseline nao existem no checkout atual.')
 
         df_status = pd.read_csv(
             baseline_status['arquivo'],

@@ -134,13 +134,6 @@ def ordenar_por_data_internacao(df):
     return df.drop(columns=["_DT_INTERNACAO_ORDENACAO"]).reset_index(drop=True)
 
 
-def sinalizar_duplicidade(df):
-    df = df.copy()
-    codigo_usuario = df["COD USUARIO"].fillna("").astype(str).str.strip()
-    df["DUPLICIDADE"] = codigo_usuario.ne("") & codigo_usuario.duplicated(keep=False)
-    return df
-
-
 def sinalizar_duplicado_por_usuario_idade(df):
     df = df.copy()
     usuario = df["USUARIO"].fillna("").astype(str).str.strip().str.upper()

@@ -10,16 +10,6 @@ def imprimir_resumo_execucao(resultado):
         print(f"Arquivo final: {resultado['arquivo_saida']}")
     if 'arquivo_log_individual' in resultado:
         print(f"Log individual: {resultado['arquivo_log_individual']}")
-    if 'total_status' in resultado:
-        print(f"Total status: {resultado['total_status']}")
-    if 'total_linhas' in resultado:
-        print(f"Total dataset: {resultado['total_linhas']}")
-    if 'total_disparo' in resultado:
-        print(f"Total disparo: {resultado['total_disparo']}")
-    if 'com_match' in resultado:
-        print(f"Com match: {resultado['com_match']}")
-    if 'sem_match' in resultado:
-        print(f"Sem match: {resultado['sem_match']}")
     if 'resultados' in resultado:
         for nome, res in resultado['resultados'].items():
             print(f"{nome}: OK={res.get('ok', False)} arquivo={res.get('arquivo_saida', '')}")

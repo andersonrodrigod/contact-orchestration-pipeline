@@ -31,7 +31,7 @@ class ObservabilidadeServiceTests(unittest.TestCase):
             caminho_rotacionado.unlink()
 
         caminho_resultado = registrar_historico_execucao(
-            {'ok': True, 'total_status': 12},
+            {'ok': True, 'arquivo_saida': 'saida.csv'},
             modo='teste',
             arquivo_historico=arquivo_base,
         )
@@ -47,7 +47,7 @@ class ObservabilidadeServiceTests(unittest.TestCase):
         payload = json.loads(linhas[0])
         self.assertEqual(payload.get('modo'), 'teste')
         self.assertTrue(payload.get('ok'))
-        self.assertEqual(payload.get('metricas', {}).get('total_status'), 12)
+        self.assertEqual(set(payload), {'timestamp', 'modo', 'ok', 'codigo_erro'})
 
         caminho_resultado.unlink()
 

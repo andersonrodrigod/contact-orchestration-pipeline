@@ -2,7 +2,6 @@ ERRO_DESCONHECIDO = 'E999'
 ERRO_MODO_BLOQUEADO = 'E001'
 ERRO_VALIDACAO_ARQUIVOS = 'E101'
 ERRO_VALIDACAO_COLUNAS = 'E102'
-ERRO_QUALIDADE_DATA = 'E201'
 ERRO_INGESTAO = 'E301'
 ERRO_INTEGRACAO = 'E302'
 ERRO_CONCATENACAO = 'E303'
@@ -25,8 +24,6 @@ def inferir_codigo_erro_por_mensagens(mensagens):
         return ERRO_VALIDACAO_COLUNAS
     if 'arquivo' in texto and ('nao encontrado' in texto or 'faltando' in texto):
         return ERRO_VALIDACAO_ARQUIVOS
-    if 'qualidade de data' in texto or 'nat' in texto:
-        return ERRO_QUALIDADE_DATA
     if 'concatenacao' in texto:
         return ERRO_CONCATENACAO
     if 'integracao' in texto:

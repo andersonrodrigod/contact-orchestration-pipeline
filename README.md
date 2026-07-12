@@ -13,7 +13,6 @@ O projeto roda por `main.py` e escreve logs em `logs/`.
 - `complicacao_com_resposta` (padrao).
 - `complicacao_gerar_status_dataset`.
 - `complicacao_orquestracao`.
-- `preflight_complicacao`.
 - `complicacao_ingestao`.
 - `complicacao_integrar_status_resposta`.
 - `complicacao_criar_dataset_status`.
@@ -44,7 +43,6 @@ Entradas esperadas:
 
 Saidas:
 - `data/gerar_planilha_complicacao/saida/complicacao.xlsx`
-- `data/gerar_planilha_complicacao/relatorios/linhas_excluidas.xlsx`
 
 Execucao:
 ```bash
@@ -61,7 +59,6 @@ Forcar modo:
 python main.py --modo complicacao_com_resposta
 python main.py --modo complicacao_gerar_status_dataset
 python main.py --modo complicacao_orquestracao
-python main.py --modo preflight_complicacao
 python main.py --modo complicacao_ingestao
 python main.py --modo complicacao_integrar_status_resposta
 python main.py --modo complicacao_criar_dataset_status
@@ -98,7 +95,7 @@ python main.py --modo complicacao_orquestrar
 - `src/pipelines/join_status_resposta_pipeline.py`: unifica status + status_resposta e versao somente status.
 - `src/services/ingestao_service.py`: regras de ingestao.
 - `src/services/integracao_service.py`: regras de negocio da integracao.
-- `src/services/dataset_metricas_service.py`: contagens de status e agregados por chave/telefone.
+- `src/services/status_contagens_service.py`: contagens operacionais de status por chave/telefone.
 - `src/services/orquestracao_service.py`: regras da etapa final.
 - `src/services/padronizacao_service.py`: padronizacao de nomes de colunas das fontes.
 - `src/services/texto_service.py`: normalizacao e limpeza textual compartilhada.

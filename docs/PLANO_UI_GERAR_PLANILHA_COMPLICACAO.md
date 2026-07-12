@@ -30,7 +30,6 @@ Campos esperados no frame:
 Arquivos gerados:
 
 - `complicacao.xlsx`
-- `linhas_excluidas.xlsx`
 
 ## Arquitetura Proposta
 
@@ -57,7 +56,6 @@ executar_pipeline(
     arquivo_telefones=arquivo_telefones,
     arquivo_utilidade=arquivo_utilidade,
     arquivo_saida=pasta_saida / "complicacao.xlsx",
-    arquivo_excluidos=pasta_saida / "linhas_excluidas.xlsx",
 )
 ```
 

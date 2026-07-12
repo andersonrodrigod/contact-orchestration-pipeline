@@ -13,7 +13,6 @@ class CliModesTests(unittest.TestCase):
             'complicacao',
             'complicacao_gerar_status_dataset',
             'complicacao_orquestracao',
-            'preflight_complicacao',
             'complicacao_ingestao',
             'complicacao_integrar_status_resposta',
             'complicacao_criar_dataset_status',

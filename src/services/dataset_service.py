@@ -6,7 +6,7 @@ from src.config.schemas import (
     COLUNAS_TELEFONE_DATASET,
 )
 
-from src.services.dataset_metricas_service import (
+from src.services.status_contagens_service import (
     aplicar_contagens_status,
     preparar_contagens_status,
 )

@@ -97,7 +97,7 @@ def _normalizar_status_para_contagens(df_status_full):
     )
     garantir_contrato_resposta_canonica(
         df_status,
-        contexto='dataset_metricas.status_pos_padronizacao',
+        contexto='status_contagens.status_pos_padronizacao',
     )
 
     df_status['__CHAVE_CONTAGEM'] = normalizar_texto_serie(

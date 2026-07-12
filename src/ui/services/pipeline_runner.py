@@ -4,7 +4,7 @@
 class PipelineRunner:
     @staticmethod
     def build_complicacao_steps(plano_execucao: dict[str, str]) -> list[str]:
-        steps = ["Validando preflight de arquivos e colunas..."]
+        steps = ["Validando arquivos e colunas..."]
 
         steps.append("Complicação: normalizando status e flow de resposta...")
         steps.append("Complicação: integrando status com resposta...")
