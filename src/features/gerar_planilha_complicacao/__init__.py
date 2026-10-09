@@ -1,2 +1,0 @@
-"""Processamento de complicacoes cirurgicas."""
-

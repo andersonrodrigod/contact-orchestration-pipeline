@@ -1,102 +1,11 @@
-# Contact Orchestration Pipeline
+# Contact Orchestration Pipeline 2.0
 
-## Visao geral
-Pipeline focado no fluxo de complicacao:
-- `ingestao`: leitura, validacao, normalizacao e limpeza dos arquivos.
-- `integracao`: filtro por HSM e merge entre status e status_resposta.
-- `criacao_dataset`: prepara o arquivo final para relatorio.
-- `orquestracao`: aplica classificacao (`PROCESSO`/`ACAO`) e orquestracao entre abas.
-
-O projeto roda por `main.py` e escreve logs em `logs/`.
-
-## Modos de execucao
-- `complicacao_com_resposta` (padrao).
-- `complicacao_gerar_status_dataset`.
-- `complicacao_orquestracao`.
-- `complicacao_ingestao`.
-- `complicacao_integrar_status_resposta`.
-- `complicacao_criar_dataset_status`.
-- `complicacao_gerar_dataset_status`.
-- `complicacao_orquestrar`.
-
-## Entradas padrao
-- `data/disparo_complicacao/entrada/status.csv`
-- `data/disparo_complicacao/entrada/status_resposta.csv`
-- `data/disparo_complicacao/entrada/complicacao.xlsx`
-
-## Saidas padrao
-- `data/disparo_complicacao/saida/status_limpo.csv`
-- `data/disparo_complicacao/saida/status_resposta_limpo.csv`
-- `data/disparo_complicacao/saida/status.csv`
-- `data/disparo_complicacao/saida/complicacao_status.xlsx`
-- `data/disparo_complicacao/saida/complicacao_final.xlsx`
-
-## Organizacao de dados
-- `data/disparo_complicacao/`: arquivos usados e gerados pelo fluxo atual de disparo da complicacao.
-- `data/gerar_planilha_complicacao/`: arquivos usados e gerados pela feature que gera a planilha de complicacao antes do disparo.
-
-### Gerar planilha de complicacao
-Entradas esperadas:
-- `data/gerar_planilha_complicacao/entrada/complicacao_mes.xlsx`
-- `data/gerar_planilha_complicacao/entrada/telefones.csv`
-- `data/gerar_planilha_complicacao/entrada/utilidade_complicacao.xlsx`
-
-Saidas:
-- `data/gerar_planilha_complicacao/saida/complicacao.xlsx`
-
-Execucao:
-```bash
-python scripts/gerar_planilha_complicacao.py
-```
-
-## Execucao
-```bash
-python main.py
-```
-
-Forcar modo:
-```bash
-python main.py --modo complicacao_com_resposta
-python main.py --modo complicacao_gerar_status_dataset
-python main.py --modo complicacao_orquestracao
-python main.py --modo complicacao_ingestao
-python main.py --modo complicacao_integrar_status_resposta
-python main.py --modo complicacao_criar_dataset_status
-python main.py --modo complicacao_gerar_dataset_status
-python main.py --modo complicacao_orquestrar
-```
-
-## Documentacao da UI
-- Guia de uso e manutencao da interface: `README_UI_PASSO_A_PASSO.md`
-
-## Regras principais de dados
-- `Data agendamento` permanece no status.
-- `DT ENVIO` e criado a partir de `Data agendamento` (somente data).
-- `dat_atendimento` e padronizado para `DT_ATENDIMENTO`.
-- `DT_ATENDIMENTO` e formatado em `dd/mm/yyyy`.
-- merge na integracao usa `Contato + DT ENVIO` com `nom_contato + DT_ATENDIMENTO`.
-- `RESPOSTA` recebe `"Sem resposta"` quando vier vazia.
-- no dataset final, `DT INTERNACAO` e `DT ENVIO` ficam como data; o resto vira texto.
-- telefones (`Telefone`, `num_telefone`) sao normalizados removendo `.0` e caracteres nao numericos.
-- o dataset final segue o padrao do legado com abas:
-  `usuarios`, `usuarios_respondidos`, `usuarios_duplicados`, `usuarios_resolvidos`.
-- na criacao de dataset, o logger valida e informa se todas as colunas obrigatorias
-  do mapeamento foram encontradas no arquivo de origem.
-
-## Logs
-- Saida de execucao em `logs/<nome_pipeline>_<timestamp>.txt`.
-- O terminal tambem mostra resumo final (`OK`, arquivo final e totais de match).
+Base minima para construir novas funcionalidades aos poucos.
 
 ## Estrutura
-- `main.py`: orquestracao dos modos e resumo final.
-- `src/pipelines/complicacao_pipeline.py`: fluxo principal de complicacao.
-- `src/pipelines/complicacao_status_pipeline.py`: ingestao + envio status + criacao do dataset_status.
-- `src/pipelines/complicacao_orquestracao_pipeline.py`: orquestracao.
-- `src/pipelines/join_status_resposta_pipeline.py`: unifica status + status_resposta e versao somente status.
-- `src/services/ingestao_service.py`: regras de ingestao.
-- `src/services/integracao_service.py`: regras de negocio da integracao.
-- `src/services/status_contagens_service.py`: contagens operacionais de status por chave/telefone.
-- `src/services/orquestracao_service.py`: regras da etapa final.
-- `src/services/padronizacao_service.py`: padronizacao de nomes de colunas das fontes.
-- `src/services/texto_service.py`: normalizacao e limpeza textual compartilhada.
-- `core/logger.py`: logger de execucao.
+
+- `src/`: codigo das futuras funcionalidades.
+- `requirements.txt`: dependencias adicionadas conforme a necessidade.
+
+Ainda nao ha funcionalidades implementadas ou dependencias externas.
+Integracoes com Oracle e data lake serao definidas nas proximas etapas.
